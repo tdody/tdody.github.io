@@ -6,7 +6,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-
+<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS_HTML'></script>
 
 
 <style type="text/css">
@@ -13247,12 +13247,7 @@ Created by Thibault Dody, 06/24/2019.
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>The signoid function is defined on the entiere range of real numbers and takes values in [0,1]. Therefore, if the output of the linear function is a large value, then the sigmoid will be close to 1 and close to 0 if z is very small. There is one missing aspect to our model. The goal is to predict wether y is equal to 0 or 1, to do so, we will define a threshold.</p>
-
-$$y_{pred}=0\ if\ a&lt;0.5$$
-
-
-$$y_{pred}=1\ if\ a\geq0.5$$
-
+$$y_{pred}=0\ if\ a&lt;0.5$$$$y_{pred}=1\ if\ a\geq0.5$$
 </div>
 </div>
 </div>
@@ -13260,9 +13255,7 @@ $$y_{pred}=1\ if\ a\geq0.5$$
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>Finally, we need to define a performance metric in order to assess how well our model behaves. We call this metric the <strong>Loss Function</strong>. It represents how close are out predictions to the actual values. The loss function is defined as:</p>
-
 $$\mathcal{L(x)}=-log(a)*y-log(1-a)*(1-y)$$
-
 </div>
 </div>
 </div>
@@ -13400,9 +13393,7 @@ $$\mathcal{L(x)}=-log(a)*y-log(1-a)*(1-y)$$
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>Finally, we define the <strong>Cost Function</strong> as the average of the <strong>Loss Function</strong> over the entire set of examples.</p>
-
 $$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)})$$
-
 </div>
 </div>
 </div>
@@ -13410,21 +13401,10 @@ $$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)})$$
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>The last step of this section consists of the optimization step. Now that the model and the performance metric have been defined, the weights of the model need to be optimized in order to best fit the data. This is where the <strong>gradient descent</strong> comes into play. The idea behind the optimization is to look at how the performance varies as a function of the weights. To do so, the partial derivatives (slops) of the <strong>Cost Function</strong> are computed.</p>
-
-$$ \frac{\partial J}{\partial w_{i}}\ and\ \frac{\partial J}{\partial b}$$
-
-<p>Each parameter is then updated using:</p>
-
-$$ \theta_{i} = w_{i} - \alpha*\frac{\partial J}{\partial \theta{i}}$$
-
-<p>Where $\alpha$ is a constant called <strong>learning</strong> rate.</p>
+$$ \frac{\partial J}{\partial w_{i}}\ and\ \frac{\partial J}{\partial b}$$<p>Each parameter is then updated using:</p>
+$$ \theta_{i} = w_{i} - \alpha*\frac{\partial J}{\partial \theta{i}}$$<p>Where $\alpha$ is a constant called <strong>learning</strong> rate.</p>
 <p>Based on our definition of the loss, we have:</p>
-
-$$ \frac{\partial J}{\partial w} = \frac{1}{m}X(A-Y)^T$$
-
-$$ \frac{\partial J}{\partial b} = \frac{1}{m} \sum_{i=1}^m (a^{(i)}-y^{(i)})$$
-
-<p>Based on the formulas presented above, it is necessary to obtain A (vector of predicted probabilities) in order to obtain the gradients. Therefore, the optimization is before as a two step process:</p>
+$$ \frac{\partial J}{\partial w} = \frac{1}{m}X(A-Y)^T$$$$ \frac{\partial J}{\partial b} = \frac{1}{m} \sum_{i=1}^m (a^{(i)}-y^{(i)})$$<p>Based on the formulas presented above, it is necessary to obtain A (vector of predicted probabilities) in order to obtain the gradients. Therefore, the optimization is before as a two step process:</p>
 <ol>
 <li>Forward propagation: Make predictions using current parameters and compute cost</li>
 <li>Backward propagation: Use predictions to compute gradients and update parameters</li>
