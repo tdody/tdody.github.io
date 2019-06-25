@@ -92,8 +92,9 @@ ax.set_ylabel('y')
 ax.set_title('Sigmoid function: $\sigma(x)=1/(1+e^{-z})$');
 ```
 
-
-![png](output_5_0.png)
+<figure>
+    <a href="_posts/output_5_0.png"><img src="_posts/output_5_0.png"></a>
+</figure>
 
 
 The signoid function is defined on the entiere range of real numbers and takes values in [0,1]. Therefore, if the output of the linear function is a large value, then the sigmoid will be close to 1 and close to 0 if z is very small. There is one missing aspect to our model. The goal is to predict wether y is equal to 0 or 1, to do so, we will define a threshold.
