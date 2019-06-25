@@ -18,7 +18,7 @@ In this article, we are going over the theory behind the Logistic Regression. Fi
 
 An HTML version of the Notebook can be found:
 
-<div markdown="0"><a href="http://htmlpreview.github.com/?https://github.com/tdody/tdody.github.io/blob/master/_html/Logistic%20Regression.html" class="btn btn-info">Link to Notebook</a></div>
+<div markdown="0"><a href="tdody.github.io/_html/Logistic Regression.html" class="btn btn-info">Link to Notebook</a></div>
 
 ## Revision Log
 
