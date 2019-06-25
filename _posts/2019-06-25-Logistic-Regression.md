@@ -96,9 +96,6 @@ ax.set_title('Sigmoid function: $\sigma(x)=1/(1+e^{-z})$');
     <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_5_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_5_0.png"></a>
 </figure>
 
-![Test](https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_5_0.png)
-
-
 
 The signoid function is defined on the entiere range of real numbers and takes values in [0,1]. Therefore, if the output of the linear function is a large value, then the sigmoid will be close to 1 and close to 0 if z is very small. There is one missing aspect to our model. The goal is to predict wether y is equal to 0 or 1, to do so, we will define a threshold.
   
@@ -127,8 +124,9 @@ ax.set_title('Loss function: $\mathcal{L(x)}=-log(a)*y-log(1-a)*(1-y)$')
 ax.legend();
 ```
 
-
-![png](output_8_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_8_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_8_0.png"></a>
+</figure>
 
 
 From the above plot, we see that the penalty becomes extremely large is the prediction is incorrect. For instance, if y=0 and $y_{prob}=0.95$, then the loss is equal to:
@@ -448,7 +446,9 @@ plt.scatter(X[0, :], X[1, :], c=y, s=40, cmap=plt.cm.Spectral);
 ```
 
 
-![png](output_25_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_25_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_25_0.png"></a>
+</figure>
 
 
 
@@ -547,7 +547,9 @@ ax.set_ylabel('Cost');
 ```
 
 
-![png](output_34_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_34_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_34_0.png"></a>
+</figure>
 
 
 
@@ -562,7 +564,9 @@ print("Accuracy Training = {:.2f}".format(accuracy_score(y_train.T,  predict(d['
     
 
 
-![png](output_35_1.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_35_1.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_35_1.png"></a>
+</figure>
 
 
 
@@ -577,7 +581,9 @@ print("Accuracy Testing = {:.2f}".format(accuracy_score(y_test.T,  predict(d['w'
     
 
 
-![png](output_36_1.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_36_1.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_36_1.png"></a>
+</figure>
 
 
 
@@ -588,7 +594,9 @@ TAD_tools.plot_decision_boundary_train_test(lambda x: predict(d['w'], d['b'], x.
 ```
 
 
-![png](output_37_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"></a>
+</figure>
 
 
 As shown by the accuracies computed above and the decision boundary plot, the logistic regression performs relatively well 
@@ -629,7 +637,9 @@ for row in range(2):
 ```
 
 
-![png](output_41_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_41_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_41_0.png"></a>
+</figure>
 
 
 
@@ -674,7 +684,9 @@ for i, dataset in enumerate(datasets):
     
 
 
-![png](output_42_1.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_42_1.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_42_1.png"></a>
+</figure>
 
 
 ***
