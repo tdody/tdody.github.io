@@ -53,7 +53,7 @@ plt.style.use('ggplot')
   
 The idea behind the logistic regression is to build a linear model (similar to a simple linear regression) in order to predict a binary outcome (0 or 1).
 
-In order to implement a logistic regresssion, two functions are needed. The first one is a simple linear function ($L$) coupled with the sigmoid function ($\sigma$). They are defined as:
+In order to implement a logistic regresssion, two functions are needed. The first one is a simple linear function ($$L$$) coupled with the sigmoid function ($$\sigma$$). They are defined as:
 
 $$L(x) = b + \sum_{n=1}^{N} w_{n} * x_{n} $$
   
