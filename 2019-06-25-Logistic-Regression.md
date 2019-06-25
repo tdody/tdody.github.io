@@ -55,11 +55,11 @@ The idea behind the logistic regression is to build a linear model (similar to a
 
 In order to implement a logistic regresssion, two functions are needed. The first one is a simple linear function ($L$) coupled with the sigmoid function ($\sigma$). They are defined as:
 
-$L(x) = b + \sum_{n=1}^{N} w_{n} * x_{n} $
+$$L(x) = b + \sum_{n=1}^{N} w_{n} * x_{n} $$
   
 and
 
-$\sigma(x) = \frac{1}{1+e^{-x}}$
+$$\sigma(x) = \frac{1}{1+e^{-x}}$$
 
 Before we dive deeper into these notions, let's define a few notations:
 
@@ -73,7 +73,7 @@ The input for our model are defined as:
 
 The goal is to find the $\beta$ of the linear function is order to make the best predictions. A prediction is defined as:
 
-$a = \sigma(z)\ where\ z=b + \sum_{n=1}^{N} w_{n} * x_{n}$  
+$$a = \sigma(z)\ where\ z=b + \sum_{n=1}^{N} w_{n} * x_{n}$$  
 
 Indeed the output of the sigmoid function can be interpreted as the probability of the prediction to be either 0 or 1. In order to visualize it, let's plot the sigmoid function.
 
@@ -93,17 +93,17 @@ ax.set_title('Sigmoid function: $\sigma(x)=1/(1+e^{-z})$');
 ```
 
 <figure>
-    <a href="../assets/img/2019-06-24-Logistic-Regression/output_5_0.png"><img src="../assets/img/2019-06-24-Logistic-Regression/output_5_0.png"></a>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_5_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_5_0.png"></a>
 </figure>
 
-![Test](../assets/img/2019-06-24-Logistic-Regression/output_5_0.png)
 
+The signoid function is defined on the entiere range of real numbers and takes values in [0,1]. Therefore, if the output of the linear function is a large value, then the sigmoid will be close to 1 and close to 0 if z is very small. There is one missing aspect to our model. The goal is to predict wether y is equal to 0 or 1, to do so, we will define a threshold.  
 
-
-The signoid function is defined on the entiere range of real numbers and takes values in [0,1]. Therefore, if the output of the linear function is a large value, then the sigmoid will be close to 1 and close to 0 if z is very small. There is one missing aspect to our model. The goal is to predict wether y is equal to 0 or 1, to do so, we will define a threshold.
+$$y_{pred}=0\ if\ a\<0.5$$  
   
-$$y_{pred}=0\ if\ a<0.5$$
-$$y_{pred}=1\ if\ a\geq0.5$$
+and  
+  
+$$y_{pred}=1\ if\ a\geq0.5$$  
 
 Finally, we need to define a performance metric in order to assess how well our model behaves. We call this metric the **Loss Function**. It represents how close are out predictions to the actual values. The loss function is defined as:
   
@@ -127,8 +127,9 @@ ax.set_title('Loss function: $\mathcal{L(x)}=-log(a)*y-log(1-a)*(1-y)$')
 ax.legend();
 ```
 
-
-![png](output_8_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_8_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_8_0.png"></a>
+</figure>
 
 
 From the above plot, we see that the penalty becomes extremely large is the prediction is incorrect. For instance, if y=0 and $y_{prob}=0.95$, then the loss is equal to:
@@ -176,7 +177,8 @@ Where $\alpha$ is a constant called **learning** rate.
   
 Based on our definition of the loss, we have:
 
-$$ \frac{\partial J}{\partial w} = \frac{1}{m}X(A-Y)^T$$
+$$ \frac{\partial J}{\partial w} = \frac{1}{m}X(A-Y)^T$$  
+
 $$ \frac{\partial J}{\partial b} = \frac{1}{m} \sum_{i=1}^m (a^{(i)}-y^{(i)})$$
   
 Based on the formulas presented above, it is necessary to obtain A (vector of predicted probabilities) in order to obtain the gradients. Therefore, the optimization is before as a two step process:
@@ -448,7 +450,9 @@ plt.scatter(X[0, :], X[1, :], c=y, s=40, cmap=plt.cm.Spectral);
 ```
 
 
-![png](output_25_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_25_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_25_0.png"></a>
+</figure>
 
 
 
@@ -547,7 +551,9 @@ ax.set_ylabel('Cost');
 ```
 
 
-![png](output_34_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_34_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_34_0.png"></a>
+</figure>
 
 
 
@@ -562,7 +568,9 @@ print("Accuracy Training = {:.2f}".format(accuracy_score(y_train.T,  predict(d['
     
 
 
-![png](output_35_1.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_35_1.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_35_1.png"></a>
+</figure>
 
 
 
@@ -577,7 +585,9 @@ print("Accuracy Testing = {:.2f}".format(accuracy_score(y_test.T,  predict(d['w'
     
 
 
-![png](output_36_1.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_36_1.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_36_1.png"></a>
+</figure>
 
 
 
@@ -588,7 +598,9 @@ TAD_tools.plot_decision_boundary_train_test(lambda x: predict(d['w'], d['b'], x.
 ```
 
 
-![png](output_37_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"></a>
+</figure>
 
 
 As shown by the accuracies computed above and the decision boundary plot, the logistic regression performs relatively well 
@@ -629,7 +641,9 @@ for row in range(2):
 ```
 
 
-![png](output_41_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_41_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_41_0.png"></a>
+</figure>
 
 
 
@@ -674,7 +688,9 @@ for i, dataset in enumerate(datasets):
     
 
 
-![png](output_42_1.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_42_1.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_42_1.png"></a>
+</figure>
 
 
 ***
