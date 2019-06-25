@@ -16,7 +16,7 @@ Created by Thibault Dody, 06/24/2019.
 
 # Logistic Regression
   
-This notebook covers the basics of logisgtic regression and its implementation from scratch in Python.
+This notebook covers the basics of logistic regression and its implementation from scratch in Python.
 
 ## Table of Content
 
@@ -53,7 +53,7 @@ plt.style.use('ggplot')
   
 The idea behind the logistic regression is to build a linear model (similar to a simple linear regression) in order to predict a binary outcome (0 or 1).
 
-In order to implement a logistic regresssion, two functions are needed. The first one is a simple linear function ($$L$$) coupled with the sigmoid function ($$\sigma$$). They are defined as:
+In order to implement a logistic regression, two functions are needed. The first one is a simple linear function ($$L$$) coupled with the sigmoid function ($$\sigma$$). They are defined as:
 
 $$L(x) = b + \sum_{n=1}^{N} w_{n} * x_{n} $$
   
@@ -97,7 +97,7 @@ ax.set_title('Sigmoid function: $\sigma(x)=1/(1+e^{-z})$');
 </figure>
 
 
-The signoid function is defined on the entiere range of real numbers and takes values in [0,1]. Therefore, if the output of the linear function is a large value, then the sigmoid will be close to 1 and close to 0 if z is very small. There is one missing aspect to our model. The goal is to predict wether y is equal to 0 or 1, to do so, we will define a threshold.  
+The sigmoid function is defined on the entire range of real numbers and takes values in [0,1]. Therefore, if the output of the linear function is a large value, then the sigmoid will be close to 1 and close to 0 if z is very small. There is one missing aspect to our model. The goal is to predict whether y is equal to 0 or 1, to do so, we will define a threshold.  
 
 $$y_{pred}=1\ if\ a\geq0.5\ else\ y_{pred}=0$$  
   
@@ -586,6 +586,8 @@ print("Accuracy Testing = {:.2f}".format(accuracy_score(y_test.T,  predict(d['w'
 </figure>
 
 
+Confusion matrices can be used to identify recurring misclassification. For instance, the logistic regression makes more errors when the true label is 1 than when it is 4. In our example, it does not really matter since the data was randomly generated. However, when working on a real dataset, this pattern can indicate a need for improvement of the model (more data,...).
+
 
 ```python
 TAD_tools.plot_decision_boundary_train_test(lambda x: predict(d['w'], d['b'], x.T),
@@ -598,8 +600,6 @@ TAD_tools.plot_decision_boundary_train_test(lambda x: predict(d['w'], d['b'], x.
     <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"></a>
 </figure>
 
-
-Confusion matrices can be use to identify recuring misclassification. For instance, the logistic regression makes more errors when the true label is 1 than when it is 4. In our example, it does not really matter since the data was randomly generated. However, when working on a real dataset, this pattern can idicate a need for improvement of the model (more data,...).
 
 
 ```python
@@ -699,7 +699,7 @@ As shown above, when boundaries between classes are not linear, the logistic reg
 ### Pros
 1. Simple to implement.
 2. Few hyperparameters.
-3. Easy to interprete and visualize (up to three dimensions).
+3. Easy to interpret and visualize (up to three dimensions).
 4. Works for both binary and multi-class classification.
 5. Can be upgraded with regularization (Ridge or Lasso)
 
