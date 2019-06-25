@@ -93,7 +93,7 @@ ax.set_title('Sigmoid function: $\sigma(x)=1/(1+e^{-z})$');
 ```
 
 <figure>
-    <a href="./output_5_0.png"><img src="./output_5_0.png"></a>
+    <a href="https://github.com/tdody/tdody.github.io/blob/master/_posts/output_5_0.png"><img src="https://github.com/tdody/tdody.github.io/blob/master/_posts/output_5_0.png"></a>
 </figure>
 
 
