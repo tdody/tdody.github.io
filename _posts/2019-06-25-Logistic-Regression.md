@@ -55,11 +55,11 @@ The idea behind the logistic regression is to build a linear model (similar to a
 
 In order to implement a logistic regresssion, two functions are needed. The first one is a simple linear function ($L$) coupled with the sigmoid function ($\sigma$). They are defined as:
 
-$L(x) = b + \sum_{n=1}^{N} w_{n} * x_{n} $
+$$L(x) = b + \sum_{n=1}^{N} w_{n} * x_{n} $$
   
 and
 
-$\sigma(x) = \frac{1}{1+e^{-x}}$
+$$\sigma(x) = \frac{1}{1+e^{-x}}$$
 
 Before we dive deeper into these notions, let's define a few notations:
 
@@ -73,7 +73,7 @@ The input for our model are defined as:
 
 The goal is to find the $\beta$ of the linear function is order to make the best predictions. A prediction is defined as:
 
-$a = \sigma(z)\ where\ z=b + \sum_{n=1}^{N} w_{n} * x_{n}$  
+$$a = \sigma(z)\ where\ z=b + \sum_{n=1}^{N} w_{n} * x_{n}$$  
 
 Indeed the output of the sigmoid function can be interpreted as the probability of the prediction to be either 0 or 1. In order to visualize it, let's plot the sigmoid function.
 
@@ -99,8 +99,9 @@ ax.set_title('Sigmoid function: $\sigma(x)=1/(1+e^{-z})$');
 
 The signoid function is defined on the entiere range of real numbers and takes values in [0,1]. Therefore, if the output of the linear function is a large value, then the sigmoid will be close to 1 and close to 0 if z is very small. There is one missing aspect to our model. The goal is to predict wether y is equal to 0 or 1, to do so, we will define a threshold.
   
-$$y_{pred}=0\ if\ a<0.5$$
-$$y_{pred}=1\ if\ a\geq0.5$$
+$$y_{pred}=0\ if\ a<0.5$$  
+
+$$y_{pred}=1\ if\ a\geq0.5$$  
 
 Finally, we need to define a performance metric in order to assess how well our model behaves. We call this metric the **Loss Function**. It represents how close are out predictions to the actual values. The loss function is defined as:
   
@@ -174,7 +175,8 @@ Where $\alpha$ is a constant called **learning** rate.
   
 Based on our definition of the loss, we have:
 
-$$ \frac{\partial J}{\partial w} = \frac{1}{m}X(A-Y)^T$$
+$$ \frac{\partial J}{\partial w} = \frac{1}{m}X(A-Y)^T$$  
+
 $$ \frac{\partial J}{\partial b} = \frac{1}{m} \sum_{i=1}^m (a^{(i)}-y^{(i)})$$
   
 Based on the formulas presented above, it is necessary to obtain A (vector of predicted probabilities) in order to obtain the gradients. Therefore, the optimization is before as a two step process:
