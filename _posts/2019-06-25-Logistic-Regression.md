@@ -64,14 +64,14 @@ $$\sigma(x) = \frac{1}{1+e^{-x}}$$
 Before we dive deeper into these notions, let's define a few notations:
 
 1. The $$w$$'s are called the **weights** of the model. The $$b$$ is commonly called the bias.
-2. The input example $x$ is a n-dimension vector.
+2. The input example $$x$$ is a n-dimension vector.
 
 The input for our model are defined as:
 
 1. A set of $$m$$ examples $$\{x_{1},...,x_{m}\}$$
 2. A set of $$m$$ targets $$\{y_{1},...,y_{m}\}$$ where $$y_{i}=0\ or\ 1$$
 
-The goal is to find the $\beta$ of the linear function is order to make the best predictions. A prediction is defined as:
+The goal is to find the $$\beta$$ of the linear function is order to make the best predictions. A prediction is defined as:
 
 $$a = \sigma(z)\ where\ z=b + \sum_{n=1}^{N} w_{n} * x_{n}$$  
 
@@ -169,7 +169,7 @@ Each parameter is then updated using:
 
 $$ \theta_{i} = w_{i} - \alpha*\frac{\partial J}{\partial \theta{i}}$$
   
-Where $\alpha$ is a constant called **learning** rate.
+Where $$\alpha$$ is a constant called **learning** rate.
   
 Based on our definition of the loss, we have:
 
