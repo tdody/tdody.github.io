@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Logistic Regression v2"
+title:  "Road to Deep Learning - Part 1: Logistic Regression"
 date:   2019-06-24
 excerpt: "A gentle introduction to Logistic Regression and its implementation in python."
 tag:
@@ -63,13 +63,13 @@ $$\sigma(x) = \frac{1}{1+e^{-x}}$$
 
 Before we dive deeper into these notions, let's define a few notations:
 
-1. The $w$'s are called the **weights** of the model. The $b$ is commonly called the bias.
+1. The $$w$$'s are called the **weights** of the model. The $$b$$ is commonly called the bias.
 2. The input example $x$ is a n-dimension vector.
 
 The input for our model are defined as:
 
-1. A set of $m$ examples $\{x_{1},...,x_{m}\}$
-2. A set of $m$ targets $\{y_{1},...,y_{m}\}$ where $y_{i}=0\ or\ 1$
+1. A set of $$m$$ examples $$\{x_{1},...,x_{m}\}$$
+2. A set of $$m$$ targets $$\{y_{1},...,y_{m}\}$$ where $$y_{i}=0\ or\ 1$$
 
 The goal is to find the $\beta$ of the linear function is order to make the best predictions. A prediction is defined as:
 
@@ -128,7 +128,7 @@ ax.legend();
 </figure>
 
 
-From the above plot, we see that the penalty becomes extremely large is the prediction is incorrect. For instance, if y=0 and $y_{prob}=0.95$, then the loss is equal to:
+From the above plot, we see that the penalty becomes extremely large is the prediction is incorrect. For instance, if $$y=0$$ and $$y_{prob}=0.95$$, then the loss is equal to:
 
 
 ```python
@@ -142,7 +142,7 @@ From the above plot, we see that the penalty becomes extremely large is the pred
 
 
 
-Whereas if y=0 and $y_{prob}=0.05$, then the loss is equal to:
+Whereas if $$y=0$$ and $$y_{prob}=0.05$$, then the loss is equal to:
 
 
 ```python
@@ -534,7 +534,7 @@ d = model(X_train, y_train, X_test, y_test, num_iterations = 2000, learning_rate
     test accuracy: 95.00 %
     
 
-The cost seems to plateau after 1100 iterations.
+The cost seems to plateau after 1100 iterations. The accuracy on the test set is **95%** while the accuracy on the train set is **91%**. Overall, the logistic regression performed well on this simple test case.
 
 
 ```python
@@ -599,7 +599,7 @@ TAD_tools.plot_decision_boundary_train_test(lambda x: predict(d['w'], d['b'], x.
 </figure>
 
 
-As shown by the accuracies computed above and the decision boundary plot, the logistic regression performs relatively well 
+Confusion matrices can be use to identify recuring misclassification. For instance, the logistic regression makes more errors when the true label is 1 than when it is 4. In our example, it does not really matter since the data was randomly generated. However, when working on a real dataset, this pattern can idicate a need for improvement of the model (more data,...).
 
 
 ```python
@@ -689,6 +689,9 @@ for i, dataset in enumerate(datasets):
 </figure>
 
 
+As shown above, when boundaries between classes are not linear, the logistic regression does not perform well (as expected). However, the principle behind linear classification can be used and combined in order to make more complex model.
+
+
 ***
 <a id="Section_5"></a>
 ## 5. Conclusion  
@@ -705,3 +708,5 @@ for i, dataset in enumerate(datasets):
 2. Too simple to capture complex relationships.
 
 In conclusion, a logistic regression can be seen as the first step of the path to a more complex model. It is often use as a mean to assess the complexity of a problem and obtain quick and rough results.
+
+In part of this series, we will cover the basic of deep learning and how we can leverage the basics of the logistic regression to implement more complex models.
