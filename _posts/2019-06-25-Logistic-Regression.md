@@ -93,10 +93,10 @@ ax.set_title('Sigmoid function: $\sigma(x)=1/(1+e^{-z})$');
 ```
 
 <figure>
-    <a href="../assets/img/2019-06-24-Logistic-Regression/output_5_0.png"><img src="../assets/img/2019-06-24-Logistic-Regression/output_5_0.png"></a>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_5_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_5_0.png"></a>
 </figure>
 
-![Test](../assets/img/2019-06-24-Logistic-Regression/output_5_0.png)
+![Test](https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_5_0.png)
 
 
 
