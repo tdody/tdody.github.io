@@ -600,7 +600,7 @@ TAD_tools.plot_decision_boundary_train_test(lambda x: predict(d['w'], d['b'], x.
     <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"></a>
 </figure>
 
-
+Finally, we now generate a few datasets with complex decision boundaries. The idea is to test the ability of the logistic regression to adapt to mode complex situations.
 
 ```python
 n_samples = 300
