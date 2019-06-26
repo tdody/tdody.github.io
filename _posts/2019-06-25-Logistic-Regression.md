@@ -15,8 +15,8 @@ Created by Thibault Dody, 06/24/2019.
 </footer>
 
 # Logistic Regression
-  
-This notebook covers the basics of logistic regression and its implementation from scratch in Python.
+
+This post is part of a three-post series on the topic of Deep Learning. The first part will cover the fundamentals of optimization and more precisely, the logistic regression and its implementation in Python. The second post will cover the basis of layered model. The final post will cover the implementation of a deep neural network.
 
 ## Table of Content
 
