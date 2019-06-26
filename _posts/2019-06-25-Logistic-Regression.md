@@ -600,7 +600,7 @@ TAD_tools.plot_decision_boundary_train_test(lambda x: predict(d['w'], d['b'], x.
     <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"></a>
 </figure>
 
-Finally, we now generate a few datasets with complex decision boundaries. The idea is to test the ability of the logistic regression to adapt to mode complex situations.
+Finally, we now generate a few datasets with complex decision boundaries. The idea is to test the ability of the logistic regression to adapt to more complex situations.
 
 ```python
 n_samples = 300
@@ -689,7 +689,7 @@ for i, dataset in enumerate(datasets):
 </figure>
 
 
-As shown above, when boundaries between classes are not linear, the logistic regression does not perform well (as expected). However, the principle behind linear classification can be used and combined in order to make more complex model.
+As shown above, when boundaries between classes are not linear, the logistic regression does not perform well (as expected). However, the principle behind linear classification can be used and combined in order to make more complex model. A new type of model combining the efficiency of the logistic regression and a non-linear aspect is the natural next step towards deep learning.
 
 
 ***
