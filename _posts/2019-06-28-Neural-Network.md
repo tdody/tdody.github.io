@@ -102,13 +102,16 @@ The hidden layer is made of an ensemble of neurons each equipped with the follow
 
 ### 2.2. Architecture
 
-<img src="images/simple_nn.png" style="width:450px;height:300px;">
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/simple_nn.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/simple_nn.png"></a>
+</figure>
 
 As shown above, the input vector $$X=\{x_{1},x_{2}\}$$ passes through the first hidden layer. The output of the hidden layer are then used as an input for the output layer. Finally, the output of the last layer is used to make a prediction.  
 
 Let's take an example where the hidden layer is made of 3 hidden units. The equations of the model are:
   
-$$a_{1}^{[1]}=g(w_{1,1}^{[1]}*x_{1}+w_{1,2}^{[1]}*x_{2}+b_{1}^{[1]})$$  
+$$a_{1}^{[1]}=g(w_{1,1}^{[1]}*x_{1}+w_{1,2}^{[1]}*x_{2}+b_{1}^{[1]})$$
+
 $$a_{2}^{[1]}=g(w_{2,1}^{[1]}*x_{1}+w_{2,2}^{[1]}*x_{2}+b_{2}^{[1]})$$
 
 Then:
@@ -152,8 +155,9 @@ axs[1].legend()
 fig.suptitle('Activation Functions');
 ```
 
-
-![png](output_11_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_11_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_11_0.png"></a>
+</figure>
 
 
 **NOTE**:
@@ -543,8 +547,9 @@ for row in range(2):
         axs[row,col].set_title("Dataset {}:".format(2*row+col));
 ```
 
-
-![png](output_31_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_31_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_31_0.png"></a>
+</figure>
 
 
 From the plots shown above, one can expect the model to perfectly predict the classes for Dataset 1 and 3. Indeed, the class distributions for the datasets 0 and 2 are not clearly defined.
@@ -623,8 +628,9 @@ axs[0].set_title('Decision Boundary')
 axs[1].set_title('Cost Function during training');
 ```
 
-
-![png](output_38_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_38_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_38_0.png"></a>
+</figure>
 
 
 **NOTE**: The accuracy on the training set is 56.08%. Such a low value was expected based on the data distribution. The two data clusters appear to be fused into a single cluster. Therefore, the model performs slightly better than a random guess (50% accuracy). In is interesting to note the shape of the decision boundary. The greater complexity of the model leads to more complex decision boundary.
@@ -671,8 +677,9 @@ axs[0].set_title('Decision Boundary')
 axs[1].set_title('Cost Function during training');
 ```
 
-
-![png](output_43_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_43_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_43_0.png"></a>
+</figure>
 
 
 **NOTE**: As expected, the model is able to perfectly classify each data-point.
@@ -719,8 +726,9 @@ axs[0].set_title('Decision Boundary')
 axs[1].set_title('Cost Function during training');
 ```
 
-
-![png](output_48_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_48_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_48_0.png"></a>
+</figure>
 
 
 **NOTE**: This example is the most interesting of the four datasets. Indeed, the data clusters are not perfectly separated. However, by looking at the data, one can define a perimeter which envelopes the red cluster. After running the model, the training accuracy is 87.06%, this is a good improvement over the predictions of the logistic regression.
@@ -767,8 +775,9 @@ axs[0].set_title('Decision Boundary')
 axs[1].set_title('Cost Function during training');
 ```
 
-
-![png](output_53_0.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_53_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_53_0.png"></a>
+</figure>
 
 
 **NOTE**: As expected, the model is able to perfectly classify each data-point.
@@ -822,8 +831,9 @@ for i, n_h in enumerate(n_h_list):
     Train Accuracy: 90.59%
     
 
-
-![png](output_58_3.png)
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_58_3.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_58_3.png"></a>
+</figure>
 
 
 As shown above, the decision boundary becomes more and more complex as the number of hidden units increases. The results obtained with 10, 15, and 20 hidden units are considered as over-fitted. Indeed, the models try to much to envelope each data points (even the isolated ones). In order to obtain a good generalized model, over-fitted needs to be avoided. For this reason, the model obtained with 5 hidden units is the preferred one. Note that to fully evaluate the models, it is necessary to test the prediction power on unseen data (the test set).
