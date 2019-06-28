@@ -103,7 +103,7 @@ The hidden layer is made of an ensemble of neurons each equipped with the follow
 ### 2.2. Architecture
 
 <figure>
-    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/simple_nn.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/simple_nn.png"></a>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/simple_nn.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/simple_nn.png" height="350"></a>
 </figure>
 
 As shown above, the input vector $$X=\{x_{1},x_{2}\}$$ passes through the first hidden layer. The output of the hidden layer are then used as an input for the output layer. Finally, the output of the last layer is used to make a prediction.  
