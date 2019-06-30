@@ -97,7 +97,7 @@ The simple neural network model is made of the following components:
 3. One output layer
   
 The hidden layer is made of an ensemble of neurons each equipped with the following two tools:
-1. A set of weights $\{w_{1},..,w_{m}\}$ and a bias term $b$.
+1. A set of weights $$\{w_{1},..,w_{m}\}$$ and a bias term $$b$$.
 2. An activation function which adds a non-linear behavior to its neuron.
 
 ### 2.2. Architecture
