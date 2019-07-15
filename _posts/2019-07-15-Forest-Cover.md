@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "Kaggle: Forest Cover - 77% acc."
+title:  "Kaggle: Forest Cover"
 date:   2019-07-06
-excerpt: "A take on the Kaggle competition of the Titanic disaster."
+excerpt: "A take on the Kaggle competition of the Forest Cover Type (Accuracy 77%)."
 project: true
 tag:
 - Kaggle 
