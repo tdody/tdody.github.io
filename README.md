@@ -12,7 +12,6 @@ This website contains a set of post and projects I have worked on related to Dat
 **Projects**  
  - MNIST  
  - Housing  
- - Forests  
  - Credit Card  
  - Veterinary Clinic  
  - Potholes  
