@@ -38,8 +38,10 @@ This study area includes four wilderness areas located in the Roosevelt National
 </figure>
 
 <figure class="third">
-	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Krummholz.jpg" height="150">
+	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Krummholz.jpg" style="height: 150px;>
 </figure>
+
+
 
 <div class="row">
   <div class="column">
@@ -67,14 +69,13 @@ This study area includes four wilderness areas located in the Roosevelt National
 
 <div class="row">
   <div class="column">
-    <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Krummholz.jpg" height="150">
+    <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Krummholz.jpg" style="height: 150px;>
   </div>
   <div class="column">
   </div>
   <div class="column">
   </div>
 </div>
-
 
 # Table of Content
 
