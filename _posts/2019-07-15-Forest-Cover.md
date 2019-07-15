@@ -26,20 +26,55 @@ We are asked to predict the forest cover type (the predominant kind of tree cove
 This study area includes four wilderness areas located in the Roosevelt National Forest of northern Colorado. These areas represent forests with minimal human-caused disturbances, so that existing forest cover types are more a result of ecological processes rather than forest management practices.
 
 <figure class="third">
-	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Spruce.jpeg" height="150">
-	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/lodgepole pine.jpg" height="150">
-	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Ponderosa Pine.jpeg" height="150">
+	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Spruce.jpeg" style="height: 150px;"/>
+	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/lodgepole pine.jpg" style="height: 150px;"/>
+	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Ponderosa Pine.jpeg" style="height: 150px;"/>
 </figure>
 
 <figure class="third">
-	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Cottonwood_Willow.jpg" height="150">
-	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Douglas-fir.jpg" height="150">
-	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Douglas-fir.jpg" height="150">
+	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Cottonwood_Willow.jpg" style="height: 150px;"/>
+	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Aspen.jpg" style="height: 150px;"/>
+	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Douglas-fir.jpg" style="height: 150px;"/>
 </figure>
 
 <figure class="third">
 	<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Krummholz.jpg" height="150">
 </figure>
+
+<div class="row">
+  <div class="column">
+    <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Spruce.jpeg" style="height: 150px;"/>
+  </div>
+  <div class="column">
+    <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/lodgepole pine.jpg" style="height: 150px;"/>
+  </div>
+  <div class="column">
+    <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Ponderosa Pine.jpeg" style="height: 150px;"/>
+  </div>
+</div>
+
+<div class="row">
+  <div class="column">
+    <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Cottonwood_Willow.jpg" style="height: 150px;"/>
+  </div>
+  <div class="column">
+    <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Aspen.jpg" style="height: 150px;"/>
+  </div>
+  <div class="column">
+    <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Douglas-fir.jpg" style="height: 150px;"/>
+  </div>
+</div>
+
+<div class="row">
+  <div class="column">
+    <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Krummholz.jpg" height="150">
+  </div>
+  <div class="column">
+  </div>
+  <div class="column">
+  </div>
+</div>
+
 
 # Table of Content
 
