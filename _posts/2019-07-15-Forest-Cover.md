@@ -27,9 +27,9 @@ This study area includes four wilderness areas located in the Roosevelt National
 
 |  A |  B |  C |
 | --- | --- | --- |
-| <figure><img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Spruce.jpeg" style="height:150px;"/>    | <figure><img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/lodgepole pine.jpg" style="height:150px;"/></figure>   | <figure><img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Ponderosa Pine.jpeg" style="height:150px;"/></figure>   |
-| <figure><img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Cottonwood_Willow.jpg" style="height:150px;"/></figure>   | <figure><img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Douglas-fir.jpg" style="height: 150px;"/></figure>   | <figure><img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Douglas-fir.jpg" style="height: 150px;"/> </figure>   |
-| <figure><img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Krummholz.jpg" style="height: 150px;"/></figure>   | <figure></figure>   | <figure></figure>   |
+| [](https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Spruce.jpeg) | [](https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/lodgepole pine.jpg) | [](https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Ponderosa Pine.jpeg) |
+| [](https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Cottonwood_Willow.jpg) | [](https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Douglas-fir.jpg) | [](https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Douglas-fir.jpg) |
+| [](https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Krummholz.jpg)  |    |    |
 
 # Table of Content
 
