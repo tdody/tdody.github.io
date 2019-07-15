@@ -17,23 +17,25 @@ Created by Thibault Dody, 07/02/2019.
 
 # Forest Cover Type
 
-<img src="./images/banner_forest.jpg" width=1920>
+<figure>
+<img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/banner_forest.jpg" style="width:1920px;>
+</figure>
 
 We are asked to predict the forest cover type (the predominant kind of tree cover) from cartographic variables. The actual forest cover type for a given 30 x 30 meter cell was determined from US Forest Service (USFS) Region 2 Resource Information System data. Independent variables were then derived from data obtained from the US Geological Survey and USFS. The data is in raw form and contains binary columns of data for qualitative independent variables such as wilderness areas and soil type.
 
 This study area includes four wilderness areas located in the Roosevelt National Forest of northern Colorado. These areas represent forests with minimal human-caused disturbances, so that existing forest cover types are more a result of ecological processes rather than forest management practices.
 
 <tr>
-<td> <img src="./images/Spruce.jpeg" style="height: 150px;"/> </td>
-<td> <img src="./images/lodgepole pine.jpg" style="height: 150px;"/> </td>
-<td> <img src="./images/Ponderosa Pine.jpeg" style="height: 150px;"/> </td>
-<td> <img src="./images/Cottonwood_Willow.jpg" style="height: 150px;"/> </td>
+<td> <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Spruce.jpeg" style="height: 150px;"/> </td>
+<td> <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/lodgepole pine.jpg" style="height: 150px;"/> </td>
+<td> <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Ponderosa Pine.jpeg" style="height: 150px;"/> </td>
+<td> <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Cottonwood_Willow.jpg" style="height: 150px;"/> </td>
 </tr>  
 
 <tr>
-<td> <img src="./images/Aspen.jpg" style="height: 150px;"/> </td>
-<td> <img src="./images/Douglas-fir.jpg" style="height: 150px;"/> </td>
-<td> <img src="./images/Krummholz.jpg" style="height: 150px;"/> </td>
+<td> <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Aspen.jpg" style="height: 150px;"/> </td>
+<td> <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Douglas-fir.jpg" style="height: 150px;"/> </td>
+<td> <img src="https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/Krummholz.jpg" style="height: 150px;"/> </td>
 </tr>
 
 # Table of Content
