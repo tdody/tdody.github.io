@@ -1849,8 +1849,11 @@ In order to reduce the over-fitting, there exists a set of techniques called reg
 
 **L1 and L2 regularizations**  
    The cost function is modified and a penalty term is added:  
-   $$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)}) + \frac{\lambda}{2*m}*\sum{}||w||^{2} \text{   for L2 Regularization}$$
-      $$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)}) + \frac{\lambda}{m}*\sum{}|w| \text{   for L1 Regularization}$$  
+
+   $$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)}) + \frac{\lambda}{2*m}*\sum{}||w||^{2} \text{   for L2 Regularization}$$  
+
+   $$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)}) + \frac{\lambda}{m}*\sum{}|w| \text{   for L1 Regularization}$$   
+     
    The idea behind this strategy is to ensure that the model is not governed by a small subsets of weights with high values. The parameter lambda is tunable.
   
 **Dropout**  
