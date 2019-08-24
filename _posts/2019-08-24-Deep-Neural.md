@@ -1848,7 +1848,7 @@ The deep neural network proved to be an improvement on the single layer model. T
 In order to reduce the over-fitting, there exists a set of techniques called regularization. Their role in to prevent the model from over-learning the training data by simplifying the model. The most common ones are:
 
 **L1 and L2 regularizations**  
-   The cost function is modified and a penalty term is added:
+   The cost function is modified and a penalty term is added:  
    $$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)}) + \frac{\lambda}{2*m}*\sum{}||w||^{2} \text{   for L2 Regularization}$$
       $$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)}) + \frac{\lambda}{m}*\sum{}|w| \text{   for L1 Regularization}$$  
    The idea behind this strategy is to ensure that the model is not governed by a small subsets of weights with high values. The parameter lambda is tunable.
