@@ -104,10 +104,10 @@ Each hidden layer ($$l$$) is made of an ensemble of neurons each equipped with t
 ### 2.2. Architecture
 
 <figure>
-    <img src="src="https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/deep_nn.png" style="width:800px;height:350px;">
-<\figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/deep_nn.png" style="width:800px;height:350px;">
+</figure>
 
-As shown above, the input vector $$X=\{x_{1},x_{2}\}$$ passes throught the first hidden layer. The output of the hidden layer are then used as an input for the output layer. Finally, the output of the last layer is used to make a prediction.  
+As shown above, the input vector $$X=\{x_{1},x_{2}\}$$ passes through the first hidden layer. The output of the hidden layer are then used as an input for the output layer. Finally, the output of the last layer is used to make a prediction.  
 
 Let's take an example where the hidden layer is made of 3 hidden units. The equations of the model are:
   
