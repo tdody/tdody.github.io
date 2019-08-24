@@ -4,7 +4,6 @@ This website contains a set of post and projects I have worked on related to Dat
 
 ## TO DO:
 **Posts**  
-  - Road to Deep Learning 3/3  
   - MNIST  
   - CNN  
   - RNN  
