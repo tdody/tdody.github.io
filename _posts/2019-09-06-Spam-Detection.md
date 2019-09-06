@@ -1,10 +1,12 @@
 ---
 layout: post
-title:  "Project: Spam Detection (accuracy 99.21%)"
+title:  "Project: Spam Detection"
 date:   2019-09-06
-excerpt: "This project contains the implementation of a SPAM detector."
+excerpt: "This project contains the implementation of a SPAM detector"
 project: true
 tag:
+- regex
+- LinearModel
 - python
 comments: False
 ---
@@ -849,7 +851,7 @@ X_sample_vectors.toarray()
 
 
 
-As shown above, each email is converted into a sparse vector. The weights of the vector correspond to the number of occurence of the specific word. The index 0 corresponds to words not contained in the vocabulary.
+As shown above, each email is converted into a sparse vector. The weights of the vector correspond to the number of occurrence of the specific word. The index 0 corresponds to words not contained in the vocabulary.
 
 
 ```python
@@ -1055,7 +1057,7 @@ print('Recall: {:.2f}%'.format(recall_score(y_test, y_test_pred)*100))
 
 
 **Note on the metrics**:  
-The basic metric for this problem is the accuracy (i.e. the ratio of the number of correct predictions and the number of total predictions). However, for cases such as email spam, one can decide to look at the problem from a different angle. Indeed, should we be concern about the type of errors the model is making? For the case of spam detection, do we care more if an email is incorrectly specified as a spam or if a spam is incorrectly specified as a normal email. It seems that the missclassification of emails as spams can cause the most harm to a user (professionally or personally). Indeed, users tend to never look into their spam folder. So if an important email is classified as spam, our users may be more impacted than having one spam in his folder. One additional aspect of this problem is human performance. Even if a spam is incorretly filtered and ends up in the user's mailbox, human are performant at identifying text content and therefore dectect spam content. In conclusion, for two models leading to the same accuracy, the model with the highest **Precision** (TP / [TP+FP] ) is to be chosen.
+The basic metric for this problem is the accuracy (i.e. the ratio of the number of correct predictions and the number of total predictions). However, for cases such as email spam, one can decide to look at the problem from a different angle. Indeed, should we be concern about the type of errors the model is making? For the case of spam detection, do we care more if an email is incorrectly specified as a spam or if a spam is incorrectly specified as a normal email. It seems that the misclassification of emails as spams can cause the most harm to a user (professionally or personally). Indeed, users tend to never look into their spam folder. So if an important email is classified as spam, our users may be more impacted than having one spam in his folder. One additional aspect of this problem is human performance. Even if a spam is incorrectly filtered and ends up in the user's mailbox, human are good at identifying text content and therefore detect spam content. In conclusion, for two models leading to the same accuracy, the model with the highest **Precision** (TP / [TP+FP] ) is to be chosen.
 
 One of the benefits of using linear models such as linear regressions or logistic regressions lies in their interpretability. We can now look at the model weights and relate them to the vocabulary words they stand for.
 
