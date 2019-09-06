@@ -1,4 +1,3 @@
-
 ---
 layout: post
 title:  "Project: Spam Detection (accuracy 99.21%)"
