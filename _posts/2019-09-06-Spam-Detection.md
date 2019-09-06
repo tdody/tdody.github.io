@@ -16,7 +16,7 @@ Created by Thibault Dody, 08/28/2019.
 # Spam Detection
 
 <figure>
-    <img src="Images/Banner.png" style="width:642px;height=288px;">
+    <img src="https://tdody.github.io/assets/img/Banner.png" style="width:642px;height=288px;">
 </figure>
 
 ## Table of Content   
