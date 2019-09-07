@@ -1,8 +1,8 @@
 ---
 layout: post
-title:  "Project: Spam Detection"
+title:  "Project: Spam Detection (accuracy 99.21%)"
 date:   2019-09-06
-excerpt: "This project contains the implementation of a SPAM detector"
+excerpt: "This project contains the implementation of a SPAM detector."
 project: true
 tag:
 - regex
