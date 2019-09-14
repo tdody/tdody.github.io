@@ -4,12 +4,10 @@ This website contains a set of post and projects I have worked on related to Dat
 
 ## TO DO:
 **Posts**  
-  - MNIST  
   - CNN  
   - RNN  
     
 **Projects**  
- - MNIST  
  - Housing  
  - Credit Card  
  - Veterinary Clinic  
