@@ -8,7 +8,6 @@ This website contains a set of post and projects I have worked on related to Dat
   - RNN  
     
 **Projects**  
- - Housing  
  - Credit Card  
  - Veterinary Clinic  
  - Potholes  
