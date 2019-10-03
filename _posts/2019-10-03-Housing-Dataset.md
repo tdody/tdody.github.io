@@ -17,9 +17,7 @@ Created by Thibault Dody, 09/09/2019.
 
 # Housing Price Dataset
 
-<figure>
-<img src="images/banner.jpg" style="width:642px;height=288px;">
-</figure>
+<img src="images/banner.jpg" width=642 height=288>
 
 ## Table of Content   
 
@@ -139,7 +137,7 @@ train.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -2841,7 +2839,7 @@ summary_df.reset_index(drop=True)
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -3332,7 +3330,7 @@ residuals.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -3501,8 +3499,6 @@ submission.iloc[:,1] = np.floor(y_test_pred_series)
 submission.to_csv("new_submission.csv", index=False)
 ```
 
-<figure>
-<img src="images/Results.png">
-</figure>
+<img src="https://tdody.github.io/assets/img/2019-10-03-Housing-Dataset/Results.png">
 
 **Conclusion**: This model ranks in the top 5% at the time of the submittal. This is a really good outcome for a relatively simple model without too much feature engineering.
