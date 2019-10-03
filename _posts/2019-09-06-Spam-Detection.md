@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Project: Spam Detection (Accuracy 99.21%)"
+title:  "Project: Spam Detection (Accuracy 99.2%)"
 date:   2019-09-06
 excerpt: "This project contains the implementation of a SPAM detector."
 project: true
