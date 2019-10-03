@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Kaggle: Housing Price Predictions - Top 5%"
+title:  "Kaggle: Housing Price Predictions (Top 5%)"
 date:   2019-10-03
 excerpt: "A take on the Kaggle competition of the Boston Housing Dataset."
 project: true
