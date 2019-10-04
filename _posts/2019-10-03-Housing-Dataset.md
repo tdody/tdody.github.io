@@ -3502,6 +3502,6 @@ submission.to_csv("new_submission.csv", index=False)
 ```
 <figure>
 <img src="https://tdody.github.io/assets/img/2019-10-03-Housing-Dataset/Results.png">
-<figure>
+</figure>
     
 **Conclusion**: This model ranks in the top 5% at the time of the submittal. This is a really good outcome for a relatively simple model without too much feature engineering.
