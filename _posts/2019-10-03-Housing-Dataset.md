@@ -19,8 +19,8 @@ Created by Thibault Dody, 09/09/2019.
 
 <figure>
 <img src="https://tdody.github.io/assets/img/2019-10-03-Housing-Dataset/banner.jpg" style="height=288px;">
-<figure>
-    
+</figure>
+
 ## Table of Content   
 
 [1. Introduction](#Section_1)   
