@@ -3091,7 +3091,7 @@ kfolds = KFold(n_splits=10, shuffle=True, random_state=42)
 In addition, we create a stacking cross-validation regressor. This ensemble technique consists of combining several regressors, train them using CV, add the predictions to the dataset as new features and train a meta-regressor with the new dataset.
 
 <figure>
-<img src="images/stacking_cv_regressor_overview.png" style="height:500px;">
+<img src="https://tdody.github.io/assets/img/2019-10-03-Housing-Dataset/stacking_cv_regressor_overview.png" style="height:500px;">
 </figure>
 
 
