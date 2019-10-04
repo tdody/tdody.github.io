@@ -18,7 +18,7 @@ Created by Thibault Dody, 09/09/2019.
 # Housing Price Dataset
 
 <figure>
-<img src="https://tdody.github.io/assets/img/2019-10-03-Housing-Dataset/banner.jpg" width=642 height=288>
+<img src="https://tdody.github.io/assets/img/2019-10-03-Housing-Dataset/banner.jpg" style="height=288px;">
 <figure>
     
 ## Table of Content   
