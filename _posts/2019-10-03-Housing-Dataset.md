@@ -39,8 +39,8 @@ Created by Thibault Dody, 09/09/2019.
 &nbsp;&nbsp;&nbsp;&nbsp;[4.1. Benchmarking](#Section_41)  
 &nbsp;&nbsp;&nbsp;&nbsp;[4.2. Feature Importances](#Section_42)  
 &nbsp;&nbsp;&nbsp;&nbsp;[4.3. Result Correlation and Model Behaviors](#Section_43)  
-&nbsp;&nbsp;&nbsp;&nbsp;[4.4. Ensembling](#Section_44)
-&nbsp;&nbsp;&nbsp;&nbsp;[4.5. Fine Tuning](#Section_45)
+&nbsp;&nbsp;&nbsp;&nbsp;[4.4. Ensembling](#Section_44)  
+&nbsp;&nbsp;&nbsp;&nbsp;[4.5. Fine Tuning](#Section_45)  
 &nbsp;&nbsp;&nbsp;&nbsp;[4.6. Predictions](#Section_46)  
 
 *****
