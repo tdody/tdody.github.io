@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Kaggle: Sales Forecast"
+title:  "Kaggle: Sales Forecast (Top 18%)"
 date:   2019-11-10
 excerpt: "A take on the Kaggle competition of the Sales Forecasting Challenge."
 project: true
