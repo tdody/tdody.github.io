@@ -43,24 +43,24 @@ disqus_shortname:   thibault
 github-url:         tdody
 #stackoverflow:     123456/username   from a "http://stackoverflow.com/users/123456/username" link
 linkedin:          thibault-dody
-xing:              username
-instagram:          username
-lastfm:            username
-tumblr:            username
-medium:            '@username'
-pinterest:         username
-foursquare:        username
-steam:              username
-dribbble:          username
-youtube:           username
-youtube-channel:   channel
-soundcloud:        username
-weibo:             username
-flickr:            username
-codepen:           username
-keybase:           username
-xmpp:              username@server.com
-hackernews:        tdod25
+#xing:              username
+#instagram:          username
+#lastfm:            username
+#tumblr:            username
+#medium:            '@username'
+#pinterest:         username
+#foursquare:        username
+#steam:              username
+#dribbble:          username
+#youtube:           username
+#youtube-channel:   channel
+#soundcloud:        username
+#weibo:             username
+#flickr:            username
+#codepen:           username
+#keybase:           username
+#xmpp:              username@server.com
+#hackernews:        tdod25
 
 # Gems
 gems:
