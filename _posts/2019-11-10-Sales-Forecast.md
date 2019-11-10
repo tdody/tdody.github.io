@@ -136,7 +136,7 @@ sample_submission.head(3)
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -200,7 +200,7 @@ sales_train.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -313,11 +313,6 @@ sales_train.isnull().sum()
 ```
 
     Null records
-
-
-
-
-
     date              0
     date_block_num    0
     shop_id           0
@@ -340,7 +335,7 @@ sales_train.describe()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -448,7 +443,7 @@ sales_test.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -546,7 +541,7 @@ items.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -621,11 +616,6 @@ items.isnull().sum()
 ```
 
     Null records
-
-
-
-
-
     item_name           0
     item_id             0
     item_category_id    0
@@ -663,7 +653,7 @@ item_categories.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -746,11 +736,6 @@ item_categories.isnull().sum()
 ```
 
     Null records
-
-
-
-
-
     item_category_name    0
     item_category_id      0
     dtype: int64
@@ -772,7 +757,7 @@ shops.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -841,11 +826,6 @@ shops.isnull().sum()
 ```
 
     Null records
-
-
-
-
-
     shop_name    0
     shop_id      0
     dtype: int64
@@ -898,7 +878,7 @@ train.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1034,7 +1014,7 @@ bench_oct2015.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1221,7 +1201,7 @@ test_submission.describe()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1301,24 +1281,24 @@ test_submission.to_csv('previous_value_benchmark.csv', index=False)
 
 **Note**: This is the benchmark value that we were aiming for.
 
-In addition, we can perform some leaderboard probing to gain valuable insights on the test set. By predicting a 0 value for all the test cases, the evaluation metric (RMSE) becomes:
-
-$$RMSE^{2}=MSE=\frac{1}{N}\sum_{i=1}^{N} (y_i-\hat{y_i})^2=\frac{1}{N}\sum_{i=1}^{N} (y_i)^2$$  
-By using the value ($$\alpha$$) from the Kaggle evaluation, then we can retrieve:
-
-$$\sum_{i=1}^{N} (y_i)^2=\alpha*N$$  
-
-Now, if we use another constant prediction, say 1.0, we have:
-$$RMSE^{2}=MSE=\frac{1}{N}\sum_{i=1}^{N} (y_i-\hat{y_i})^2=\frac{1}{N}\sum_{i=1}^{N} (y_i-1)^{2}=\beta$$  
+In addition, we can perform some leaderboard probing to gain valuable insights on the test set. By predicting a 0 value for all the test cases, the evaluation metric (RMSE) becomes:  
   
-If we combine our two equations, we obtain:
-
-$$N*\beta=\sum_{i=1}^{N} (y_i-0.5)^{2}=\sum_{i=1}^{N} (y_i^{2}-2*y_i-1)=\sum_{i=1}^{N}(y_i^{2})-2*\sum_{i=1}^{N}(y_i)+N$$
-
-This becomes:
-
-$$\frac{1}{N}\sum_{i=1}^{N}(y_i)=\frac{\alpha+1-\beta}{2}$$
-
+$$RMSE^{2}=MSE=\frac{1}{N}\sum_{i=1}^{N} (y_i-\hat{y_i})^2=\frac{1}{N}\sum_{i=1}^{N} (y_i)^2$$  
+By using the value ($$\alpha$$) from the Kaggle evaluation, then we can retrieve:  
+  
+$$\sum_{i=1}^{N} (y_i)^2=\alpha*N$$   
+  
+Now, if we use another constant prediction, say 1.0, we have:  
+$$RMSE^{2}=MSE=\frac{1}{N}\sum_{i=1}^{N} (y_i-\hat{y_i})^2=\frac{1}{N}\sum_{i=1}^{N} (y_i-1)^{2}=\beta$$   
+   
+If we combine our two equations, we obtain:  
+  
+$$N*\beta=\sum_{i=1}^{N} (y_i-0.5)^{2}=\sum_{i=1}^{N} (y_i^{2}-2*y_i-1)=\sum_{i=1}^{N}(y_i^{2})-2*\sum_{i=1}^{N}(y_i)+N$$  
+  
+This becomes:  
+  
+$$\frac{1}{N}\sum_{i=1}^{N}(y_i)=\frac{\alpha+1-\beta}{2}$$  
+  
 We can then scale our future predictions to match the sum of the squares.
 
 
@@ -1390,7 +1370,7 @@ train.describe()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1569,7 +1549,7 @@ train[train['item_price'] > 150000]
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1629,7 +1609,7 @@ train[train['item_id'] == 6066]
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1764,7 +1744,7 @@ train[train['item_cnt_day'] > 1500]
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -2073,7 +2053,7 @@ item_categories.head(10)
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -2274,7 +2254,7 @@ full_data.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -2404,7 +2384,7 @@ full_data.head()
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -3479,7 +3459,7 @@ feature_importance.sort_values('score_mean', ascending=False)
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -4189,8 +4169,6 @@ summary_df, pred_valid_df  = train_estimator(X_train, Y_train,
     --------------------------------------------------
     Training: XGBRegressor
 
-
-    [13:50:55] WARNING: src/learner.cc:686: Tree method is automatically selected to be 'approx' for faster speed. To use old behavior (exact greedy algorithm on single machine), set tree_method to 'exact'.
     	training time: 3223.7s
     XGBRegressor trained...
     
@@ -4206,7 +4184,7 @@ summary_df
 
 
 
-<div>
+<div style="overflow-x:auto;">
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -5004,9 +4982,6 @@ model = XGBRegressor(**best_params)
 model.fit(X_train, Y_train, eval_metric="rmse", eval_set=[(X_valid, Y_valid)], 
           verbose=True,early_stopping_rounds = 50)
 ```
-
-    [13:02:46] WARNING: src/objective/regression_obj.cu:152: reg:linear is now deprecated in favor of reg:squarederror.
-    [13:02:46] WARNING: src/learner.cc:686: Tree method is automatically selected to be 'approx' for faster speed. To use old behavior (exact greedy algorithm on single machine), set tree_method to 'exact'.
     [0]	validation_0-rmse:1.03205
     Will train until validation_0-rmse hasn't improved in 50 rounds.
     [1]	validation_0-rmse:0.980421
@@ -5288,51 +5263,34 @@ for cur_block_num in [28, 29, 30, 31, 32]:
     	 done with Lasso
     	 done with Bayesian
     	 done with Random Forest
-
     	 done with LGBM
-    [12:35:19] WARNING: src/objective/regression_obj.cu:152: reg:linear is now deprecated in favor of reg:squarederror.
-    [12:35:19] WARNING: src/learner.cc:686: Tree method is automatically selected to be 'approx' for faster speed. To use old behavior (exact greedy algorithm on single machine), set tree_method to 'exact'.
     	 done with XGB
     Testing on month: 29
     	 done with Ridge
     	 done with Lasso
     	 done with Bayesian
     	 done with Random Forest
-
     	 done with LGBM
-    [14:14:34] WARNING: src/objective/regression_obj.cu:152: reg:linear is now deprecated in favor of reg:squarederror.
-    [14:14:34] WARNING: src/learner.cc:686: Tree method is automatically selected to be 'approx' for faster speed. To use old behavior (exact greedy algorithm on single machine), set tree_method to 'exact'.
     	 done with XGB
     Testing on month: 30
     	 done with Ridge
     	 done with Lasso
     	 done with Bayesian
     	 done with Random Forest
-
     	 done with LGBM
-    [15:45:01] WARNING: src/objective/regression_obj.cu:152: reg:linear is now deprecated in favor of reg:squarederror.
-    [15:45:01] WARNING: src/learner.cc:686: Tree method is automatically selected to be 'approx' for faster speed. To use old behavior (exact greedy algorithm on single machine), set tree_method to 'exact'.
     	 done with XGB
     Testing on month: 31
     	 done with Ridge
     	 done with Lasso
     	 done with Bayesian
     	 done with Random Forest
-
-
     	 done with LGBM
-    [17:46:47] WARNING: src/objective/regression_obj.cu:152: reg:linear is now deprecated in favor of reg:squarederror.
-    [17:46:47] WARNING: src/learner.cc:686: Tree method is automatically selected to be 'approx' for faster speed. To use old behavior (exact greedy algorithm on single machine), set tree_method to 'exact'.
-    	 done with XGB
     Testing on month: 32
     	 done with Ridge
     	 done with Lasso
     	 done with Bayesian
     	 done with Random Forest
-
     	 done with LGBM
-    [20:04:32] WARNING: src/objective/regression_obj.cu:152: reg:linear is now deprecated in favor of reg:squarederror.
-    [20:04:32] WARNING: src/learner.cc:686: Tree method is automatically selected to be 'approx' for faster speed. To use old behavior (exact greedy algorithm on single machine), set tree_method to 'exact'.
     	 done with XGB
 
 
