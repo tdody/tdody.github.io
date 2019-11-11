@@ -9,7 +9,7 @@ comments: false
 # AROUT ME
 
 <figure>
-<img style="float right;", src="https://tdody.github.io/assets/img/Personal.png">
+<img style="float right;" src="https://tdody.github.io/assets/img/Personal.png">
 </figure>
 
 My name is Thibault Dody. I am a structural engineer with a strong background in mathematics. My current work focuses on performing risk analysis for nuclear power plants. 
