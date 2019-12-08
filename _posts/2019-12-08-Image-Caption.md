@@ -690,8 +690,7 @@ writer = tf.summary.FileWriter('./logs', s.graph)
 
 ## Training loop  
    
-Before we can train the model, we need to generate our training and validation batches. Each batch contains a set of embedded images (from the InceptionV3 encoder) and indexed captions.  
-- 
+Before we can train the model, we need to generate our training and validation batches. Each batch contains a set of embedded images (from the InceptionV3 encoder) and indexed captions.
 
 
 ```python
