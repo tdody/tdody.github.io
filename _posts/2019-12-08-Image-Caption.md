@@ -45,12 +45,6 @@ import grading
 import download_utils
 ```
 
-
-```python
-download_utils.link_all_keras_resources()
-```
-
-
 ```python
 import tensorflow as tf
 from tensorflow.contrib import keras
@@ -561,41 +555,8 @@ s = reset_tf_session()
 tf.set_random_seed(42)
 ```
 
-
-Here's a figure to help you with flattening in decoder:  
 <figure>
-    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/flatten_help.png">
-</figure>
-
-```python
-LOG_DIR = './logs'
-get_ipython().system_raw(
-    'tensorboard --logdir {} --host 0.0.0.0 --port 6006 &'
-    .format(LOG_DIR)
-)
-# Install
-! npm install -g localtunnel
-
-!rm url.txt
-!rm -r logs
-
-# Tunnel port 6006 (TensorBoard assumed running)
-get_ipython().system_raw('lt --port 6006 >> url.txt 2>&1 &')
-
-# Get url
-! cat url.txt
-```
-
-    [K[?25h/tools/node/bin/lt -> /tools/node/lib/node_modules/localtunnel/bin/lt.js
-    [K[?25h+ localtunnel@2.0.0
-    added 35 packages from 21 contributors in 2.332s
-    rm: cannot remove 'url.txt': No such file or directory
-    rm: cannot remove 'logs': No such file or directory
-    your url is: https://nervous-dingo-17.localtunnel.me
-
-
-<figure>
-    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/Model.png">
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/Model.PNG">
 </figure>
 
 ```python
@@ -724,11 +685,11 @@ writer = tf.summary.FileWriter('./logs', s.graph)
 ```
 
 <figure>
-    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/TensorBoard.png">
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/TensorBoard.PNG">
 </figure>
 
-## Training loop
-  
+## Training loop  
+   
 Before we can train the model, we need to generate our training and validation batches. Each batch contains a set of embedded images (from the InceptionV3 encoder) and indexed captions.  
 - 
 
