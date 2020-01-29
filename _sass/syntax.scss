@@ -20,23 +20,23 @@ pre.highlight {
 	.k                 { color: #66d9ef }                            /* Keyword                     */
 	.l                 { color: #ae81ff }                            /* Literal                     */
 	.n                 { color: #f8f8f2 }                            /* Name                        */
-	.o                 { color: #f92672 }                            /* Operator                    */
+	.o                 { color: #ff2957 }                            /* Operator                    */
 	.p                 { color: #f8f8f2 }                            /* Punctuation                 */
 	.cm                { color: #75715e }                            /* Comment.Multiline           */
 	.cp                { color: #75715e }                            /* Comment.Preproc             */
-	.c1                { color: #75715e }                            /* Comment.Single              */
-	.cs                { color: #75715e }                            /* Comment.Special             */
+	.c1                { color: #3ebd84 }                            /* Comment.Single              */
+	.cs                { color: #3ebd84 }                            /* Comment.Special             */
 	.ge                { font-style: italic }                        /* Generic.Emph                */
 	.gs                { font-weight: bold }                         /* Generic.Strong              */
 	.kc                { color: #66d9ef }                            /* Keyword.Constant            */
 	.kd                { color: #66d9ef }                            /* Keyword.Declaration         */
-	.kn                { color: #f92672 }                            /* Keyword.Namespace           */
+	.kn                { color: #ff2957 }                            /* Keyword.Namespace           */
 	.kp                { color: #66d9ef }                            /* Keyword.Pseudo              */
 	.kr                { color: #66d9ef }                            /* Keyword.Reserved            */
 	.kt                { color: #66d9ef }                            /* Keyword.Type                */
-	.ld                { color: #e6db74 }                            /* Literal.Date                */
+	.ld                { color: #f5e54e }                            /* Literal.Date                */
 	.m                 { color: #ae81ff }                            /* Literal.Number              */
-	.s                 { color: #e6db74 }                            /* Literal.String              */
+	.s                 { color: #f5e54e }                            /* Literal.String              */
 	.na                { color: #a6e22e }                            /* Name.Attribute              */
 	.nb                { color: #f8f8f2 }                            /* Name.Builtin                */
 	.nc                { color: #a6e22e }                            /* Name.Class                  */
@@ -49,19 +49,19 @@ pre.highlight {
 	.nn                { color: #f8f8f2 }                            /* Name.Namespace              */
 	.nx                { color: #a6e22e }                            /* Name.Other                  */
 	.py                { color: #f8f8f2 }                            /* Name.Property               */
-	.nt                { color: #f92672 }                            /* Name.Tag                    */
+	.nt                { color: #ff2957 }                            /* Name.Tag                    */
 	.nv                { color: #f8f8f2 }                            /* Name.Variable               */
-	.ow                { color: #f92672 }                            /* Operator.Word               */
+	.ow                { color: #ff2957 }                            /* Operator.Word               */
 	.w                 { color: #f8f8f2 }                            /* Text.Whitespace             */
-	.mf                { color: #ae81ff }                            /* Literal.Number.Float        */
-	.mh                { color: #ae81ff }                            /* Literal.Number.Hex          */
-	.mi                { color: #ae81ff }                            /* Literal.Number.Integer      */
-	.mo                { color: #ae81ff }                            /* Literal.Number.Oct          */
+	.mf                { color: #b992e0 }                            /* Literal.Number.Float        */
+	.mh                { color: #b992e0 }                            /* Literal.Number.Hex          */
+	.mi                { color: #b992e0 }                            /* Literal.Number.Integer      */
+	.mo                { color: #b992e0 }                            /* Literal.Number.Oct          */
 	.sb                { color: #e6db74 }                            /* Literal.String.Backtick     */
 	.sc                { color: #e6db74 }                            /* Literal.String.Char         */
 	.sd                { color: #e6db74 }                            /* Literal.String.Doc          */
 	.s2                { color: #e6db74 }                            /* Literal.String.Double       */
-	.se                { color: #ae81ff }                            /* Literal.String.Escape       */
+	.se                { color: #b992e0 }                            /* Literal.String.Escape       */
 	.sh                { color: #e6db74 }                            /* Literal.String.Heredoc      */
 	.si                { color: #e6db74 }                            /* Literal.String.Interpol     */
 	.sx                { color: #e6db74 }                            /* Literal.String.Other        */
@@ -72,5 +72,5 @@ pre.highlight {
 	.vc                { color: #f8f8f2 }                            /* Name.Variable.Class         */
 	.vg                { color: #f8f8f2 }                            /* Name.Variable.Global        */
 	.vi                { color: #f8f8f2 }                            /* Name.Variable.Instance      */
-	.il                { color: #ae81ff }                            /* Literal.Number.Integer.Long */
+	.il                { color: #b992e0 }                            /* Literal.Number.Integer.Long */
 }
