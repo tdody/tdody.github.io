@@ -30,9 +30,9 @@ disqus_shortname:   thibault
 
 # Social
 # if you don't have any of social below, comment the line.
-#google:
+google:
   #plus:            #username
-  #analytics:
+  analytics:        UA-157368881-1
   #verify:
   #ad-client:
   #ad-slot:
