@@ -131,7 +131,26 @@ li .highlight pre {
 // table
 table {
 	//width: 100%;
-    border: 2
+    border-collapse: collapse;
+    border-spacing: 0;
+    border:2px solid #ff0000;
+}
+tr {
+  background-color: #ddd;
+}
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+th {
+    border:1px solid #000000;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #4CAF50;
+    color: white;
+}
+td {
+    border:1px solid #000000;
 }
 
 // notice
