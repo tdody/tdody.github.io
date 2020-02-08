@@ -6,7 +6,7 @@ excerpt: "This post compiles all the courses I have taken."
 comments: false
 ---
 
-
+<ul>
 <style>
 table {
   font-family: arial, sans-serif;
@@ -24,6 +24,8 @@ tr:nth-child(even) {
   background-color: #dddddd;
 }
 </style>
+
+<li class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
 <table>
   <tr>
     <td>
@@ -46,3 +48,5 @@ tr:nth-child(even) {
     </td>
   </tr>
 </table>
+</li>
+</ul>
