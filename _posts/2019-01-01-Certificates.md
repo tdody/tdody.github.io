@@ -28,7 +28,8 @@ tr:nth-child(even) {
   <tr>
     <td>
         <figure>
-            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/StatisticsWithPython.png"></img>
+            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/StatisticsWithPython.png">
+            </img>
         </figure>
     </td>
     <td>
