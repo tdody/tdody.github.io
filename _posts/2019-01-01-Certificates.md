@@ -7,12 +7,28 @@ comments: false
 ---
 
 
+<style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
 
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+</style>
 <table>
   <tr>
     <td>
         <figure>
-            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/StatisticsWithPython.png"></a>
+            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/StatisticsWithPython.png"></img>
         </figure>
     </td>
     <td>
