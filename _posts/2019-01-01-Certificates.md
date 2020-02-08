@@ -33,12 +33,11 @@ tr:nth-child(even) {
   <tr>
     <td>
         <figure>
-            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/StatisticsWithPython.jpg" style="width:200px;height:=200px;">
+            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/StatisticsWithPython.jpg" style="float:left;width:200px;height:=200px;">
             </img>
         </figure>
     </td>
     <td>
-        <p>
         <a class="zoombtn">Name</b><br/>
         <i>Provider</i><br/><br/>
         SPECIALIZATION | Level<br/><br/>
@@ -47,7 +46,6 @@ tr:nth-child(even) {
           <li>Class2</li>
           <li>Class3</li>
         </ol>
-        </p>
     </td>
   </tr>
 </table>
