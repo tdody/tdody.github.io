@@ -10,70 +10,70 @@ comments: false
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/DeepLearning.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/FFLENBEMCWRJ">Deep Learning</a>
-            <p>Coursera / deeplearning.ai</p>
+            <p>Coursera / deeplearning.ai, 150 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/TensorFlowInPractice.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/GPGWT4UE4M9P">Tensorflow in Practice</a>
-            <p>Coursera / deeplearning.ai</p>
+            <p>Coursera / deeplearning.ai, 60 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/MachineLearningGoogle.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/GPGWT4UE4M9P">Machine Learning with TensorFlow on Google Cloud Platform Specialization</a>
-            <p>Coursera / Google</p>
+            <p>Coursera / Google, 60 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/IBM.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/Z974VXH4QY7C">IBM Data Science Professional Certificate</a>
-            <p>Coursera / IBM</p>
+            <p>Coursera / IBM, 120 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/Apache.jpg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/YGQFPDXH74DV">Introduction to Apache Spark and AWS</a>
-            <p>Coursera / University of London</p>
+            <p>Coursera / University of London, 20 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/Git.jpg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/WTYUTBD4D2R7">Version Control with Git</a>
-            <p>Coursera / Atlassian</p>
+            <p>Coursera / Atlassian, 15 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
-            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/Agile.jpg" style="float:left;width:100px;height:100px;padding-right:10px">
+            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/Agile.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/U6J2JY5UGYNB">Agile with Atlassian Jira</a>
-            <p>Coursera / Atlassian</p>
+            <p>Coursera / Atlassian, 15 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/StatisticsWithPython.jpg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/3NE3M5ESW945">Statistics with Python</a>
-            <p>Coursera / University of Michigan</p>
+            <p>Coursera / University of Michigan, 110 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
-            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/AppliedDS.jpg" style="float:left;width:100px;height:100px;padding-right:10px">
+            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/AppliedDS.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="https://www.coursera.org/account/accomplishments/specialization/certificate/5NAAUWDJH6GY">Applied Data Science with Python</a>
-            <p>Coursera / University of Michigan</p>
+            <p>Coursera / University of Michigan, 130 houra</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/Tebleau.jpg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/ZDVM8U2VBWZH">Data Visualization with Tableau</a>
-            <p>Coursera / UC Davis</p>
+            <p>Coursera / UC Davis, 100 hours</p>
         </li>
     </ul>
 </div>
