@@ -4,6 +4,7 @@ title:  "My Data Science Journey"
 date:   2019-01-01
 excerpt: "This post compiles all the courses I have taken."
 comments: false
+image: "https://tdody.github.io/assets/img/2019-01-01-Certificates/TensorFlowInPractice.jpeg"
 ---
 <div class="post-list">
     <ul>
