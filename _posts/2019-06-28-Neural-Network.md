@@ -8,6 +8,7 @@ tag:
 - numpy
 - python
 comments: false
+image: "https://tdody.github.io/assets/img/2019-06-28-Neural-Network/tile.png"
 ---
 
 

@@ -9,6 +9,7 @@ tag:
 - LinearModel
 - python
 comments: False
+image: "https://tdody.github.io/assets/img/2019-09-06-Spam-Detection/tile.png"
 ---
 
 <footer id="attribution" style="float:right; color:#999; background:#fff;">

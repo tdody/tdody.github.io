@@ -9,6 +9,7 @@ tag:
 - python
 - keras
 comments: false
+image: "https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/tile.jpeg"
 ---
 
 <footer id="attribution" style="float:right; color:#999; background:#fff;">

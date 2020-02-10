@@ -8,6 +8,7 @@ tag:
 - numpy
 - python
 comments: false
+image: "https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/tile.png"
 ---
 
 <footer id="attribution" style="float:right; color:#999; background:#fff;">

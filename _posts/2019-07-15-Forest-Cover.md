@@ -9,6 +9,7 @@ tag:
 - ML
 - python
 comments: False
+image: "https://tdody.github.io/assets/img/2019-07-15-Forest-Cover/tile.jpg"
 ---
 
 <footer id="attribution" style="float:right; color:#999; background:#fff;">

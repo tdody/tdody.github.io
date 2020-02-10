@@ -9,6 +9,7 @@ tag:
 - ML
 - python
 comments: False
+image: "https://tdody.github.io/assets/img/2019-12-08-Image-Caption/tile.png"
 ---
 
 <footer id="attribution" style="float:right; color:#999; background:#fff;">
