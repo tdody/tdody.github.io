@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Kaggle: Forest Cover (Accuracy 77%)"
+title:  "Kaggle: Forest Cover (Top 10%)"
 date:   2019-07-06
 excerpt: "A take on the Kaggle competition of the Forest Cover Type."
 project: true
