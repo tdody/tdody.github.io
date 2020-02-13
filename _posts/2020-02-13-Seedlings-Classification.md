@@ -1905,7 +1905,7 @@ There are many different ways to represent images. The most common ones are **RG
 
 Each image is encoded using three channels, this encoding is typically called RGB (Red, Blue, Green) corresponding to the magnitude of the color in each channel (from 0 to 255 as an 8 bit number). We can see if extracting specific channel can helps the seedling to stand out.
 <figure>
-<img src="https://tdody.github.io/assets/img/2020-02-13-Seedlings-Classification/RGB.jpg" style="height:250px;">
+<img src="https://tdody.github.io/assets/img/2020-02-13-Seedlings-Classification/rgb.jpg" style="height:250px;">
 </figure>
 
 **HSV (hue, saturation, value)**  
@@ -1916,7 +1916,7 @@ HSV is an alternative representation. The colors are encoded using 3 parameters:
 3. Value corresponds to the base grayscale value from 0 to 1 where 0 is black and 1 is white.
 
 <figure>
-<img src="../Images/hsv.jpg" style="height:250px;">
+<img src="https://tdody.github.io/assets/img/2020-02-13-Seedlings-Classification/Images/hsv.jpg" style="height:250px;">
 </figure>
 
 **CIELAB** 
@@ -3099,3 +3099,9 @@ plt.tight_layout()
 <img src="https://tdody.github.io/assets/img/2020-02-13-Seedlings-Classification/output_163_1.png">
 </figure>
 
+### Conclusion
+  
+In conclusion, we were able to produce a model relying only on the shape, size, and colors of the seedlings. This model is capable of making correct predictions more than 90% of the times on 12 different seedling species. If we were to improve this model and its data collection, the following recommendations would be proposed:
+1. Standardize photographs by taking pictures from the same distance, same focus.
+2. Build a model to classify the Loose-Silky bent and Black-grass together then develop a model specifically to classify these two species.
+3. Collect information regarding the importance of misclassification of certain species. Weights can then be incorporated in the model.
