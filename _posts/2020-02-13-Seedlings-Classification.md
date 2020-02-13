@@ -60,7 +60,7 @@ The goal of this study is to develop a model to classify the species given a new
 ## Load Libraries and Import Data
 
 
-```
+```python
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -122,7 +122,7 @@ import TAD_tools_v01
 
 
 
-```
+```python
 # ZIPFILE = './NonsegmentedV2.zip'
 ZIPEXTRACT = '../Data/'
 ```
@@ -130,7 +130,7 @@ ZIPEXTRACT = '../Data/'
 ## Data Inspection
 
 
-```
+```python
 species = []
 counts = []
 
@@ -161,7 +161,7 @@ plt.title('Image distribution amongst species', fontsize=15);
  - The agricultural plants (wheat, maize, beet) are less present in the dataset compared to wild weeds.
 
 
-```
+```pythonpython
 fig, axes = plt.subplots(12, 5, figsize=(15, 45))
 for n, folder in enumerate(listdir(ZIPEXTRACT)):
     # select random images from class
@@ -202,7 +202,7 @@ A few observations from each class are depicted in the above figure. The followi
 Prior to investigating the relationships between file number, image shape, and image resolution, we import the data into a pandas DataFrame to facilitate our analysis.
 
 
-```
+```python
 # instantiate main DataFrame
 resolution_df = pd.DataFrame(
     columns=['file_name', 'species', 'width', 'height'])
@@ -317,7 +317,7 @@ The data has been imported into a dataframe. We have created two new features:
 2. File number - Number associated to the image
 
 
-```
+```python
 resolution_df.describe()
 ```
 
@@ -414,7 +414,7 @@ resolution_df.describe()
 We can now create several investigation to establish whether of not the file numbers have been assigned randomly.
 
 
-```
+```python
 fig, axes = plt.subplots(4, 3, figsize=(18, 15), sharex=True, sharey=True)
 
 for idx, plant in enumerate(resolution_df['species'].unique()):
@@ -452,7 +452,7 @@ We now need to create additional visualizations to validate our hypotheses.
 There is one aspect of the data distribution to account for. Indeed, the trends are not perfect and some noise is clearly visible. In order to identify the file number corresponding to the beginning of a new resolution cycle, **we are applying a rolling average**.
 
 
-```
+```python
 # define a drop ratio between batches
 max_ratio = 0.5
 
@@ -517,7 +517,7 @@ for idx, plant in enumerate(resolution_df['species'].unique()):
 We can now plot various photographs per cycle and determine if there is any correlation (same seedling, same growth stage).
 
 
-```
+```python
 # create plot
 fig, axes = plt.subplots(12, 5, figsize=(15, 45))
 
@@ -570,7 +570,7 @@ We can hypothesize that the original photographs were taken at full resolution a
 As previously established, the image sizes range from 49 pixels to 3652 pixels. This is an extreme difference that will impact the model. We are now going to dig deeper and investigate if the image size is correlated to the classes and if the set contains outliers.
 
 
-```
+```python
 sns.jointplot(x='width', y='height', data=resolution_df, color="#4CB391", alpha=0.3);
 ```
 
@@ -583,7 +583,7 @@ sns.jointplot(x='width', y='height', data=resolution_df, color="#4CB391", alpha=
 
 
 
-```
+```python
 print(
     "Pearson correlation between image height and image width: {:.5f}".format(
         resolution_df[['width', 'height']].corr().iloc[0, 1]))
@@ -593,7 +593,7 @@ print(
 
 
 
-```
+```python
 print("{:.2f}% of the images are square (ratio=1.)".format((resolution_df['ratio']==1).mean()*100))
 ```
 
@@ -605,7 +605,7 @@ print("{:.2f}% of the images are square (ratio=1.)".format((resolution_df['ratio
 From the above distribution plot, it appear that most of the images present a 1:1 shape ratio. We can now filter the square images and search for additional information using the non-square images.
 
 
-```
+```python
 fig, ax = plt.subplots(figsize=(18, 6))
 sns.boxplot(x="species", y="width", data=resolution_df, ax=ax)
 plt.xticks(rotation=45)
@@ -633,7 +633,7 @@ The above boxplot shows the followings:
 3. The minimum width seems to be roughly identical between classes (~60 pixels) except for the "Charlock" class.  
 
 
-```
+```python
 print('Minumum image height and width accros species:')
 print(resolution_df.groupby(['species'])[['width','height']].min())
 ```
@@ -658,7 +658,7 @@ print(resolution_df.groupby(['species'])[['width','height']].min())
 We previously saw that most of the images are square. We can focus on the rectangular image to see if there is a pattern in their distribution (species, size).
 
 
-```
+```python
 filtered_df = resolution_df[resolution_df['ratio'] != 1.00]
 sns.jointplot(x='width', y='height', data=filtered_df, color="#4CB391", alpha=0.3);
 ```
@@ -671,7 +671,7 @@ sns.jointplot(x='width', y='height', data=filtered_df, color="#4CB391", alpha=0.
 
 
 
-```
+```python
 print(
     "Pearson correlation between image height and image width for rectangular images: {:.5f}".format(
         filtered_df[['width', 'height']].corr().iloc[0, 1]))
@@ -685,7 +685,7 @@ print(
 The height/width of rectangular images are distributed is a manner similar as the rest of the data.
 
 
-```
+```python
 fig, ax = plt.subplots(figsize=(8, 8))
 sns.scatterplot(x='width',
                 y='height',
@@ -710,7 +710,7 @@ From the above plots, we can draw the following observations:
 2. Eventhough these images are not perfectly square, they are fairly square (correlation of 0.99).
 
 
-```
+```python
 fig, ax = plt.subplots(2, 1, figsize=(16, 12))
 for single in resolution_df.species.unique():
     sns.kdeplot(resolution_df[resolution_df['species'] == single].width,
@@ -736,7 +736,7 @@ plt.tight_layout()
 The above plots show distribution that are typical for log distribution. We can apply a log transformation to normalize them.
 
 
-```
+```python
 fig, ax = plt.subplots(2, 1, figsize=(16, 12))
 for single in resolution_df.species.unique():
     sns.kdeplot(np.log(
@@ -777,7 +777,7 @@ One of the first focus of our feature engineering is going to **try to estimate 
 *Note: since we have established that most of the images are square, we are only going to use the width as our main feature from now on.*
 
 
-```
+```python
 # normalize and scale the data
 scaler = StandardScaler()
 
@@ -803,7 +803,7 @@ for k in tqdm_notebook(K):
 
 
 
-```
+```python
 plt.figure(figsize=(12, 6))
 plt.plot(K, inertias, 'X-', markersize=10, color="#4CB391")
 plt.xlabel('Values of K')
@@ -823,7 +823,7 @@ plt.show()
 Using the elbow method on the inertia, we can consider **5** to be an appropriate number of clusters for our growth cycle. 
 
 
-```
+```python
 # re-train KMeans using optimal number of clusters
 km = KMeans(n_clusters=5, random_state=10)
 
@@ -832,7 +832,7 @@ resolution_df['growth_lvl'] = km.fit_predict(X)
 ```
 
 
-```
+```python
 fig, ax = plt.subplots(1, 1, figsize=(6, 6))
 
 colors = resolution_df['growth_lvl'].apply(
@@ -858,7 +858,7 @@ for cluster_center in np.exp(scaler.inverse_transform((km.cluster_centers_))):
 
 
 
-```
+```python
 fig, axes = plt.subplots(4, 3, figsize=(18, 15), sharex=True, sharey=True)
 
 for idx, plant in enumerate(resolution_df['species'].unique()):
@@ -900,7 +900,7 @@ plt.tight_layout()
 
 
 
-```
+```python
 for idx, k in enumerate(np.exp(scaler.inverse_transform((km.cluster_centers_))).reshape(1,-1)[0]):
     print('Cluster {}: width = {:.1f}'.format(idx, k))
 ```
@@ -913,7 +913,7 @@ for idx, k in enumerate(np.exp(scaler.inverse_transform((km.cluster_centers_))).
 
 
 
-```
+```python
 CLUSTER_ORDER = km.cluster_centers_.reshape(1,-1).argsort().tolist()[0]
 CLUSTER_ORDER
 ```
@@ -934,7 +934,7 @@ The above plots show the results of our clustering. We can make the following ob
 We can now plot individual of each cycle and validate our assumptions.
 
 
-```
+```python
 # create plot
 fig, axes = plt.subplots(12, 5, figsize=(15, 35))
 
@@ -971,12 +971,12 @@ plt.tight_layout()
 We also would like to obtain the count of photographs per species and per cluster.
 
 
-```
+```python
 CLUSTER_ORDER_str = [str(x) for x in CLUSTER_ORDER]
 ```
 
 
-```
+```python
 # aggregate by species and growth_lvl
 agg_df = resolution_df.groupby(['growth_lvl', 'species']).size().unstack().fillna(0)
 agg_df.index = agg_df.index.astype(str)
@@ -1034,7 +1034,7 @@ Keras contains useful tools to help process image files and feed them in batches
 - Finally, the images will be sent to the model using batches of 32 RGB images reshaped at 70x70.
 
 
-```
+```python
 # create full path to data
 resolution_df['full_path'] = '../Data/' + resolution_df[
     'species'] + '/' + resolution_df['file_name']
@@ -1135,7 +1135,7 @@ resolution_df.head()
 
 
 
-```
+```python
 # image size
 scale = 224
 
@@ -1149,7 +1149,7 @@ seed = 10
 At this point of the analysis, the images have not been loaded into a numpy array. Using the data stored in the pandas DataFrame, we load the images into a single array of size (N, scale, scale).
 
 
-```
+```python
 # load images into a numpy array
 full_set = []
 for i in tqdm_notebook(resolution_df['full_path']):
@@ -1170,7 +1170,7 @@ print("{} images in full set.".format(full_set.shape[0]))
 Now that the images have been loaded and resized, we have to work on the target labels. The current feature used to encode the species contains various strings. We need to convert the list of labels into a one-hot encoded array of size (N, n) where n is the number of species in the dataset.
 
 
-```
+```python
 # encode target
 # create encoder and fit on training set
 labels = LabelEncoder()
@@ -1195,7 +1195,7 @@ n_classes = clearalllabels.shape[1]
 Before we can feed our data into a model, an essential step consists of scaling the pixel values down to range from 0 to 1. This will stabilize the training of the model. Since RGB encoding ranges from 0 to 255, we will divide the pixel values by 255.
 
 
-```
+```python
 # scale data
 full_set = full_set / 255.
 ```
@@ -1203,7 +1203,7 @@ full_set = full_set / 255.
 Finally, we need to establish our validation strategy. We divide the entire set of images into a training set (90%) and a test set (10%). Since the classes are unbalanced, we are forcing the train-test-split to be as consistent as possible by stratifying the selection process.
 
 
-```
+```python
 # isolate train and test indexes
 X_train, X_test, y_train, y_test = train_test_split(full_set,
                                                     clearalllabels,
@@ -1213,7 +1213,7 @@ X_train, X_test, y_train, y_test = train_test_split(full_set,
 ```
 
 
-```
+```python
 # plot proportions
 train_split = pd.Series(y_train.argmax(axis=1)).value_counts()/y_train.shape[0]*100
 test_split = pd.Series(y_test.argmax(axis=1)).value_counts()/y_test.shape[0]*100
@@ -1242,7 +1242,7 @@ Finally, we will use data augmentation to help the model generalize on unseen da
 5. Horizontal and vertical flips
 
 
-```
+```python
 # data augmentation
 generator = ImageDataGenerator(rotation_range=180,
                                width_shift_range=0.1,
@@ -1271,7 +1271,7 @@ It is now time to build our model. We will use a Convolutional Neural Network (C
 The CNN is followed by two dense layers equipped with BatchNorm and Dropout.
 
 
-```
+```python
 np.random.seed(seed)
 
 model = Sequential()
@@ -1332,7 +1332,7 @@ Before we can train our model, we have to define the followings:
 3. **Optimization strategy**: that is how to adjust the learning rate, when to stop the training.
 
 
-```
+```python
 # optimizer
 optimizer = optimizers.Adam(lr=1e-3, beta_1=0.9, beta_2=0.999)
 
@@ -1434,7 +1434,7 @@ model.summary()
     _________________________________________________________________
 
 
-```python
+```pythonpython
 # Fit the model
 history = model.fit_generator(generator.flow(X_train, y_train, batch_size=batch_size),
                     epochs=50,
@@ -1444,7 +1444,7 @@ history = model.fit_generator(generator.flow(X_train, y_train, batch_size=batch_
                     verbose=2)
 ```
 
-```
+```python
 Epoch 1/50 - 2586s - loss: 2.1630 - acc: 0.3713 - val_loss: 9.3464 - val_acc: 0.2022  
 Epoch 2/50 - 2562s - loss: 1.4018 - acc: 0.5561 - val_loss: 1.7693 - val_acc: 0.5235  
 Epoch 3/50 - 2554s - loss: 1.1133 - acc: 0.6468 - val_loss: 1.6343 - val_acc: 0.5505  
@@ -1456,13 +1456,13 @@ Epoch 50/50 - 2747s - loss: 0.2100 - acc: 0.9202 - val_loss: 0.2375 - val_acc: 0
 ```
 
 
-```
+```python
 lr = pd.read_csv('lr_0.csv', index_col=0)
 history = pd.read_csv('history_0.csv', index_col=0)
 ```
 
 
-```
+```python
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 axes[0,0].plot(history['loss'], label='training', c='dodgerblue')
 axes[0,0].plot(history['val_loss'], label='validation', c='crimson')
@@ -1506,7 +1506,7 @@ The next step is to investigate the performances of the model by looking at pred
 ### Predictions and Results
 
 
-```
+```python
 print("Maximum accuray on validation step:")
 print(" Epoch: {}".format(np.argmax(history['val_acc'])))
 print("        {:.2f}%".format(history['val_acc'].values.max()*100))
@@ -1519,7 +1519,7 @@ print("        {:.2f}%".format(history['val_acc'].values.max()*100))
 
 
 
-```
+```python
 # load best model
 model.load_weights("./Model_0/weights.best_43-0.92.hdf5")
 ```
@@ -1527,7 +1527,7 @@ model.load_weights("./Model_0/weights.best_43-0.92.hdf5")
 Make predictions on both the train and test sets.
 
 
-```
+```python
 y_train_pred = model.predict(X_train, verbose=1).argmax(axis=1)
 y_test_pred = model.predict(X_test, verbose=1).argmax(axis=1)
 ```
@@ -1539,7 +1539,7 @@ y_test_pred = model.predict(X_test, verbose=1).argmax(axis=1)
 
 
 
-```
+```python
 print('Training Data')
 ax = TAD_tools_v01.plot_confusion_matrix(y_train.argmax(axis=1),
                                     y_train_pred,
@@ -1562,7 +1562,7 @@ ax.set_ylim(11.5,-0.5);
 
 
 
-```
+```python
 print('Test Data')
 ax = TAD_tools_v01.plot_confusion_matrix(y_test.argmax(axis=1),
                                     y_test_pred,
@@ -1585,7 +1585,7 @@ ax.set_ylim(11.5,-0.5);
 
 
 
-```
+```python
 print("Accurancy:")
 print("   Train: {:.2f}%".format(metrics.accuracy_score(y_train.argmax(axis=1), y_train_pred)*100))
 print("   Test:  {:.2f}%".format(metrics.accuracy_score(y_test.argmax(axis=1), y_test_pred)*100))
@@ -1651,7 +1651,7 @@ print(metrics.classification_report(y_test.argmax(axis=1), y_test_pred))
 In addition to the confusion matrix per species, we can show how well our basic model performs per species and per growth stage.
 
 
-```
+```python
 # isolate train and test indexes as dataframe
 df_X_train, df_X_test = train_test_split(resolution_df,
                                                     test_size=0.1,
@@ -1676,7 +1676,7 @@ df_X_test = df_X_test.reset_index().pivot(index='growth_lvl', columns="species",
 
 
 
-```
+```python
 print("Training set:")
 fig, ax = plt.subplots(figsize=(16,6))
 sns.heatmap(df_X_train.reindex(CLUSTER_ORDER), ax=ax, cmap='RdYlGn', annot=True, annot_kws={"fontsize":12})
@@ -1695,7 +1695,7 @@ ax.set_ylim(0,5);
 
 
 
-```
+```python
 print("Test set:")
 fig, ax = plt.subplots(figsize=(16,6))
 sns.heatmap(df_X_test.reindex(CLUSTER_ORDER), ax=ax, cmap='RdYlGn', annot=True, annot_kws={"fontsize":12})
@@ -1722,14 +1722,14 @@ In addition, our model tends to do better on fully grown plants. Indeed, the hig
 Let's plot some of these errors against true specimens and assess if there is an apparent reason for the misclassifications.
 
 
-```
+```python
 # create a mapping between labels and classes
 id_class_mapping = {idx: label for  idx, label in enumerate(labels.classes_)}
 class_id_mapping = {label: idx for idx, label in id_class_mapping.items()}
 ```
 
 
-```
+```python
 # true Black-grass predicted as Loose Silky-bent
 false_loose_silky = X_train[
     (y_train.argmax(axis=1) == class_id_mapping['Black-grass']) &
@@ -1750,7 +1750,7 @@ true_black_grass = X_train[(y_train.argmax(axis=1) == y_train_pred)
 ```
 
 
-```
+```python
 # create plot
 fig, axes = plt.subplots(10, 10, figsize=(20, 20), gridspec_kw = {'wspace':0, 'hspace':0})
 colors = ['grey', 'white']
@@ -1828,7 +1828,7 @@ Before trying to adjust our model, we need to better understand our model and op
 ### Model Inspection
 
 
-```
+```python
 fig, axes = plt.subplots(6, 4, figsize=(16, 30))
 
 m = 0
@@ -1931,7 +1931,7 @@ It expresses color as three values:
 </figure>
 
 
-```
+```python
 # create plot
 fig, axes = plt.subplots(12, 10, figsize=(15, 20))
 
@@ -1980,7 +1980,7 @@ plt.tight_layout()
 
 
 
-```
+```python
 selected_image = resolution_df.iloc[4535]['full_path']
 name = resolution_df.iloc[4535]['species'] + '/' + resolution_df.iloc[4535]['file_num'].astype(str)
 name
@@ -1994,21 +1994,21 @@ name
 
 
 
-```
+```python
 rgb = imageio.imread(selected_image, as_gray=False, pilmode="RGB")
 hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
 lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
 ```
 
 
-```
+```python
 r, g, b = cv2.split(rgb)
 h, s, v = cv2.split(hsv)
 l, a, b = cv2.split(lab)
 ```
 
 
-```
+```python
 fig, axes = plt.subplots(2, 2, figsize=(13,13))
 
 pixel_colors = rgb.reshape((np.shape(rgb)[0]*np.shape(rgb)[1], 3))
@@ -2042,7 +2042,7 @@ plt.show()
 
 
 
-```
+```python
 fig, axes = plt.subplots(2, 2, figsize=(13,13))
 
 pixel_colors = rgb.reshape((np.shape(rgb)[0]*np.shape(rgb)[1], 3))
@@ -2076,7 +2076,7 @@ plt.show()
 
 
 
-```
+```python
 fig, axes = plt.subplots(2, 2, figsize=(13,13))
 
 pixel_colors = rgb.reshape((np.shape(rgb)[0]*np.shape(rgb)[1], 3))
@@ -2116,7 +2116,7 @@ From the above image decomposition plots, the `Hue` value of the HSV decompositi
 In order to properly remove the background, we can start by plotting the histogram of the Hue-level for sampled images. The plot below shows 5 samples of each species at different steps of the growth cycle with the histogram of the pixel hue.
 
 
-```
+```python
 # create plot
 fig, axes = plt.subplots(24, 5, figsize=(15, 45))
 
@@ -2169,7 +2169,7 @@ From the above plots, it appears that the hue values of the pixels cluster into 
 Since we want to reach the best accuracy possible, we will implement the **clustering option**. 
 
 
-```
+```python
 def cluster_pixels_lab(image_rgb, return_labels=False, n_clusters=3):
     
     # convert image to hsv
@@ -2191,7 +2191,7 @@ def cluster_pixels_lab(image_rgb, return_labels=False, n_clusters=3):
 ```
 
 
-```
+```python
 fig, axes = plt.subplots(12, 2, figsize=(15, 45))
 colors = ["royalblue", "gold", "silver", "lightgreen", "mediumpurple"]
 
@@ -2262,7 +2262,7 @@ From above results depicting the pixel clustering, our approach is very promisin
 In most cases, the green color is assigned a cluster. However, for cases where the seedling consists of grass-type leaves, a cluster cannot be assigned. However, we can use the information from the clustering of the other species to come up with a threshold.
 
 
-```
+```python
 # threshold to apply on A value
 sensitivity = 25
 colormin=(50-sensitivity,40,50)
@@ -2270,7 +2270,7 @@ colormax=(50+sensitivity,255,200)
 ```
 
 
-```
+```python
 def segment_plant(image_rgb):
 
     # apply blur
@@ -2291,13 +2291,13 @@ def segment_plant(image_rgb):
 ```
 
 
-```
+```python
 scale_1 = 224
 scale_2 = 70
 ```
 
 
-```
+```python
 fig, axes = plt.subplots(24, 5, figsize=(14, 50))
 growth_cycles = ['Start', 'Full']
 
@@ -2373,7 +2373,7 @@ Our image segmentation is now ready, the results look good with every species.
 We are going to segment each image and save it locally by using the same folder structure as the original dataset. Once the images have been segmented, we can feed them back into the model and train the CNN again.
 
 
-```
+```python
 SAVELOCATION = './DataAugmented_HSV_224/'
 
 # create folder
@@ -2382,11 +2382,11 @@ if not os.path.exists(SAVELOCATION):
 ```
 
 
-```
+```python
 SCALE = 224
 ```
 
-```
+```python
 # extract image information
 for folder in tqdm_notebook(listdir(ZIPEXTRACT), desc='1st loop'):
 
@@ -2412,7 +2412,7 @@ for folder in tqdm_notebook(listdir(ZIPEXTRACT), desc='1st loop'):
 ```
 
 
-```
+```python
 # create full path to data
 resolution_df['full_path_seg'] = SAVELOCATION + resolution_df[
     'species'] + '/' + resolution_df['file_name']
@@ -2519,7 +2519,7 @@ resolution_df.head()
 
 
 
-```
+```python
 # batch size
 batch_size = 32
 
@@ -2528,7 +2528,7 @@ seed = 10
 ```
 
 
-```
+```python
 # load images into a numpy array
 full_set_segm = []
 for i in tqdm.notebook.tqdm(resolution_df['full_path_seg']):
@@ -2547,7 +2547,7 @@ print("{} images in full set.".format(full_set_segm.shape[0]))
 
 
 
-```
+```python
 # encode target
 # create encoder and fit on training set
 labels = LabelEncoder()
@@ -2570,13 +2570,13 @@ n_classes = clearalllabels.shape[1]
 
 
 
-```
+```python
 # scale data
 full_set_segm = full_set_segm / 255.
 ```
 
 
-```
+```python
 # isolate train and test indexes
 X_train, X_test, y_train, y_test = train_test_split(full_set_segm,
                                                     clearalllabels,
@@ -2586,7 +2586,7 @@ X_train, X_test, y_train, y_test = train_test_split(full_set_segm,
 ```
 
 
-```
+```python
 # data augmentation
 generator = ImageDataGenerator(rotation_range=180,
                                width_shift_range=0.1,
@@ -2602,7 +2602,7 @@ generator = ImageDataGenerator(rotation_range=180,
 ```
 
 
-```
+```python
 np.random.seed(seed)
 
 model = Sequential()
@@ -2649,7 +2649,7 @@ model.add(Dense(n_classes, activation='softmax'))
 ```
 
 
-```
+```python
 # optimizer
 optimizer = optimizers.Adam(lr=1e-2, beta_1=0.9, beta_2=0.999)
 
@@ -2754,7 +2754,7 @@ model.summary()
     _________________________________________________________________
 
 
-```
+```python
 # Fit the model
 history = model.fit_generator(generator.flow(X_train, y_train, batch_size=batch_size),
                     epochs=50,
@@ -2764,7 +2764,7 @@ history = model.fit_generator(generator.flow(X_train, y_train, batch_size=batch_
                     verbose=2)
 ```
 
-```
+```python
 Epoch 1/50 - 2341s - loss: 2.2011 - acc: 0.3446 - val_loss: 7.5625 - val_acc: 0.0776  
 Epoch 00001: saving model to ./Model_HSV_224/weights.best_01-0.08.hdf5  
 Epoch 2/50 - 2088s - loss: 1.4293 - acc: 0.5153 - val_loss: 4.6444 - val_acc: 0.1498  
@@ -2785,13 +2785,13 @@ Epoch 00050: saving model to ./Model_HSV_224/weights.best_50-0.91.hdf5
 ```
 
 
-```
+```python
 lr = pd.read_csv('lr_HSV.csv', index_col=0)
 history = pd.read_csv('history_HSV.csv', index_col=0)
 ```
 
 
-```
+```python
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 axes[0,0].plot(history['loss'], label='training', c='dodgerblue')
 axes[0,0].plot(history['val_loss'], label='validation', c='crimson')
@@ -2831,7 +2831,7 @@ In addition, the accuracy of both models reach around 90%. Our initial model rea
 ###  Predictions and Results
 
 
-```
+```python
 print("Maximum accuray on validation step:")
 print(" Epoch: {}".format(np.argmax(history['val_acc'])))
 print("        {:.2f}%".format(history['val_acc'].values.max()*100))
@@ -2846,7 +2846,7 @@ print("        {:.2f}%".format(history['val_acc'].values.max()*100))
 We now load the model weights corresponding to the best accuracy on the test set.
 
 
-```
+```python
 # load best model
 model.load_weights("./Model_HSV_224/weights.best_34-0.91.hdf5")
 ```
@@ -2854,7 +2854,7 @@ model.load_weights("./Model_HSV_224/weights.best_34-0.91.hdf5")
 We now make predictions on the train and test sets.
 
 
-```
+```python
 y_train_pred = model.predict(X_train, verbose=1).argmax(axis=1)
 y_test_pred = model.predict(X_test, verbose=1).argmax(axis=1)
 ```
@@ -2866,7 +2866,7 @@ y_test_pred = model.predict(X_test, verbose=1).argmax(axis=1)
 Similar to the first model, we can plot the confusion matrices for both the training and test sets.
 
 
-```
+```python
 print('Training Data')
 ax = TAD_tools_v01.plot_confusion_matrix(y_train.argmax(axis=1),
                                     y_train_pred,
@@ -2889,7 +2889,7 @@ ax.set_ylim(11.5,-0.5);
 
 
 
-```
+```python
 print('Test Data')
 ax = TAD_tools_v01.plot_confusion_matrix(y_test.argmax(axis=1),
                                     y_test_pred,
@@ -2916,7 +2916,7 @@ ax.set_ylim(11.5,-0.5);
 From the above, we can clearly see that our model has lost some accuracy on the Black-grass class. The class accuracy is not only 0.51 and 0.39 for the training and test sets respectively. However, the model has improved its predictions on the other classes.
 
 
-```
+```python
 print("Accurancy:")
 print("   Train: {:.2f}%".format(metrics.accuracy_score(y_train.argmax(axis=1), y_train_pred)*100))
 print("   Test:  {:.2f}%".format(metrics.accuracy_score(y_test.argmax(axis=1), y_test_pred)*100))
@@ -2980,7 +2980,7 @@ print(metrics.classification_report(y_test.argmax(axis=1), y_test_pred))
 
 
 
-```
+```python
 # isolate train and test indexes as dataframe
 df_X_train, df_X_test = train_test_split(resolution_df,
                                                     test_size=0.1,
@@ -3005,7 +3005,7 @@ df_X_test = df_X_test.reset_index().pivot(index='growth_lvl', columns="species",
 
 
 
-```
+```python
 print("Training set:")
 fig, ax = plt.subplots(figsize=(16,6))
 sns.heatmap(df_X_train.reindex(CLUSTER_ORDER), ax=ax, cmap='RdYlGn', annot=True, annot_kws={"fontsize":12}, vmin=0)
@@ -3024,7 +3024,7 @@ ax.set_ylim(0,5);
 
 
 
-```
+```python
 print("Test set:")
 fig, ax = plt.subplots(figsize=(16,6))
 sns.heatmap(df_X_test.reindex(CLUSTER_ORDER), ax=ax, cmap='RdYlGn', annot=True, annot_kws={"fontsize":12}, vmin=0)
@@ -3044,7 +3044,7 @@ ax.set_ylim(0,5);
 ### Final Model Inspection
 
 
-```
+```python
 fig, axes = plt.subplots(6, 4, figsize=(16, 30))
 
 m = 0
