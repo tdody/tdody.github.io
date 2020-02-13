@@ -67,7 +67,7 @@ image: "https://tdody.github.io/assets/img/2019-01-01-Certificates/tile.jpeg"
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/AppliedDS.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="https://www.coursera.org/account/accomplishments/specialization/certificate/5NAAUWDJH6GY" target="_blank">Applied Data Science with Python</a>
-            <p>Coursera / University of Michigan, 130 houra</p>
+            <p>Coursera / University of Michigan, 130 hours</p>
         </li>
     </ul>
     <ul>
