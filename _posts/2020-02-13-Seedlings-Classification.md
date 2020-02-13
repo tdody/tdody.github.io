@@ -1317,13 +1317,6 @@ model.add(Dropout(0.5))
 model.add(Dense(n_classes, activation='softmax'))
 ```
 
-    WARNING:tensorflow:From /opt/anaconda3/lib/python3.7/site-packages/tensorflow_core/python/ops/resource_variable_ops.py:1630: calling BaseResourceVariable.__init__ (from tensorflow.python.ops.resource_variable_ops) with constraint is deprecated and will be removed in a future version.
-    Instructions for updating:
-    If using Keras pass *_constraint arguments to layers.
-    WARNING:tensorflow:From /opt/anaconda3/lib/python3.7/site-packages/keras/backend/tensorflow_backend.py:4070: The name tf.nn.max_pool is deprecated. Please use tf.nn.max_pool2d instead.
-    
-
-
 ### Metric Definition and Optimizer
 
 Before we can train our model, we have to define the followings:
@@ -1531,12 +1524,6 @@ Make predictions on both the train and test sets.
 y_train_pred = model.predict(X_train, verbose=1).argmax(axis=1)
 y_test_pred = model.predict(X_test, verbose=1).argmax(axis=1)
 ```
-
-    WARNING:tensorflow:From /opt/anaconda3/lib/python3.7/site-packages/keras/backend/tensorflow_backend.py:422: The name tf.global_variables is deprecated. Please use tf.compat.v1.global_variables instead.
-    
-    4985/4985 [==============================] - 1123s 225ms/step
-    554/554 [==============================] - 117s 211ms/step
-
 
 
 ```python
