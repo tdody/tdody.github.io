@@ -1903,7 +1903,7 @@ HSV is an alternative representation. The colors are encoded using 3 parameters:
 3. Value corresponds to the base grayscale value from 0 to 1 where 0 is black and 1 is white.
 
 <figure>
-<img src="https://tdody.github.io/assets/img/2020-02-13-Seedlings-Classification/Images/hsv.jpg" style="height:250px;">
+<img src="https://tdody.github.io/assets/img/2020-02-13-Seedlings-Classification/hsv.jpg" style="height:250px;">
 </figure>
 
 **CIELAB** 
