@@ -1,29 +1,13 @@
----
-layout: post
-title:  "Kaggle: Titanic Disaster (Top 3%)"
-date:   2020-02-02
-excerpt: "A take on the Kaggle competition of the Titanic disaster."
-project: true
-tag:
-- Kaggle 
-- ML
-- python
-comments: False
-image: "https://tdody.github.io/assets/img/2020-02-02-Titanic/tile.png"
----
-
 <footer id="attribution" style="float:right; color:#999; background:#fff;">
 Created by Thibault Dody, 02/02/2020.
-</footer>  
-  
-# Titanic Disaster Study  
-  
-<figure>
-<img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/Titanic1.jpg" style="width:642px;height:=288px;">
-</figure>  
-  
+</footer>
+
+# Titanic Disaster Study
+
+<img src="Misc/Titanic1.jpg" style="width:642px;height=288px;">
+
 ## Table of Content   
-  
+
 [**1. Introduction**](#Section_1)   
 [**2. Data Import**](#Section_2)  
 &nbsp;&nbsp;&nbsp;&nbsp;[2.1 Import Libraries](#Section_21)  
@@ -57,13 +41,11 @@ Created by Thibault Dody, 02/02/2020.
 [**8. Models**](#Section_8)  
 [**9. Best Models**](#Section_9)  
 [**10. Create Submission**](#Section_10)  
-  
 
-*****  
 <a id="Section_1"></a>
 ## 1. Introduction
 
-On April 15, 1912, the Titanic sunk after colliding with an iceberg, 1502 out of 2224 passengers and crew members died. The dataset containing passenger information has been made available. The purpose of this Notebook is to perform a comparison study of different models aimed at predicting survival rate. The data is obtained from [Kaggle](https://www.kaggle.com/).
+On April 15, 1912, the Titanic sak after colliding with an iceberg, 1502 out of 2224 passagers and crew members died. The dataset containing passenger information has been made available. The purpose of this Notebook is to perform a comparison study of different models aimed at predicting survival rate. The data is obtained from [Kaggle](https://www.kaggle.com/).
 
 *****
 <a id="Section_2"></a>
@@ -88,12 +70,13 @@ import sklearn
 print("sklearn version:\t{}".format(sklearn.__version__))
 ```
 
-    Python version:		3.7.6 (default, Jan  8 2020, 20:23:39) [MSC v.1916 64 bit (AMD64)]
-    pandas version:		0.25.3
+    Python version:		3.7.4 (default, Aug 13 2019, 15:17:50) 
+    [Clang 4.0.1 (tags/RELEASE_401/final)]
+    pandas version:		0.25.1
     matplotlib version:	3.1.1
-    numpy version:		1.18.1
-    scipy version:		1.3.2
-    sklearn version:	0.22.1
+    numpy version:		1.17.2
+    scipy version:		1.1.0
+    sklearn version:	0.21.3
 
 
 <a id="Section_22"></a>
@@ -161,7 +144,7 @@ train.head()
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -195,7 +178,7 @@ train.head()
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
+      <td>0</td>
       <td>1</td>
       <td>0</td>
       <td>3</td>
@@ -210,7 +193,7 @@ train.head()
       <td>S</td>
     </tr>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>2</td>
       <td>1</td>
       <td>1</td>
@@ -225,7 +208,7 @@ train.head()
       <td>C</td>
     </tr>
     <tr>
-      <th>2</th>
+      <td>2</td>
       <td>3</td>
       <td>1</td>
       <td>3</td>
@@ -240,7 +223,7 @@ train.head()
       <td>S</td>
     </tr>
     <tr>
-      <th>3</th>
+      <td>3</td>
       <td>4</td>
       <td>1</td>
       <td>1</td>
@@ -255,7 +238,7 @@ train.head()
       <td>S</td>
     </tr>
     <tr>
-      <th>4</th>
+      <td>4</td>
       <td>5</td>
       <td>0</td>
       <td>3</td>
@@ -284,7 +267,7 @@ test.head()
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -317,7 +300,7 @@ test.head()
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
+      <td>0</td>
       <td>892</td>
       <td>3</td>
       <td>Kelly, Mr. James</td>
@@ -331,7 +314,7 @@ test.head()
       <td>Q</td>
     </tr>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>893</td>
       <td>3</td>
       <td>Wilkes, Mrs. James (Ellen Needs)</td>
@@ -345,7 +328,7 @@ test.head()
       <td>S</td>
     </tr>
     <tr>
-      <th>2</th>
+      <td>2</td>
       <td>894</td>
       <td>2</td>
       <td>Myles, Mr. Thomas Francis</td>
@@ -359,7 +342,7 @@ test.head()
       <td>Q</td>
     </tr>
     <tr>
-      <th>3</th>
+      <td>3</td>
       <td>895</td>
       <td>3</td>
       <td>Wirz, Mr. Albert</td>
@@ -373,7 +356,7 @@ test.head()
       <td>S</td>
     </tr>
     <tr>
-      <th>4</th>
+      <td>4</td>
       <td>896</td>
       <td>3</td>
       <td>Hirvonen, Mrs. Alexander (Helga E Lindqvist)</td>
@@ -411,7 +394,7 @@ df_exp = df_all.copy()
 <a id="Section_24"></a>
 ### 2.4 Data Inspection
 
-The data is divided into two separate datasets:
+The data is divived into two separate datasets:
 - a training set containing a set of features and out target variable (whether or not a passenger survived)
 - a test set containing only the set of features
 
@@ -515,7 +498,7 @@ pd.concat([missing_total,missing_percentage],keys=['Count','Percentage'],axis=1)
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -539,57 +522,57 @@ pd.concat([missing_total,missing_percentage],keys=['Count','Percentage'],axis=1)
   </thead>
   <tbody>
     <tr>
-      <th>Cabin</th>
+      <td>Cabin</td>
       <td>687</td>
       <td>77.104377</td>
     </tr>
     <tr>
-      <th>Age</th>
+      <td>Age</td>
       <td>177</td>
       <td>19.865320</td>
     </tr>
     <tr>
-      <th>Embarked</th>
+      <td>Embarked</td>
       <td>2</td>
       <td>0.224467</td>
     </tr>
     <tr>
-      <th>Fare</th>
+      <td>Fare</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Ticket</th>
+      <td>Ticket</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Parch</th>
+      <td>Parch</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>SibSp</th>
+      <td>SibSp</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Sex</th>
+      <td>Sex</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Name</th>
+      <td>Name</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Pclass</th>
+      <td>Pclass</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Survived</th>
+      <td>Survived</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
@@ -602,8 +585,8 @@ pd.concat([missing_total,missing_percentage],keys=['Count','Percentage'],axis=1)
 **Comment**:  
 Based on the above table, the following observations can be made:
 1. The cabin feature is mostly empty, this will be hard to use.
-2. The age feature contains a large number of missing values. This will require a smarter approach rather than just filling the null with a median.
-3. The embarked feature only has 2 missing values. We can come up with estimates for these two by taking a quick look at the data and using the most probable values as replacements.
+2. The age feature contains a large number of missing values. This will requiere a smarter approach rather than just filling the null with a median.
+3. The embaked feature only has 2 missing values. We can come up with estimates for these two by taking a quick look at the data and using the most probable values as replacements.
 
 
 ```python
@@ -626,7 +609,7 @@ pd.concat([missing_total,missing_percentage],keys=['Count','Percentage'],axis=1)
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -650,52 +633,52 @@ pd.concat([missing_total,missing_percentage],keys=['Count','Percentage'],axis=1)
   </thead>
   <tbody>
     <tr>
-      <th>Cabin</th>
+      <td>Cabin</td>
       <td>327</td>
       <td>36.700337</td>
     </tr>
     <tr>
-      <th>Age</th>
+      <td>Age</td>
       <td>86</td>
       <td>9.652076</td>
     </tr>
     <tr>
-      <th>Fare</th>
+      <td>Fare</td>
       <td>1</td>
       <td>0.112233</td>
     </tr>
     <tr>
-      <th>Embarked</th>
+      <td>Embarked</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Ticket</th>
+      <td>Ticket</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Parch</th>
+      <td>Parch</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>SibSp</th>
+      <td>SibSp</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Sex</th>
+      <td>Sex</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Name</th>
+      <td>Name</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>Pclass</th>
+      <td>Pclass</td>
       <td>0</td>
       <td>0.000000</td>
     </tr>
@@ -708,7 +691,7 @@ pd.concat([missing_total,missing_percentage],keys=['Count','Percentage'],axis=1)
 **Comment**:  
 Based on the above table, the following observations can be made:
 1. The cabin feature is also mostly empty, this will be hard to use.
-2. The age feature contains a large number of missing values. This will require a smarter approach rather than just filling the null with a median.
+2. The age feature contains a large number of missing values. This will requiere a smarter approach rather than just filling the null with a median.
 3. The fare feature only has 1 missing values. We can come up with an estimate for this by taking a quick look at the data and using the most probable values as a replacement.
 
 <a id="Section_31"></a>
@@ -724,7 +707,7 @@ train[['Sex','Survived']].groupby(['Sex'],as_index=False).agg(['mean','count'])
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -761,12 +744,12 @@ train[['Sex','Survived']].groupby(['Sex'],as_index=False).agg(['mean','count'])
   </thead>
   <tbody>
     <tr>
-      <th>female</th>
+      <td>female</td>
       <td>0.742038</td>
       <td>314</td>
     </tr>
     <tr>
-      <th>male</th>
+      <td>male</td>
       <td>0.188908</td>
       <td>577</td>
     </tr>
@@ -784,7 +767,7 @@ train[['Pclass','Survived']].groupby(['Pclass'],as_index=False).agg(['mean','cou
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -821,17 +804,17 @@ train[['Pclass','Survived']].groupby(['Pclass'],as_index=False).agg(['mean','cou
   </thead>
   <tbody>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>0.629630</td>
       <td>216</td>
     </tr>
     <tr>
-      <th>2</th>
+      <td>2</td>
       <td>0.472826</td>
       <td>184</td>
     </tr>
     <tr>
-      <th>3</th>
+      <td>3</td>
       <td>0.242363</td>
       <td>491</td>
     </tr>
@@ -849,7 +832,7 @@ train[['SibSp','Survived']].groupby(['SibSp'],as_index=False).agg(['mean','count
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -886,37 +869,37 @@ train[['SibSp','Survived']].groupby(['SibSp'],as_index=False).agg(['mean','count
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
+      <td>0</td>
       <td>0.345395</td>
       <td>608</td>
     </tr>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>0.535885</td>
       <td>209</td>
     </tr>
     <tr>
-      <th>2</th>
+      <td>2</td>
       <td>0.464286</td>
       <td>28</td>
     </tr>
     <tr>
-      <th>3</th>
+      <td>3</td>
       <td>0.250000</td>
       <td>16</td>
     </tr>
     <tr>
-      <th>4</th>
+      <td>4</td>
       <td>0.166667</td>
       <td>18</td>
     </tr>
     <tr>
-      <th>5</th>
+      <td>5</td>
       <td>0.000000</td>
       <td>5</td>
     </tr>
     <tr>
-      <th>8</th>
+      <td>8</td>
       <td>0.000000</td>
       <td>7</td>
     </tr>
@@ -934,7 +917,7 @@ train[['Parch','Survived']].groupby(['Parch'],as_index=False).agg(['mean','count
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -971,37 +954,37 @@ train[['Parch','Survived']].groupby(['Parch'],as_index=False).agg(['mean','count
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
+      <td>0</td>
       <td>0.343658</td>
       <td>678</td>
     </tr>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>0.550847</td>
       <td>118</td>
     </tr>
     <tr>
-      <th>2</th>
+      <td>2</td>
       <td>0.500000</td>
       <td>80</td>
     </tr>
     <tr>
-      <th>3</th>
+      <td>3</td>
       <td>0.600000</td>
       <td>5</td>
     </tr>
     <tr>
-      <th>4</th>
+      <td>4</td>
       <td>0.000000</td>
       <td>4</td>
     </tr>
     <tr>
-      <th>5</th>
+      <td>5</td>
       <td>0.200000</td>
       <td>5</td>
     </tr>
     <tr>
-      <th>6</th>
+      <td>6</td>
       <td>0.000000</td>
       <td>1</td>
     </tr>
@@ -1033,6 +1016,10 @@ df_all_corr['Age'].sort_values(ascending=False)[1:]
 
     Correlation with Age feature
 
+
+
+
+
     Pclass         0.408106
     SibSp          0.243699
     Fare           0.178740
@@ -1050,6 +1037,8 @@ As listed above, the Class feature is fairly well correlated to the Age of the p
 df_exp['Cat'] = df_exp['Sex'].astype(str) + df_exp['Pclass'].astype(str)
 df_exp.groupby(['Cat']).median()['Age']
 ```
+
+
 
 
     Cat
@@ -1107,7 +1096,7 @@ train[train['Embarked'].isnull()]
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1140,7 +1129,7 @@ train[train['Embarked'].isnull()]
   </thead>
   <tbody>
     <tr>
-      <th>61</th>
+      <td>61</td>
       <td>1</td>
       <td>1</td>
       <td>Icard, Miss. Amelie</td>
@@ -1154,7 +1143,7 @@ train[train['Embarked'].isnull()]
       <td>NaN</td>
     </tr>
     <tr>
-      <th>829</th>
+      <td>829</td>
       <td>1</td>
       <td>1</td>
       <td>Stone, Mrs. George Nelson (Martha Evelyn)</td>
@@ -1217,7 +1206,7 @@ df_all[df_all.Fare.isnull()]
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1251,7 +1240,7 @@ df_all[df_all.Fare.isnull()]
   </thead>
   <tbody>
     <tr>
-      <th>1043</th>
+      <td>1043</td>
       <td>60.5</td>
       <td>NaN</td>
       <td>S</td>
@@ -1310,9 +1299,7 @@ By doing some research on the ship, the Cabin value contains the following infor
 1. One letter standing for the boat deck
 2. One number standing for the cabin number
 
-<figure>
-<img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/Titanic_cutaway_diagram.png" style="width: 400px;">  
-</figure>
+<img src="Misc/Titanic_cutaway_diagram.png" style="width: 400px;">  
 source: [Wikipedia](https://en.wikipedia.org/wiki/First_class_facilities_of_the_RMS_Titanic?oldformat=true)
 
 
@@ -1330,7 +1317,7 @@ df_plot.fillna(0)
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1361,55 +1348,55 @@ df_plot.fillna(0)
   </thead>
   <tbody>
     <tr>
-      <th>A</th>
+      <td>A</td>
       <td>22.0</td>
       <td>0.0</td>
       <td>0.0</td>
     </tr>
     <tr>
-      <th>B</th>
+      <td>B</td>
       <td>65.0</td>
       <td>0.0</td>
       <td>0.0</td>
     </tr>
     <tr>
-      <th>C</th>
+      <td>C</td>
       <td>94.0</td>
       <td>0.0</td>
       <td>0.0</td>
     </tr>
     <tr>
-      <th>D</th>
+      <td>D</td>
       <td>40.0</td>
       <td>6.0</td>
       <td>0.0</td>
     </tr>
     <tr>
-      <th>E</th>
+      <td>E</td>
       <td>34.0</td>
       <td>4.0</td>
       <td>3.0</td>
     </tr>
     <tr>
-      <th>F</th>
+      <td>F</td>
       <td>0.0</td>
       <td>13.0</td>
       <td>8.0</td>
     </tr>
     <tr>
-      <th>G</th>
+      <td>G</td>
       <td>0.0</td>
       <td>0.0</td>
       <td>5.0</td>
     </tr>
     <tr>
-      <th>M</th>
+      <td>M</td>
       <td>67.0</td>
       <td>254.0</td>
       <td>693.0</td>
     </tr>
     <tr>
-      <th>T</th>
+      <td>T</td>
       <td>1.0</td>
       <td>0.0</td>
       <td>0.0</td>
@@ -1434,9 +1421,7 @@ ax.set_ylim(0,1);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_60_0.png">
-</figure>
+![png](output_60_0.png)
 
 
 The following observations can be made from the above plot:
@@ -1474,9 +1459,7 @@ ax.set_ylim(0,1);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_64_0.png">
-</figure>
+![png](output_64_0.png)
 
 
 We can now group decks based on the survival rate and the class distribution.
@@ -1510,7 +1493,7 @@ train, test = divide_df(df_all)
 <a id="Section_4"></a>
 ## 4. Data Visualization and Feature Exploration
 
-Before we implement the full model, it is important to inspect the data and answers a few basic questions. This will help understanding how the data is distributed but also will provide useful input used in our models.
+Before we implement the full model, it is important to inspect the data and answers a few basic questions. This will help understanding how the data is distributed but also will provide usefull input used in our models.
 
 Based on the famous rule *"Women and children first"*, we expect the gender and age to be strongly correlated with the survival rate.
 
@@ -1535,9 +1518,7 @@ plt.xlabel("Sex",fontsize=15);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_72_0.png">
-</figure>
+![png](output_72_0.png)
 
 
 
@@ -1567,9 +1548,7 @@ ax.set_xlabel('Age',fontsize=15);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_76_0.png">
-</figure>
+![png](output_76_0.png)
 
 
 
@@ -1610,9 +1589,7 @@ plt.xlabel("Class",fontsize=15);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_80_0.png">
-</figure>
+![png](output_80_0.png)
 
 
 
@@ -1644,23 +1621,21 @@ plt.xlabel("Pclass",fontsize=15);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_83_0.png">
-</figure>
+![png](output_83_0.png)
 
 
 
 ```python
 print('Median fare:')
-print("1st class =\t$${:.2f}".format(train[train['Pclass'] == 1]['Fare'].median()))
-print("2nd class =\t$${:.2f}".format(train[train['Pclass'] == 2]['Fare'].median()))
-print("3nd class =\t$${:.2f}".format(train[train['Pclass'] == 3]['Fare'].median()))
+print("1st class =\t${:.2f}".format(train[train['Pclass'] == 1]['Fare'].median()))
+print("2nd class =\t${:.2f}".format(train[train['Pclass'] == 2]['Fare'].median()))
+print("3nd class =\t${:.2f}".format(train[train['Pclass'] == 3]['Fare'].median()))
 ```
 
     Median fare:
-    1st class =	$$60.29
-    2nd class =	$$14.25
-    3nd class =	$$8.05
+    1st class =	$60.29
+    2nd class =	$14.25
+    3nd class =	$8.05
 
 
 
@@ -1673,9 +1648,7 @@ ax.set_ylim(0, 300);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_85_0.png">
-</figure>
+![png](output_85_0.png)
 
 
 
@@ -1688,9 +1661,7 @@ ax.set_xticks(range(0,600,25));
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_86_0.png">
-</figure>
+![png](output_86_0.png)
 
 
 
@@ -1706,13 +1677,11 @@ plt.title('Fare Distribution Survived vs Non Survived',fontsize=15);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_87_0.png">
-</figure>
+![png](output_87_0.png)
 
 
 **Comment**   
-As expected. the survival rate increases with the fare price. Based on the above plot, it appears that the survival rate is larger than 50% for fares higher that $$150.
+As explected. the survival rate increases with the fare price. Based on the above plot, it appears that the survival rate is larger than 50% for fares higher that $150.
 
 <a id="Section_44"></a>
 ### 4.4 SibSp & Parch
@@ -1725,7 +1694,7 @@ train[['SibSp','Survived']].groupby(['SibSp'],as_index=False).mean().sort_values
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1749,37 +1718,37 @@ train[['SibSp','Survived']].groupby(['SibSp'],as_index=False).mean().sort_values
   </thead>
   <tbody>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>1</td>
       <td>0.535885</td>
     </tr>
     <tr>
-      <th>2</th>
+      <td>2</td>
       <td>2</td>
       <td>0.464286</td>
     </tr>
     <tr>
-      <th>0</th>
+      <td>0</td>
       <td>0</td>
       <td>0.345395</td>
     </tr>
     <tr>
-      <th>3</th>
+      <td>3</td>
       <td>3</td>
       <td>0.250000</td>
     </tr>
     <tr>
-      <th>4</th>
+      <td>4</td>
       <td>4</td>
       <td>0.166667</td>
     </tr>
     <tr>
-      <th>5</th>
+      <td>5</td>
       <td>5</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>6</th>
+      <td>6</td>
       <td>8</td>
       <td>0.000000</td>
     </tr>
@@ -1796,9 +1765,7 @@ sns.barplot(x="SibSp", y="Survived",color='r',data=train);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_91_0.png">
-</figure>
+![png](output_91_0.png)
 
 
 
@@ -1809,7 +1776,7 @@ train[['Parch','Survived']].groupby(['Parch'],as_index=False).mean().sort_values
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1833,37 +1800,37 @@ train[['Parch','Survived']].groupby(['Parch'],as_index=False).mean().sort_values
   </thead>
   <tbody>
     <tr>
-      <th>3</th>
+      <td>3</td>
       <td>3</td>
       <td>0.600000</td>
     </tr>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>1</td>
       <td>0.550847</td>
     </tr>
     <tr>
-      <th>2</th>
+      <td>2</td>
       <td>2</td>
       <td>0.500000</td>
     </tr>
     <tr>
-      <th>0</th>
+      <td>0</td>
       <td>0</td>
       <td>0.343658</td>
     </tr>
     <tr>
-      <th>5</th>
+      <td>5</td>
       <td>5</td>
       <td>0.200000</td>
     </tr>
     <tr>
-      <th>4</th>
+      <td>4</td>
       <td>4</td>
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>6</th>
+      <td>6</td>
       <td>6</td>
       <td>0.000000</td>
     </tr>
@@ -1880,9 +1847,7 @@ sns.barplot(x="Parch", y="Survived",color='b', data=train);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_93_0.png">
-</figure>
+![png](output_93_0.png)
 
 
 **Comment**   
@@ -1899,7 +1864,7 @@ train[['Embarked','Survived']].groupby(['Embarked'],as_index=False).mean().sort_
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1923,17 +1888,17 @@ train[['Embarked','Survived']].groupby(['Embarked'],as_index=False).mean().sort_
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
+      <td>0</td>
       <td>C</td>
       <td>0.553571</td>
     </tr>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>Q</td>
       <td>0.389610</td>
     </tr>
     <tr>
-      <th>2</th>
+      <td>2</td>
       <td>S</td>
       <td>0.339009</td>
     </tr>
@@ -1967,7 +1932,7 @@ train.describe()
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -1997,7 +1962,7 @@ train.describe()
   </thead>
   <tbody>
     <tr>
-      <th>count</th>
+      <td>count</td>
       <td>891.000000</td>
       <td>891.000000</td>
       <td>891.000000</td>
@@ -2008,7 +1973,7 @@ train.describe()
       <td>891.000000</td>
     </tr>
     <tr>
-      <th>mean</th>
+      <td>mean</td>
       <td>29.188182</td>
       <td>32.204208</td>
       <td>0.381594</td>
@@ -2019,7 +1984,7 @@ train.describe()
       <td>0.383838</td>
     </tr>
     <tr>
-      <th>std</th>
+      <td>std</td>
       <td>13.337887</td>
       <td>49.693429</td>
       <td>0.806057</td>
@@ -2030,7 +1995,7 @@ train.describe()
       <td>0.486592</td>
     </tr>
     <tr>
-      <th>min</th>
+      <td>min</td>
       <td>0.420000</td>
       <td>0.000000</td>
       <td>0.000000</td>
@@ -2041,7 +2006,7 @@ train.describe()
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>25%</th>
+      <td>25%</td>
       <td>22.000000</td>
       <td>7.910400</td>
       <td>0.000000</td>
@@ -2052,7 +2017,7 @@ train.describe()
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>50%</th>
+      <td>50%</td>
       <td>26.000000</td>
       <td>14.454200</td>
       <td>0.000000</td>
@@ -2063,7 +2028,7 @@ train.describe()
       <td>0.000000</td>
     </tr>
     <tr>
-      <th>75%</th>
+      <td>75%</td>
       <td>36.000000</td>
       <td>31.000000</td>
       <td>0.000000</td>
@@ -2074,7 +2039,7 @@ train.describe()
       <td>1.000000</td>
     </tr>
     <tr>
-      <th>max</th>
+      <td>max</td>
       <td>80.000000</td>
       <td>512.329200</td>
       <td>6.000000</td>
@@ -2101,7 +2066,7 @@ train[['Sex', 'Survived']].groupby("Sex").mean()
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -2128,11 +2093,11 @@ train[['Sex', 'Survived']].groupby("Sex").mean()
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
+      <td>0</td>
       <td>0.742038</td>
     </tr>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>0.188908</td>
     </tr>
   </tbody>
@@ -2149,7 +2114,7 @@ train[['Pclass', 'Survived']].groupby("Pclass").mean()
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -2176,15 +2141,15 @@ train[['Pclass', 'Survived']].groupby("Pclass").mean()
   </thead>
   <tbody>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>0.629630</td>
     </tr>
     <tr>
-      <th>2</th>
+      <td>2</td>
       <td>0.472826</td>
     </tr>
     <tr>
-      <th>3</th>
+      <td>3</td>
       <td>0.242363</td>
     </tr>
   </tbody>
@@ -2242,9 +2207,7 @@ ax.set_ylim(8,0.5);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_107_0.png">
-</figure>
+![png](output_107_0.png)
 
 
 **Comment**   
@@ -2286,9 +2249,7 @@ ax.set_title("Title Distribution");
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_113_0.png">
-</figure>
+![png](output_113_0.png)
 
 
 There are four principle titles. The rest consists of mostly single values. We can see if the survival rate varies between titles.
@@ -2313,9 +2274,7 @@ ax.set_ylim(0,1);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_116_0.png">
-</figure>
+![png](output_116_0.png)
 
 
 Based on the results shown above, it appears that different title are used to describe the same status. For instance Miss, Mlle, and Ms are used to describe Miss. We standardize the titles using a custom function.
@@ -2351,9 +2310,7 @@ axes[1].set_title("Title Distribution");
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_120_0.png">
-</figure>
+![png](output_120_0.png)
 
 
 As displayed above the passenger title influences the survival rate.
@@ -2393,9 +2350,7 @@ axes[1].set_title("Survival Rate based on Family Size", fontsize=15)
 
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_125_1.png">
-</figure>
+![png](output_125_1.png)
 
 
 As shown above, single individual tend to die more than families of 2, 3, and 4 individuals. However, larger families suffer more casualties.
@@ -2432,9 +2387,7 @@ axes[1].set_title("Survival Rate based on Family Size", fontsize=15);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_128_0.png">
-</figure>
+![png](output_128_0.png)
 
 
 Based on our observations, we have grouped the family sizes into four groups. However, this new feature does not account for people not related but traveling in groups.
@@ -2489,9 +2442,7 @@ axes[1].set_title("Survival Rate based on  Ticket Frequency", fontsize=15);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_135_0.png">
-</figure>
+![png](output_135_0.png)
 
 
 Similar to the family size, single individual tend to die more than families of 2, 3, and 4 individuals. However, larger families suffer more casualties.
@@ -2609,9 +2560,7 @@ plt.tight_layout()
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_153_0.png">
-</figure>
+![png](output_153_0.png)
 
 
 <a id="Section_66"></a>
@@ -2637,9 +2586,7 @@ plt.tight_layout()
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_157_0.png">
-</figure>
+![png](output_157_0.png)
 
 
 <a id="Section_67"></a>
@@ -2711,7 +2658,7 @@ df_all.head()
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -2754,7 +2701,7 @@ df_all.head()
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
+      <td>0</td>
       <td>2</td>
       <td>0</td>
       <td>0</td>
@@ -2778,7 +2725,7 @@ df_all.head()
       <td>0</td>
     </tr>
     <tr>
-      <th>1</th>
+      <td>1</td>
       <td>7</td>
       <td>1</td>
       <td>0</td>
@@ -2802,7 +2749,7 @@ df_all.head()
       <td>0</td>
     </tr>
     <tr>
-      <th>2</th>
+      <td>2</td>
       <td>4</td>
       <td>0</td>
       <td>0</td>
@@ -2826,7 +2773,7 @@ df_all.head()
       <td>0</td>
     </tr>
     <tr>
-      <th>3</th>
+      <td>3</td>
       <td>7</td>
       <td>1</td>
       <td>0</td>
@@ -2850,7 +2797,7 @@ df_all.head()
       <td>0</td>
     </tr>
     <tr>
-      <th>4</th>
+      <td>4</td>
       <td>7</td>
       <td>0</td>
       <td>0</td>
@@ -2941,9 +2888,7 @@ ax.set_xlim(0,pca.n_components_);
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_174_0.png">
-</figure>
+![png](output_174_0.png)
 
 
 
@@ -2970,9 +2915,7 @@ plt.tight_layout();
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_175_0.png">
-</figure>
+![png](output_175_0.png)
 
 
 ****
@@ -3089,7 +3032,7 @@ cv_res_df = pd.DataFrame({"CrossValMeans":cv_means_list,
 cv_res_df = cv_res_df.sort_values(by='CrossValMeans',ascending=False)             
 ```
 
-    100%|██████████████████████████████████████████████████████████████████████████████████| 23/23 [00:20<00:00,  1.12it/s]
+    100%|██████████| 23/23 [00:44<00:00,  1.95s/it]
 
 
 
@@ -3100,7 +3043,7 @@ cv_res_df.set_index('Algorithm')
 
 
 
-<div style="overflow-x:auto;">
+<div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -3129,119 +3072,119 @@ cv_res_df.set_index('Algorithm')
   </thead>
   <tbody>
     <tr>
-      <th>LogisticRegression</th>
-      <td>0.853035</td>
-      <td>0.035074</td>
+      <td>LogisticRegression</td>
+      <td>0.853052</td>
+      <td>0.032781</td>
     </tr>
     <tr>
-      <th>GradientBoostingClassifier</th>
-      <td>0.853010</td>
-      <td>0.028286</td>
+      <td>LinearDiscriminantAnalysis</td>
+      <td>0.851947</td>
+      <td>0.035314</td>
     </tr>
     <tr>
-      <th>LinearDiscriminantAnalysis</th>
-      <td>0.851893</td>
-      <td>0.026919</td>
+      <td>RidgeClassifier</td>
+      <td>0.851947</td>
+      <td>0.035314</td>
     </tr>
     <tr>
-      <th>RidgeClassifier</th>
-      <td>0.851893</td>
-      <td>0.026919</td>
+      <td>MLPClassifier</td>
+      <td>0.851922</td>
+      <td>0.021257</td>
     </tr>
     <tr>
-      <th>LinearSVC</th>
-      <td>0.850781</td>
-      <td>0.030352</td>
+      <td>XGBClassifier</td>
+      <td>0.849662</td>
+      <td>0.025821</td>
     </tr>
     <tr>
-      <th>MLPClassifier</th>
-      <td>0.850769</td>
-      <td>0.026927</td>
+      <td>LinearSVC</td>
+      <td>0.846342</td>
+      <td>0.037342</td>
     </tr>
     <tr>
-      <th>XGBClassifier</th>
-      <td>0.850769</td>
-      <td>0.027849</td>
+      <td>GradientBoostingClassifier</td>
+      <td>0.845149</td>
+      <td>0.020001</td>
     </tr>
     <tr>
-      <th>NuSVC</th>
-      <td>0.840675</td>
-      <td>0.028222</td>
+      <td>SVC</td>
+      <td>0.842984</td>
+      <td>0.033473</td>
     </tr>
     <tr>
-      <th>SVC</th>
-      <td>0.840669</td>
-      <td>0.028718</td>
+      <td>RandomForestClassifier</td>
+      <td>0.842933</td>
+      <td>0.019237</td>
     </tr>
     <tr>
-      <th>SGDClassifier</th>
-      <td>0.837261</td>
-      <td>0.028204</td>
+      <td>AdaBoostClassifier</td>
+      <td>0.840655</td>
+      <td>0.020008</td>
     </tr>
     <tr>
-      <th>GaussianProcessClassifier</th>
-      <td>0.835057</td>
-      <td>0.026180</td>
+      <td>GaussianProcessClassifier</td>
+      <td>0.839575</td>
+      <td>0.025284</td>
     </tr>
     <tr>
-      <th>RandomForestClassifier</th>
-      <td>0.831674</td>
-      <td>0.023097</td>
+      <td>ExtraTreesClassifier</td>
+      <td>0.839525</td>
+      <td>0.011267</td>
     </tr>
     <tr>
-      <th>KNeighborsClassifier</th>
-      <td>0.829452</td>
-      <td>0.027523</td>
+      <td>NuSVC</td>
+      <td>0.836229</td>
+      <td>0.032664</td>
     </tr>
     <tr>
-      <th>BaggingClassifier</th>
-      <td>0.823828</td>
-      <td>0.026461</td>
+      <td>KNeighborsClassifier</td>
+      <td>0.836223</td>
+      <td>0.023893</td>
     </tr>
     <tr>
-      <th>ExtraTreesClassifier</th>
-      <td>0.821581</td>
-      <td>0.026906</td>
+      <td>BaggingClassifier</td>
+      <td>0.836166</td>
+      <td>0.026934</td>
     </tr>
     <tr>
-      <th>AdaBoostClassifier</th>
-      <td>0.818204</td>
-      <td>0.028622</td>
+      <td>DecisionTreeClassifier</td>
+      <td>0.826010</td>
+      <td>0.025539</td>
     </tr>
     <tr>
-      <th>DecisionTreeClassifier</th>
-      <td>0.810345</td>
-      <td>0.019053</td>
+      <td>ExtraTreeClassifier</td>
+      <td>0.820379</td>
+      <td>0.020534</td>
     </tr>
     <tr>
-      <th>GaussianNB</th>
-      <td>0.808123</td>
-      <td>0.032538</td>
+      <td>GaussianNB</td>
+      <td>0.813808</td>
+      <td>0.036541</td>
     </tr>
     <tr>
-      <th>ExtraTreeClassifier</th>
-      <td>0.805850</td>
-      <td>0.016329</td>
+      <td>SGDClassifier</td>
+      <td>0.805848</td>
+      <td>0.038477</td>
     </tr>
     <tr>
-      <th>BernoulliNB</th>
-      <td>0.795750</td>
-      <td>0.011812</td>
+      <td>BernoulliNB</td>
+      <td>0.795893</td>
+      <td>0.044118</td>
     </tr>
     <tr>
-      <th>Perceptron</th>
-      <td>0.766675</td>
-      <td>0.060092</td>
+      <td>QuadraticDiscriminantAnalysis</td>
+      <td>0.772146</td>
+      <td>0.023072</td>
     </tr>
     <tr>
-      <th>QuadraticDiscriminantAnalysis</th>
-      <td>0.754234</td>
-      <td>0.024949</td>
+      <td>PassiveAggressiveClassifier</td>
+      <td>0.771243</td>
+      <td>0.099959</td>
     </tr>
     <tr>
-      <th>PassiveAggressiveClassifier</th>
-      <td>0.727224</td>
-      <td>0.068009</td>
+      <td>Perceptron</td>
+      <td>0.741947</td>
+      <td>0.055786</td>
     </tr>
   </tbody>
 </table>
@@ -3264,9 +3207,7 @@ g = g.set_title("Cross validation scores")
 ```
 
 
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_181_0.png">
-</figure>
+![png](output_181_0.png)
 
 
 
@@ -3315,33 +3256,33 @@ optimize_model(XGBClassifier, X_train, y_train, paramgrid=param_grid)
     Fitting 5 folds for each of 108 candidates, totalling 540 fits
 
 
-    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 8 concurrent workers.
-    [Parallel(n_jobs=-1)]: Done  34 tasks      | elapsed:   15.3s
-    [Parallel(n_jobs=-1)]: Done 184 tasks      | elapsed:  1.3min
-    [Parallel(n_jobs=-1)]: Done 434 tasks      | elapsed:  2.9min
-    [Parallel(n_jobs=-1)]: Done 540 out of 540 | elapsed:  3.5min finished
+    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 4 concurrent workers.
+    [Parallel(n_jobs=-1)]: Done  42 tasks      | elapsed:   37.3s
+    [Parallel(n_jobs=-1)]: Done 192 tasks      | elapsed:  3.1min
+    [Parallel(n_jobs=-1)]: Done 442 tasks      | elapsed:  6.3min
+    [Parallel(n_jobs=-1)]: Done 540 out of 540 | elapsed:  7.3min finished
 
 
     GridSearchCV(cv=StratifiedKFold(n_splits=5, random_state=5, shuffle=True),
-                 error_score=nan,
+                 error_score='raise-deprecating',
                  estimator=XGBClassifier(base_score=0.5, booster='gbtree',
                                          colsample_bylevel=1, colsample_bynode=1,
                                          colsample_bytree=1, gamma=0,
                                          learning_rate=0.1, max_delta_step=0,
                                          max_depth=3, min_child_weight=1,
                                          missing=None, n_estimators=100, n_jobs=1,
-                                         nthread=None, objective='binary:logistic',
+                                         nthread=None, object...nary:logistic',
                                          random_state=0, reg_alpha=0, reg_lambda=1,
                                          scale_pos_weight=1, seed=None, silent=None,
                                          subsample=1, verbosity=1),
-                 iid='deprecated', n_jobs=-1,
+                 iid='warn', n_jobs=-1,
                  param_grid={'learning_rate': [0.01, 0.025, 0.05, 0.075, 0, 1, 0,
                                                15, 0.2],
                              'max_depth': [3, 5, 6, 7],
                              'n_estimators': [500, 1000, 1500]},
                  pre_dispatch='2*n_jobs', refit=True, return_train_score=False,
                  scoring='accuracy', verbose=1)
-    Best XGBClassifier model archieves 85.64% accuracy
+    Best XGBClassifier model archieves 85.41% accuracy
 
 
 
@@ -3362,27 +3303,26 @@ optimize_model(ExtraTreesClassifier, X_train, y_train, paramgrid=param_grid)
     Fitting 5 folds for each of 54 candidates, totalling 270 fits
 
 
-    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 8 concurrent workers.
-    [Parallel(n_jobs=-1)]: Done  34 tasks      | elapsed:   18.5s
-    [Parallel(n_jobs=-1)]: Done 184 tasks      | elapsed:  1.5min
-    [Parallel(n_jobs=-1)]: Done 270 out of 270 | elapsed:  2.3min finished
+    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 4 concurrent workers.
+    [Parallel(n_jobs=-1)]: Done  42 tasks      | elapsed:   47.9s
+    [Parallel(n_jobs=-1)]: Done 192 tasks      | elapsed:  3.7min
+    [Parallel(n_jobs=-1)]: Done 270 out of 270 | elapsed:  5.2min finished
 
 
     GridSearchCV(cv=StratifiedKFold(n_splits=5, random_state=5, shuffle=True),
-                 error_score=nan,
-                 estimator=ExtraTreesClassifier(bootstrap=False, ccp_alpha=0.0,
-                                                class_weight=None, criterion='gini',
-                                                max_depth=None, max_features='auto',
+                 error_score='raise-deprecating',
+                 estimator=ExtraTreesClassifier(bootstrap=False, class_weight=None,
+                                                criterion='gini', max_depth=None,
+                                                max_features='auto',
                                                 max_leaf_nodes=None,
-                                                max_samples=None,
                                                 min_impurity_decrease=0.0,
                                                 min_impurity_split=None,
                                                 min_samples_leaf=1,
                                                 min_samples_split=2,
-                                                min_w...
+                                                min_weight_fraction_...
                                                 oob_score=False, random_state=None,
                                                 verbose=0, warm_start=False),
-                 iid='deprecated', n_jobs=-1,
+                 iid='warn', n_jobs=-1,
                  param_grid={'bootstrap': [False], 'criterion': ['gini'],
                              'max_depth': [None], 'max_features': [5, 7, 'auto'],
                              'min_samples_leaf': [4, 5, 6],
@@ -3390,7 +3330,7 @@ optimize_model(ExtraTreesClassifier, X_train, y_train, paramgrid=param_grid)
                              'n_estimators': [1500, 2000]},
                  pre_dispatch='2*n_jobs', refit=True, return_train_score=False,
                  scoring='accuracy', verbose=1)
-    Best ExtraTreesClassifier model archieves 83.96% accuracy
+    Best ExtraTreesClassifier model archieves 84.06% accuracy
 
 
 
@@ -3410,30 +3350,28 @@ optimize_model(RandomForestClassifier, X_train, y_train, paramgrid=param_grid)
     Fitting 5 folds for each of 81 candidates, totalling 405 fits
 
 
-    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 8 concurrent workers.
-    [Parallel(n_jobs=-1)]: Done  34 tasks      | elapsed:   29.4s
-    [Parallel(n_jobs=-1)]: Done 184 tasks      | elapsed:  2.0min
-    [Parallel(n_jobs=-1)]: Done 405 out of 405 | elapsed:  4.3min finished
+    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 4 concurrent workers.
+    [Parallel(n_jobs=-1)]: Done  42 tasks      | elapsed:  1.0min
+    [Parallel(n_jobs=-1)]: Done 192 tasks      | elapsed:  4.5min
+    [Parallel(n_jobs=-1)]: Done 405 out of 405 | elapsed:  9.5min finished
 
 
     GridSearchCV(cv=StratifiedKFold(n_splits=5, random_state=5, shuffle=True),
-                 error_score=nan,
-                 estimator=RandomForestClassifier(bootstrap=True, ccp_alpha=0.0,
-                                                  class_weight=None,
+                 error_score='raise-deprecating',
+                 estimator=RandomForestClassifier(bootstrap=True, class_weight=None,
                                                   criterion='gini', max_depth=None,
                                                   max_features='auto',
                                                   max_leaf_nodes=None,
-                                                  max_samples=None,
                                                   min_impurity_decrease=0.0,
                                                   min_impurity_split=None,
                                                   min_samples_leaf=1,
                                                   min_samples_split=2,
-                                                  min_...
-                                                  n_estimators=100, n_jobs=None,
+                                                  min_weight_fraction...
+                                                  n_estimators='warn', n_jobs=None,
                                                   oob_score=False,
                                                   random_state=None, verbose=0,
                                                   warm_start=False),
-                 iid='deprecated', n_jobs=-1,
+                 iid='warn', n_jobs=-1,
                  param_grid={'criterion': ['gini'], 'max_depth': [5, 6, 7],
                              'max_features': [5, 7, 'auto'],
                              'min_samples_leaf': [4, 5, 6],
@@ -3441,7 +3379,7 @@ optimize_model(RandomForestClassifier, X_train, y_train, paramgrid=param_grid)
                              'n_estimators': [1750]},
                  pre_dispatch='2*n_jobs', refit=True, return_train_score=False,
                  scoring='accuracy', verbose=1)
-    Best RandomForestClassifier model archieves 84.74% accuracy
+    Best RandomForestClassifier model archieves 84.96% accuracy
 
 
 
@@ -3458,30 +3396,27 @@ optimize_model(SVC, X_train, y_train, paramgrid=param_grid, other_args={'probabi
     Fitting 5 folds for each of 63 candidates, totalling 315 fits
 
 
-    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 8 concurrent workers.
-    [Parallel(n_jobs=-1)]: Done  52 tasks      | elapsed:    0.8s
-    [Parallel(n_jobs=-1)]: Done 300 out of 315 | elapsed:    9.5s remaining:    0.4s
+    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 4 concurrent workers.
+    [Parallel(n_jobs=-1)]: Done  42 tasks      | elapsed:    1.9s
+    [Parallel(n_jobs=-1)]: Done 192 tasks      | elapsed:   12.4s
+    [Parallel(n_jobs=-1)]: Done 315 out of 315 | elapsed:   28.5s finished
 
 
     GridSearchCV(cv=StratifiedKFold(n_splits=5, random_state=5, shuffle=True),
-                 error_score=nan,
-                 estimator=SVC(C=1.0, break_ties=False, cache_size=200,
-                               class_weight=None, coef0=0.0,
+                 error_score='raise-deprecating',
+                 estimator=SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
                                decision_function_shape='ovr', degree=3,
-                               gamma='scale', kernel='rbf', max_iter=-1,
+                               gamma='auto_deprecated', kernel='rbf', max_iter=-1,
                                probability=True, random_state=None, shrinking=True,
                                tol=0.001, verbose=False),
-                 iid='deprecated', n_jobs=-1,
+                 iid='warn', n_jobs=-1,
                  param_grid={'C': [1, 10, 50, 100, 200, 250, 500],
                              'gamma': [0.0005, 0.0008, 0.001, 0.005, 0.01, 0.05,
                                        0.1, 0.5, 1],
                              'kernel': ['rbf']},
                  pre_dispatch='2*n_jobs', refit=True, return_train_score=False,
                  scoring='accuracy', verbose=1)
-    Best SVC model archieves 85.42% accuracy
-
-
-    [Parallel(n_jobs=-1)]: Done 315 out of 315 | elapsed:   10.2s finished
+    Best SVC model archieves 85.19% accuracy
 
 
 
@@ -3494,21 +3429,20 @@ optimize_model(LogisticRegression, X_train, y_train, paramgrid=param_grid)
     Fitting 5 folds for each of 80 candidates, totalling 400 fits
 
 
-    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 8 concurrent workers.
-    [Parallel(n_jobs=-1)]: Done  56 tasks      | elapsed:    0.0s
+    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 4 concurrent workers.
 
 
     GridSearchCV(cv=StratifiedKFold(n_splits=5, random_state=5, shuffle=True),
-                 error_score=nan,
+                 error_score='raise-deprecating',
                  estimator=LogisticRegression(C=1.0, class_weight=None, dual=False,
                                               fit_intercept=True,
                                               intercept_scaling=1, l1_ratio=None,
-                                              max_iter=100, multi_class='auto',
+                                              max_iter=100, multi_class='warn',
                                               n_jobs=None, penalty='l2',
-                                              random_state=None, solver='lbfgs',
+                                              random_state=None, solver='warn',
                                               tol=0.0001, verbose=0,
                                               warm_start=False),
-                 iid='deprecated'...
+                 i...
            4.92388263e+00, 7.01703829e+00, 1.00000000e+01, 1.42510267e+01,
            2.03091762e+01, 2.89426612e+01, 4.12462638e+01, 5.87801607e+01,
            8.37677640e+01, 1.19377664e+02, 1.70125428e+02, 2.42446202e+02,
@@ -3516,10 +3450,10 @@ optimize_model(LogisticRegression, X_train, y_train, paramgrid=param_grid)
                              'penalty': ['l1', 'l2']},
                  pre_dispatch='2*n_jobs', refit=True, return_train_score=False,
                  scoring='accuracy', verbose=1)
-    Best LogisticRegression model archieves 85.64% accuracy
+    Best LogisticRegression model archieves 85.52% accuracy
 
 
-    [Parallel(n_jobs=-1)]: Done 400 out of 400 | elapsed:    0.3s finished
+    [Parallel(n_jobs=-1)]: Done 400 out of 400 | elapsed:    4.0s finished
 
 
 
@@ -3535,19 +3469,19 @@ optimize_model(GradientBoostingClassifier,
                paramgrid=param_grid)
 ```
 
-    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 8 concurrent workers.
+    [Parallel(n_jobs=-1)]: Using backend LokyBackend with 4 concurrent workers.
 
 
     Fitting 5 folds for each of 56 candidates, totalling 280 fits
 
 
-    [Parallel(n_jobs=-1)]: Done  52 tasks      | elapsed:    1.5s
+    [Parallel(n_jobs=-1)]: Done  42 tasks      | elapsed:    3.0s
+    [Parallel(n_jobs=-1)]: Done 192 tasks      | elapsed:   12.4s
 
 
     GridSearchCV(cv=StratifiedKFold(n_splits=5, random_state=5, shuffle=True),
-                 error_score=nan,
-                 estimator=GradientBoostingClassifier(ccp_alpha=0.0,
-                                                      criterion='friedman_mse',
+                 error_score='raise-deprecating',
+                 estimator=GradientBoostingClassifier(criterion='friedman_mse',
                                                       init=None, learning_rate=0.1,
                                                       loss='deviance', max_depth=3,
                                                       max_features=None,
@@ -3556,25 +3490,30 @@ optimize_model(GradientBoostingClassifier,
                                                       min_impurity_split=None,
                                                       min_samples_leaf=1,
                                                       min_samples_split=2,
-                                                      min...
+                                                      m...
                                                       n_iter_no_change=None,
-                                                      presort='deprecated',
+                                                      presort='auto',
                                                       random_state=None,
                                                       subsample=1.0, tol=0.0001,
                                                       validation_fraction=0.1,
                                                       verbose=0, warm_start=False),
-                 iid='deprecated', n_jobs=-1,
+                 iid='warn', n_jobs=-1,
                  param_grid={'learning_rate': [0.01, 0.025, 0.05, 0.075, 0.1, 0.15,
                                                0.2],
                              'subsample': [0.5, 0.62, 0.8, 0.85, 0.87, 0.9, 0.95,
                                            1.0]},
                  pre_dispatch='2*n_jobs', refit=True, return_train_score=False,
                  scoring='accuracy', verbose=1)
-    Best GradientBoostingClassifier model archieves 86.20% accuracy
+    Best GradientBoostingClassifier model archieves 86.53% accuracy
 
 
-    [Parallel(n_jobs=-1)]: Done 280 out of 280 | elapsed:    6.8s finished
+    [Parallel(n_jobs=-1)]: Done 280 out of 280 | elapsed:   17.8s finished
 
+
+
+```python
+?KNeighborsClassifier
+```
 
 
 ```python
@@ -3771,9 +3710,8 @@ g.set_ylim(len(best_models), 0.5);
 ```
 
 
-<figure>
-<img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_200_0.png">  
-</figure>
+![png](output_200_0.png)
+
 
 
 ```python
@@ -3844,9 +3782,8 @@ plot_learning_curve(best_models,X_train,y_train,cv=kfold, ylim=(0.6,1.));
 ```
 
 
-<figure>
-<img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_202_0.png">  
-</figure>
+![png](output_202_0.png)
+
 
 
 ```python
@@ -3874,9 +3811,8 @@ plt.tight_layout()
 ```
 
 
-<figure>
-<img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/output_203_0.png">  
-</figure>
+![png](output_203_0.png)
+
 
 ****
 <a id="Section_10"></a>
@@ -3890,11 +3826,7 @@ submission_df = pd.DataFrame({'PassengerId': passengerId,
 submission_df.to_csv("voting_submission_df.csv", index=False)
 ```
 
-The submission leads to a **81.339%** accuracy. This is puts the predictions in the top **3%** of the Kaggle leaderboard.
+The submission leads to a **81.339%** accuracy. This is puts the prediciton in the top **3%** of the Kaggle leaderboard.
 
-<figure>
-<img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/Score.PNG" style="width:800px;">  
-</figure>
-<figure>
-<img src="https://tdody.github.io/assets/img/2020-02-02-Titanic/Rank.PNG" style="width:250px;">
-</figure>
+<img src="Misc/Score.png" style="width:800px;">
+<img src="Misc/Rank.png" style="width:250px;">
