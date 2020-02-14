@@ -38,12 +38,15 @@ It comprises annotated RGB images with a physical resolution of roughly 10 pixel
 The dataset (version 2) can be found [here](https://vision.eng.au.dk/plant-seedlings-dataset/).
 
 The dataset contains images of the following classes subdivided into two main groups:
+
  - Agriculture plants
+
      - Maize
      - Common wheat
      - Sugar beet
      
  - Wild weeds
+
      - Scentless Mayweed
      - Common Chickweed
      - Shepherd's Purse
@@ -161,7 +164,7 @@ plt.title('Image distribution amongst species', fontsize=15);
  - The agricultural plants (wheat, maize, beet) are less present in the dataset compared to wild weeds.
 
 
-```pythonpython
+```python
 fig, axes = plt.subplots(12, 5, figsize=(15, 45))
 for n, folder in enumerate(listdir(ZIPEXTRACT)):
     # select random images from class
@@ -181,7 +184,9 @@ for n, folder in enumerate(listdir(ZIPEXTRACT)):
 
 
 ### Observations - Data content
+
 A few observations from each class are depicted in the above figure. The following observations can be made:
+
  1. All images are top-down photographs. 
  2. The images have **different sizes**. This will have to be investigated.
  3. If we assume that the soil gravels have the same size in all picture, it appears that the images are taken at various distances from the plants. This can create several issues with the model:
@@ -313,6 +318,7 @@ resolution_df.head()
 
 
 The data has been imported into a dataframe. We have created two new features:
+
 1. Image ratio - Ratio between image width and image height
 2. File number - Number associated to the image
 
@@ -444,6 +450,7 @@ The first important observation is related to the number of files and the maximu
 A pattern appears when plotting the image width against the file number. As the file number increases, the width of the image increases up to a certain point, then the image size abruptly decreases. **The pattern repeats approximately four times per species.** Note that the pattern is not as well defined for the Back-grass and the Loose Silky bent species.
 
 From this observation, we can make the following assumptions:
+
  - Four different plant specimens have been photographed at various stage of their growth cycles.
  - Four batches of specimens have been photographed simultaneously during their growth. Once the specimen are matured enough, they stopped being photographed.
  
@@ -628,17 +635,18 @@ ax.set_title('Distribution of image width between species', fontsize=15)
 **Observations**
   
 The above boxplot shows the followings:
+
 1. Each class contains outliers with large width.
 2. The width distribution is not consistent between classes. 
 3. The minimum width seems to be roughly identical between classes (~60 pixels) except for the "Charlock" class.  
 
 
 ```python
-print('Minumum image height and width accros species:')
+print('Minimum image height and width across species:')
 print(resolution_df.groupby(['species'])[['width','height']].min())
 ```
 
-    Minumum image height and width accros species:
+    Minimum image height and width across species:
                                width  height
     species                                 
     Black-grass                 73.0    73.0
@@ -706,6 +714,7 @@ sns.scatterplot(x='width',
 **Observations**
   
 From the above plots, we can draw the following observations:
+
 1. Most of the rectangular images from the "Loose Silky-bent" are small images <700pixels)
 2. Eventhough these images are not perfectly square, they are fairly square (correlation of 0.99).
 
@@ -768,6 +777,7 @@ plt.tight_layout()
 ## Feature Engineering
 
 During our investigation, we have reached the following conclusions:
+
 1. The image size can be a good indicator of the plant species.
 2. For each species, we have identified image cycles through the file names. We have extracted approximate cut-off for each cycle and each species.
 3. Each image contains a certain number of external components that can contaminate the model.
@@ -925,9 +935,10 @@ CLUSTER_ORDER
 
 
 
-###### **Observations** 
+**Observations** 
 
 The above plots show the results of our clustering. We can make the following observations:
+
  - most plant present photographs in the 5 clusters.
  - for each plant, the repetition of growth cycle through each period (file numbers) are identical.
     
@@ -1028,6 +1039,7 @@ In order for our model to generalize well on unseen data, a good practice consis
 We need to ensure that our model does not over fit the training data. To do so, we are using a training set and a test set both taken from the original dataset.  
 
 Keras contains useful tools to help process image files and feed them in batches to the model. We will be using a generator for both the train and test phases.
+
 - First, we must create a new feature to our dataset which contains the full path to each image.
 - Then, we can create two generators, the training generator will contains several data augmentation transformation (horizontal and vertical flips, zoom).
 - Both the train and test generator will normalize the pixel values.
@@ -1235,6 +1247,7 @@ axes[1].set_xlabel("Class ID");
 
 
 Finally, we will use data augmentation to help the model generalize on unseen data. The following actions can be taken:
+
 1. Rotation from -180 to 180 deg
 2. Width and height shifts of 10%
 3. Shear range of 10%
@@ -1320,6 +1333,7 @@ model.add(Dense(n_classes, activation='softmax'))
 ### Metric Definition and Optimizer
 
 Before we can train our model, we have to define the followings:
+
 1. **Optimizing metrics**: in our case, we will be optimizing the cross-entropy. This is typical for a multi-class problem.
 2. **Optimizer technique**: an Adam optimizer is used.
 3. **Optimization strategy**: that is how to adjust the learning rate, when to stop the training.
@@ -1878,7 +1892,9 @@ Although our model performs relatively well, we can see that in several cases sh
 In conclusion, our model could be improved by removing extra components from the images.
 
 ## Model Improvement
+
 We have identified flaws in the predictions of our first model:
+
 1. Uses external components to make predictions.
 2. Struggles to make the difference between `Black-grass` and `Loose Silky-bent`
 
@@ -1898,6 +1914,7 @@ Each image is encoded using three channels, this encoding is typically called RG
 **HSV (hue, saturation, value)**  
 
 HSV is an alternative representation. The colors are encoded using 3 parameters:
+
 1. Hue as an angle value 0° for red, 120° for green and 240° for blue.
 2. Saturation is the intensity of the color as a number from 0 to 1 where 0 corresponds to the grayscale.
 3. Value corresponds to the base grayscale value from 0 to 1 where 0 is black and 1 is white.
@@ -1909,6 +1926,7 @@ HSV is an alternative representation. The colors are encoded using 3 parameters:
 **CIELAB** 
 
 It expresses color as three values:
+
 1. L* for the lightness from black (0) to white (100)
 2. a* from green (−) to red (+)
 3. b* from blue (−) to yellow (+)
@@ -2150,6 +2168,7 @@ plt.tight_layout()
 **Observations**  
 
 From the above plots, it appears that the hue values of the pixels cluster into two groups. From there, we could consider two approaches:
+
 1. Simple: define a threshold value of around 70 to manually divide the pixels into two cluster and eliminate the potion of the image where the hue of the pixels is larger than the threshold.
 2. Complex but more suited to the various pixel distributions: **for each image, cluster the hue of the pixels using a clustering algorithm and define the threshold as the boundary between the two clusters**.
   
@@ -3089,6 +3108,7 @@ plt.tight_layout()
 ### Conclusion
   
 In conclusion, we were able to produce a model relying only on the shape, size, and colors of the seedlings. This model is capable of making correct predictions more than 90% of the times on 12 different seedling species. If we were to improve this model and its data collection, the following recommendations would be proposed:
+
 1. Standardize photographs by taking pictures from the same distance, same focus.
 2. Build a model to classify the Loose-Silky bent and Black-grass together then develop a model specifically to classify these two species.
 3. Collect information regarding the importance of misclassification of certain species. Weights can then be incorporated in the model.
