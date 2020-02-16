@@ -20,7 +20,6 @@ image: "https://tdody.github.io/assets/img/2019-01-01-Certificates/tile.jpeg"
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/FW3A2YDB4XM9" target="_blank">Reinforcement Learning</a>
             <a class="zoombtn">/</a>
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/X6R29MCNZPQX" target="_blank">Computer Vision</a>
-            <a class="zoombtn">/</a>
             <p>Coursera / HSE, 250 hours</p>
         </li>
     </ul>
