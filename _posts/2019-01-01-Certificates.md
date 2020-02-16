@@ -10,38 +10,38 @@ image: "https://tdody.github.io/assets/img/2019-01-01-Certificates/tile.jpeg"
         <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/advanced.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            "Advanced Machine Learning"
-            <a class="zoombtn" href="https://coursera.org/share/a6ec8237c90f96baaa55cd08f610e449" target="_blank">Introduction</a>
-            "/"
-            <a class="zoombtn" href="https://coursera.org/share/4a276cff236a197737a16468953bc008" target="_blank">Data Competitions</a>
-            "/"
-            <a class="zoombtn" href="https://coursera.org/share/04b386a58211865526dc5d84f3df598a" target="_blank">Bayesian Methods</a>
-            "/"
-            <a class="zoombtn" href="https://coursera.org/share/2458ce3b3656e0540e34cf531cc688a3" target="_blank">Reinforcement Learning</a>
-            "/"
-            <a class="zoombtn" href="https://coursera.org/share/6e4aa8ebb45fb7f72fa4174c41bc8962" target="_blank">Computer Vision</a>
-            "/"
+            <a class="zoombtn"> Advanced Machine Learning</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/GGMNVWSBAGT5" target="_blank">Introduction</a>
+            <a class="zoombtn">/</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/UPSMQP3K4G6X" target="_blank">Data Competitions</a>
+            <a class="zoombtn">/</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/W2EDL45XSXM6" target="_blank">Bayesian Methods</a>
+            <a class="zoombtn">/</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/FW3A2YDB4XM9" target="_blank">Reinforcement Learning</a>
+            <a class="zoombtn">/</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/X6R29MCNZPQX" target="_blank">Computer Vision</a>
+            <a class="zoombtn">/</a>
             <p>Coursera / HSE, 250 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/DeepLearning.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/FFLENBEMCWRJ" target="_blank">Deep Learning</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/FFLENBEMCWRJ" target="_blank">Deep Learning - Specialization</a>
             <p>Coursera / deeplearning.ai, 150 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/TensorFlowInPractice.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/GPGWT4UE4M9P" target="_blank">Tensorflow in Practice</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/GPGWT4UE4M9P" target="_blank">Tensorflow in Practice - Specialization</a>
             <p>Coursera / deeplearning.ai, 60 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/MachineLearningGoogle.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/GPGWT4UE4M9P" target="_blank">Machine Learning with TensorFlow on Google Cloud Platform Specialization</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/GPGWT4UE4M9P" target="_blank">Machine Learning with TensorFlow on Google Cloud Platform - Specialization</a>
             <p>Coursera / Google, 60 hours</p>
         </li>
     </ul>
