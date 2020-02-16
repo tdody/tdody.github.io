@@ -2,7 +2,7 @@
 layout: post
 title:  "Seedlings Classification (91% Accuracy)"
 date:   2020-02-13
-excerpt: "Image classification of seedlings.."
+excerpt: "Image classification of seedlings."
 project: true
 tag:
 - Kaggle 
