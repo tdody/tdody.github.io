@@ -9,12 +9,19 @@ image: "https://tdody.github.io/assets/img/2019-01-01-Certificates/tile.jpeg"
 <div class="post-list">
         <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
-            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/DeepLearning.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/DeepLearning.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/DeepLearning.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/DeepLearning.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/FFLENBEMCWRJ" target="_blank">Deep Learning</a>
-            <p>Coursera / deeplearning.ai, 150 hours</p>
+            <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/advanced.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
+            "Advanced Machine Learning"
+            <a class="zoombtn" href="https://coursera.org/share/a6ec8237c90f96baaa55cd08f610e449" target="_blank">Introduction</a>
+            "/"
+            <a class="zoombtn" href="https://coursera.org/share/4a276cff236a197737a16468953bc008" target="_blank">Data Competitions</a>
+            "/"
+            <a class="zoombtn" href="https://coursera.org/share/04b386a58211865526dc5d84f3df598a" target="_blank">Bayesian Methods</a>
+            "/"
+            <a class="zoombtn" href="https://coursera.org/share/2458ce3b3656e0540e34cf531cc688a3" target="_blank">Reinforcement Learning</a>
+            "/"
+            <a class="zoombtn" href="https://coursera.org/share/6e4aa8ebb45fb7f72fa4174c41bc8962" target="_blank">Computer Vision</a>
+            "/"
+            <p>Coursera / HSE, 250 hours</p>
         </li>
     </ul>
     <ul>
