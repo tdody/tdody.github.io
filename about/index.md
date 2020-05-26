@@ -6,7 +6,7 @@ date: 2019-01-01
 comments: false
 ---
     
-# AROUT ME
+# ABOUT ME
 
 <div class="article_content">
             <p><img src="https://tdody.github.io/assets/img/Personal.png" style="float:left;width:191px;height:280px;padding-right:20px;">
