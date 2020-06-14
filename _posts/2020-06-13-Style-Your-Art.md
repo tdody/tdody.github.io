@@ -19,26 +19,38 @@ Created by Thibault Dody, 06/13/2020.
 
 # Art Style Predictions
 
+<b>A live version can be accessed <a href="ec2-3-128-59-191.us-east-2.compute.amazonaws.com" target=" _blank ">HERE</a></b>.
+
+________
 ## Goal
 
 The available dataset consists of all the paintings and artworks from Wikiart.  
 The objective is to build a model able to predict the style of an uploaded image amongst the top 18 most popular styles.
 
 My main objective through this project was to build and deploy a model and an associated API.  
-The python code is available in my [Github repository](https://github.com/tdody/StyleYourArt).
+The python code is available in my <a href="https://github.com/tdody/StyleYourArt" target=" _blank ">Github repository</a>.
 
 For the deployment of this model, I have chosen the following:
 1. Build a flask app to create a web interface.
 2. Host some of the data into a MongoDB database.
 3. Deploy a live version using an AWS instance (EC2+S3).
-
-## Deployed API
-
-**A live version can be accessed [here](https://revenue-ml.herokuapp.com/)**
   
+________
 ## API
 
+### Deployed API
+
+<b>A live version can be accessed <a href="ec2-3-128-59-191.us-east-2.compute.amazonaws.com" target=" _blank ">HERE</a></b>.
+
 ### Architecture
+
+The application is built using:
+- Wikiart Web Scraper (<a href="https://github.com/lucasdavid/wikiart/" target="_blank">Repository</a>)
+- MongoDB database containing meta information about every artwork
+- Keras models
+- Flask API
+- The application is stored on Amazon S3
+- The instance of the application is hosted on an Ubuntu 18.04 server (Amazon EC2)
 
 <figure>
     <p align="center">
@@ -53,10 +65,11 @@ For the deployment of this model, I have chosen the following:
 </iframe>
 </p>
 
-### Data
+________
+## Data
 
 Keras can use the directory structure to determine the image classes. To do so, we need to store each image into a folder titled with the painting style.
-A python function `organize_directories` in module `models.py` is used to move each picture in its corresponding style directory. Note that the images are also resized as 224x224 and saved as `png`. Finally, the distribution is done by splitting the dataset into a train and test sets. The split is done by stratifying the styles and assigning randomly 20% of each styles into the test set.
+A python function `organize_directories` in module `models.py` is used to move each picture in its corresponding style directory. Note that the images are also resized as `224x224x3` and saved as `png`. Finally, the distribution is done by splitting the dataset into a train and test sets. The split is done by stratifying the styles and assigning randomly 20% of each styles into the test set.
 
 <figure>
 <p align="center">
@@ -66,9 +79,10 @@ A python function `organize_directories` in module `models.py` is used to move e
 
 As shown above, the dataset has been divided into the train and test set while maintaining the class proportion. In order to avoid bias over class that are overly represented (Impressionism, Realism...). The metrics of interest will be weighted so that each class is assigned the same importance.
 
-### Model
+________
+## Model
 
-## Convolutional Neural Network
+### Convolutional Neural Network
 In this section, we will train a CNN to predict the species feature. The approach is divided between the following steps:
 
 - Encode the target feature
@@ -89,6 +103,7 @@ Both the train and test generator will normalize the pixel values.
 Finally, the images will be sent to the model using batches of 16 RGB images reshaped at 224x224.
 
 ### Transfer Learning - First Generation  
+
 Before we train a model on the entire dataset, we need to investigate the following modeling choices:
 1. Architecture
 2. Optimization metrics
@@ -112,16 +127,12 @@ For each model, we remove the top layer and add a custom model to it. This top m
 - Dense (64, relu)
 - Dense (18, softmax)
 
-
 ```python
 ## load results
 results = pd.read_csv('../data/training_phase1.csv')
 results['size_total_MB'] = results['size_base_MB'] + results['size_top_MB']
 results
 ```
-
-
-
 
 <div>
 <style scoped>
@@ -217,9 +228,6 @@ results
 </table>
 </div>
 
-
-
-
 ```python
 %matplotlib inline
 fig, ax = plt.subplots(figsize=(8,6))
@@ -291,7 +299,7 @@ This top model is defined as follows:
 
 **Training**
 <table>
-    <tr>
+    <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
     <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_AUC_ROC.png" style="width:600px;"></figure></td>
@@ -304,7 +312,7 @@ This top model is defined as follows:
 
 **Predictions**
 <table>
-    <tr>
+    <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
     <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_confusion_matrix.png"></figure></td>
@@ -316,7 +324,7 @@ This top model is defined as follows:
     </table>
 
 <table>
-    <tr>
+    <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
     <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_confusion_matrix.png"></figure></td>
@@ -373,7 +381,7 @@ plt.tight_layout();
 
 **Training**
 <table>
-    <tr>
+    <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
     <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_AUC_ROC.png" style="width:600px;"></figure></td>
@@ -386,7 +394,7 @@ plt.tight_layout();
 
 **Predictions**
 <table>
-    <tr>
+    <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
     <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_confusion_matrix.png"></figure></td>
@@ -398,7 +406,7 @@ plt.tight_layout();
     </table>
 
 <table>
-    <tr>
+    <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
     <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_confusion_matrix.png"></figure></td>
@@ -449,6 +457,6 @@ plt.tight_layout();
 <br>
 
 ## References
-[1] Wikiart, <a href="https://www.wikiart.org/ " target=" _blank ">https://www.wikiart.org/</a>
+[1] Wikiart,<a href="https://www.wikiart.org/" target="_blank"> https://www.wikiart.org/</a>
 <br>
-[2] Lucas Oliveira David, Wikiart Retrieval, <a href="https://github.com/lucasdavid/wikiart/" target=" _blank ">GitHub</a>
+[2] Lucas Oliveira David, Wikiart Retrieval,<a href="https://github.com/lucasdavid/wikiart/" target="_blank"> GitHub</a>
