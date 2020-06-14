@@ -42,7 +42,7 @@ For the deployment of this model, I have chosen the following:
 
 <figure>
     <p align="center">
-        <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/Architecture.png " alt="schema " , style="width:850 ">
+        <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/Architecture.png" alt="schema " style="width:850 ">
     </p>
 </figure>
 
@@ -448,16 +448,7 @@ plt.tight_layout();
 </figure>
 <br>
 
-
-
-
-
-
-
-
-
-
 ## References
-[1] Wikiart,<a href="https://www.wikiart.org/ " target=" _blank ">https://www.wikiart.org/</a>
+[1] Wikiart, <a href="https://www.wikiart.org/ " target=" _blank ">https://www.wikiart.org/</a>
 <br>
-[2] Lucas Oliveira David, Wikiart Retrieval,<a href="https://github.com/lucasdavid/wikiart/" target=" _blank ">GitHub</a>
+[2] Lucas Oliveira David, Wikiart Retrieval, <a href="https://github.com/lucasdavid/wikiart/" target=" _blank ">GitHub</a>
