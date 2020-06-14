@@ -298,7 +298,7 @@ This top model is defined as follows:
 </figure>
 
 **Training**
-<table>
+<table style="border:0">
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
@@ -311,7 +311,7 @@ This top model is defined as follows:
     </table>
 
 **Predictions**
-<table>
+<table style="border:0">
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
@@ -323,7 +323,7 @@ This top model is defined as follows:
     </tr>
     </table>
 
-<table>
+<table style="border:0">
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
@@ -380,7 +380,7 @@ plt.tight_layout();
 </figure>
 
 **Training**
-<table>
+<table style="border:0">
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
@@ -393,7 +393,7 @@ plt.tight_layout();
     </table>
 
 **Predictions**
-<table>
+<table style="border:0">
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
@@ -405,7 +405,7 @@ plt.tight_layout();
     </tr>
     </table>
 
-<table>
+<table style="border:0">
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
