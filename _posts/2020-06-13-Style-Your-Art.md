@@ -293,12 +293,17 @@ This top model is defined as follows:
 #### Results
 
 **Training**
+
+As shown below the training accuracy plateaus at 56% (benchmark accuracy is 5.6%) while the accuracy on the test set is 43%.
+
 <figure>
 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/history.png" style="width:1920px;">
 </figure>
 
-**Training**
-<table style="border:0">
+The F-1 score on the training set is 0.78 (macro average) and 0.78 (weighted average).
+The F-1 score on the training set is 0.43 (macro average) and 0.44 (weighted average).
+
+<table>
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
@@ -311,7 +316,7 @@ This top model is defined as follows:
     </table>
 
 **Predictions**
-<table style="border:0">
+<table>
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
@@ -323,7 +328,7 @@ This top model is defined as follows:
     </tr>
     </table>
 
-<table style="border:0">
+<table>
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
@@ -375,12 +380,17 @@ plt.tight_layout();
 ### Transfer Learning - Third Generation  
 
 **Training**
+
+As shown below the training accuracy plateaus at 57% (benchmark accuracy is 5.6%) while the accuracy on the test set is 45%.
+
 <figure>
 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/history.png" style="width:1920px;">
 </figure>
 
-**Training**
-<table style="border:0">
+The F-1 score on the training set is 0.79 (macro average) and 0.71 (weighted average).
+The F-1 score on the training set is 0.45 (macro average) and 0.45 (weighted average).
+
+<table>
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
@@ -393,7 +403,7 @@ plt.tight_layout();
     </table>
 
 **Predictions**
-<table style="border:0">
+<table>
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
@@ -405,7 +415,7 @@ plt.tight_layout();
     </tr>
     </table>
 
-<table style="border:0">
+<table>
     <tr style="border-collapse: collapse; border: none;">
         <td>
 <figure>
