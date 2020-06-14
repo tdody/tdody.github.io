@@ -19,7 +19,7 @@ Created by Thibault Dody, 06/13/2020.
 
 # Art Style Predictions
 
-A live version can be accessed <a href="http://ec2-3-128-59-191.us-east-2.compute.amazonaws.com/" target=" _blank ">HERE</a>.
+A live version can be accessed <a href="http://ec2-3-128-59-191.us-east-2.compute.amazonaws.com/" target=" _blank "><b>HERE</b></a>.
 
 ________
 ## Goal
@@ -40,7 +40,7 @@ ________
 
 ### Deployed API
 
-A live version can be accessed <a href="http://ec2-3-128-59-191.us-east-2.compute.amazonaws.com/" target=" _blank ">HERE</a>.
+A live version can be accessed <a href="http://ec2-3-128-59-191.us-east-2.compute.amazonaws.com/" target=" _blank "><b>HERE</b></a>.
 
 ### Architecture
 
