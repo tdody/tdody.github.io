@@ -20,7 +20,7 @@ Created by Thibault Dody, 06/13/2020.
 # Art Style Predictions
 
 <figure>
-<img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/oil-paint-banner.jpg" style="width:642px;height:288px;">
+<img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/oil-paint-banner.jpg" style="height:288px;">
 </figure>
 
 A live version can be accessed <a href="http://ec2-3-128-59-191.us-east-2.compute.amazonaws.com/" target=" _blank "><b>HERE</b></a>.
