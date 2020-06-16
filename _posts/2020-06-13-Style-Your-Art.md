@@ -23,7 +23,7 @@ Created by Thibault Dody, 06/13/2020.
 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/oil-paint-banner.jpg" style="height:288px;">
 </figure>
 
-A live version can be accessed <a href="http://ec2-3-128-59-191.us-east-2.compute.amazonaws.com/" target=" _blank "><b>HERE</b></a>.
+A live version can be accessed <a href="http://52.71.228.3:8000/" target=" _blank "><b>HERE</b></a>.
 
 ________
 ## Goal
@@ -44,7 +44,7 @@ ________
 
 ### Deployed API
 
-A live version can be accessed <a href="http://ec2-3-128-59-191.us-east-2.compute.amazonaws.com/" target=" _blank "><b>HERE</b></a>.
+A live version can be accessed <a href="http://52.71.228.3:8000/" target=" _blank "><b>HERE</b></a>.
 
 ### Architecture
 
