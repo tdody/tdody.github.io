@@ -12,14 +12,13 @@ image: "https://tdody.github.io/assets/img/2019-01-01-Certificates/tile.jpeg"
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/SantaCruz.png" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn"> Bayesian Statistics: </a>
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/KL55T92DNPEK" target="_blank">Concept and Data Analysis</a>
-            <a class="zoombtn">/</a>
             <p>Coursera / University of California Santa Cruz, 30 hours</p>
         </li>
     </ul>
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/DeepLearning.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            <a class="zoombtn" href="https://www.coursera.org/specializations/natural-language-processing" target="_blank">Natural Language Processing Specialization - Specialization (In progress)</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/9Y4M8VU4LQRG" target="_blank">Natural Language Processing Specialization - Specialization</a>
             <p>Coursera / deeplearning.ai, 200 hours</p>
         </li>
     </ul>
