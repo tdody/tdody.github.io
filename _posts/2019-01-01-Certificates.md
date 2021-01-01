@@ -18,7 +18,7 @@ image: "https://tdody.github.io/assets/img/2019-01-01-Certificates/tile.jpeg"
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/DeepLearning.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/9Y4M8VU4LQRG" target="_blank">Natural Language Processing Specialization - Specialization</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/9Y4M8VU4LQRG" target="_blank">Natural Language Processing - Specialization</a>
             <p>Coursera / deeplearning.ai, 200 hours</p>
         </li>
     </ul>
