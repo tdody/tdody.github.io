@@ -82,6 +82,12 @@ A python function `organize_directories` in module `models.py` is used to move e
 
 As shown above, the dataset has been divided into the train and test set while maintaining the class proportion. In order to avoid bias over class that are overly represented (Impressionism, Realism...). The metrics of interest will be weighted so that each class is assigned the same importance.
 
+<figure>
+    <p align="center">
+        <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/StyleTrend.png">
+    </p>
+</figure>
+
 ________
 ## Model
 
