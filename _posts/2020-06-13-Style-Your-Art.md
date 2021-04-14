@@ -306,14 +306,14 @@ As shown below the training accuracy plateaus at 56% (benchmark accuracy is 5.6%
 The F-1 score on the training set is 0.78 (macro average) and 0.78 (weighted average).
 The F-1 score on the training set is 0.43 (macro average) and 0.44 (weighted average).
 
-<table style="border-collapse: collapse; border: 0px;">>
-    <tr style="border-collapse: collapse; border: none;">
-        <td style="border-collapse: collapse; border: 0px;">>
+<table style="border:0px;">>
+    <tr style="border:0px;">
+        <td style="border:0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_AUC_ROC.png" style="width:600px;">
             </figure>
         </td>
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border:0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_AUC_ROC.png" style="width:600px;">
             </figure>
@@ -322,14 +322,14 @@ The F-1 score on the training set is 0.43 (macro average) and 0.44 (weighted ave
 </table>
 
 **Predictions**
-<table style="border-collapse: collapse; border: 0px;">>
+<table style="border-collapse: collapse; border: 0px;">
     <tr style="border-collapse: collapse; border: 0px;">
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_confusion_matrix.png">
             </figure>
         </td>
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_Normalize_confusion_matrix.png">
             </figure>
@@ -339,12 +339,12 @@ The F-1 score on the training set is 0.43 (macro average) and 0.44 (weighted ave
 
 <table>
     <tr style="border-collapse: collapse; border: none;">
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_confusion_matrix.png">
             </figure>
         </td>
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_Normalize_confusion_matrix.png">
             </figure>
@@ -404,12 +404,12 @@ The F-1 score on the training set is 0.45 (macro average) and 0.45 (weighted ave
 
 <table>
     <tr style="border-collapse: collapse; border: none;">
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_AUC_ROC.png" style="width:600px;">
             </figure>
         </td>
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_AUC_ROC.png" style="width:600px;">
             </figure>
@@ -418,14 +418,14 @@ The F-1 score on the training set is 0.45 (macro average) and 0.45 (weighted ave
 </table>
 
 **Predictions**
-<table style="border-collapse: collapse; border: 0px;">>
+<table style="border-collapse: collapse; border: 0px;">
     <tr style="border-collapse: collapse; border: none;">
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_confusion_matrix.png">
             </figure>
         </td>
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_Normalize_confusion_matrix.png">
             </figure>
@@ -433,14 +433,14 @@ The F-1 score on the training set is 0.45 (macro average) and 0.45 (weighted ave
     </tr>
 </table>
 
-<table style="border-collapse: collapse; border: 0px;">>
+<table style="border-collapse: collapse; border: 0px;">
     <tr style="border-collapse: collapse; border: none;">
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_confusion_matrix.png">
             </figure>
         </td>
-        <td style="border-collapse: collapse; border: 0px;">>
+        <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_Normalize_confusion_matrix.png">
             </figure>
