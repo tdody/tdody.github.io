@@ -336,7 +336,7 @@ The F-1 score on the training set is 0.43 (macro average) and 0.44 (weighted ave
         <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_Normalize_confusion_matrix.png">
-            </figure>s
+            </figure>
         </td>
     </tr>
 </table>
