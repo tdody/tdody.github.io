@@ -20,7 +20,7 @@ Created by Thibault Dody, 06/13/2020.
 # Art Style Predictions
 
 <figure>
-<img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/oil-paint-banner.jpg" style="height:288px;">
+    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/oil-paint-banner.jpg" style="height:288px;">
 </figure>
 
 A live version can be accessed <a href="http://52.71.228.3/" target=" _blank "><b>HERE</b></a>.
@@ -65,8 +65,7 @@ The application is built using:
 ### Interface
 
 <p align="center">
-    <iframe width="720px" height="456px" src=" https://www.youtube.com/embed/ZJSRZ6CiEwM ">
-</iframe>
+    <iframe width="720px" height="456px" src=" https://www.youtube.com/embed/ZJSRZ6CiEwM "></iframe>
 </p>
 
 ________
@@ -76,8 +75,8 @@ Keras can use the directory structure to determine the image classes. To do so, 
 A python function `organize_directories` in module `models.py` is used to move each picture in its corresponding style directory. Note that the images are also resized as `224x224x3` and saved as `png`. Finally, the distribution is done by splitting the dataset into a train and test sets. The split is done by stratifying the styles and assigning randomly 20% of each styles into the test set.
 
 <figure>
-<p align="center">
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/output_22_0.png">
+    <p align="center">
+        <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/output_22_0.png">
     </p>
 </figure>
 
@@ -307,42 +306,51 @@ As shown below the training accuracy plateaus at 56% (benchmark accuracy is 5.6%
 The F-1 score on the training set is 0.78 (macro average) and 0.78 (weighted average).
 The F-1 score on the training set is 0.43 (macro average) and 0.44 (weighted average).
 
-<table>
+<table style="border-collapse: collapse; border: 0px;">>
     <tr style="border-collapse: collapse; border: none;">
-        <td>
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_AUC_ROC.png" style="width:600px;"></figure></td>
-        <td>
+        <td style="border-collapse: collapse; border: 0px;">>
             <figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_AUC_ROC.png" style="width:600px;"></figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_AUC_ROC.png" style="width:600px;">
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">>
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_AUC_ROC.png" style="width:600px;">
+            </figure>
         </td>
     </tr>
-    </table>
+</table>
 
 **Predictions**
-<table>
-    <tr style="border-collapse: collapse; border: none;">
-        <td>
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_confusion_matrix.png"></figure></td>
-        <td>
+<table style="border-collapse: collapse; border: 0px;">>
+    <tr style="border-collapse: collapse; border: 0px;">
+        <td style="border-collapse: collapse; border: 0px;">>
             <figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_Normalize_confusion_matrix.png"></figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_confusion_matrix.png">
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">>
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_Normalize_confusion_matrix.png">
+            </figure>
         </td>
     </tr>
-    </table>
+</table>
 
 <table>
     <tr style="border-collapse: collapse; border: none;">
-        <td>
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_confusion_matrix.png"></figure></td>
-        <td>
+        <td style="border-collapse: collapse; border: 0px;">>
             <figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_Normalize_confusion_matrix.png"></figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_confusion_matrix.png">
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">>
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_Normalize_confusion_matrix.png">
+            </figure>
         </td>
     </tr>
-    </table>
+</table>
 
 
 ```python
@@ -388,7 +396,7 @@ plt.tight_layout();
 As shown below the training accuracy plateaus at 57% (benchmark accuracy is 5.6%) while the accuracy on the test set is 45%.
 
 <figure>
-<img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/history.png" style="width:1920px;">
+    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/history.png" style="width:1920px;">
 </figure>
 
 The F-1 score on the training set is 0.79 (macro average) and 0.71 (weighted average).
@@ -396,40 +404,49 @@ The F-1 score on the training set is 0.45 (macro average) and 0.45 (weighted ave
 
 <table>
     <tr style="border-collapse: collapse; border: none;">
-        <td>
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_AUC_ROC.png" style="width:600px;"></figure></td>
-        <td>
+        <td style="border-collapse: collapse; border: 0px;">>
             <figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_AUC_ROC.png" style="width:600px;"></figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_AUC_ROC.png" style="width:600px;">
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">>
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_AUC_ROC.png" style="width:600px;">
+            </figure>
         </td>
     </tr>
-    </table>
+</table>
 
 **Predictions**
-<table>
+<table style="border-collapse: collapse; border: 0px;">>
     <tr style="border-collapse: collapse; border: none;">
-        <td>
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_confusion_matrix.png"></figure></td>
-        <td>
+        <td style="border-collapse: collapse; border: 0px;">>
             <figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_Normalize_confusion_matrix.png"></figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_confusion_matrix.png">
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">>
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_Normalize_confusion_matrix.png">
+            </figure>
         </td>
     </tr>
-    </table>
+</table>
 
-<table>
+<table style="border-collapse: collapse; border: 0px;">>
     <tr style="border-collapse: collapse; border: none;">
-        <td>
-<figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_confusion_matrix.png"></figure></td>
-        <td>
+        <td style="border-collapse: collapse; border: 0px;">>
             <figure>
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_Normalize_confusion_matrix.png"></figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_confusion_matrix.png">
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">>
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_Normalize_confusion_matrix.png">
+            </figure>
         </td>
     </tr>
-    </table>
+</table>
 
 
 ```python
@@ -464,8 +481,8 @@ plt.tight_layout();
 ```
 
 <figure>
-<p align="center">
-    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/output_45_0.png">
+    <p align="center">
+        <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/output_45_0.png">
     </p>
 </figure>
 <br>
