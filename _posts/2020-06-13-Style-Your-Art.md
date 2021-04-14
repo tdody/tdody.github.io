@@ -402,7 +402,7 @@ As shown below the training accuracy plateaus at 57% (benchmark accuracy is 5.6%
 The F-1 score on the training set is 0.79 (macro average) and 0.71 (weighted average).
 The F-1 score on the training set is 0.45 (macro average) and 0.45 (weighted average).
 
-<table>
+<table style="border-collapse: collapse; border: none;">>
     <tr style="border-collapse: collapse; border: none;">
         <td style="border-collapse: collapse; border: 0px;">
             <figure>
