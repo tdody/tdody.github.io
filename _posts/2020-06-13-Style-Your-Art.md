@@ -343,7 +343,7 @@ The F-1 score on the training set is 0.43 (macro average) and 0.44 (weighted ave
     </tr>
 </table>
 
-<table>
+<table style="border-collapse: collapse; border: none;">
     <tr style="border-collapse: collapse; border: none;">
         <td style="border-collapse: collapse; border: 0px;">
             <figure>
