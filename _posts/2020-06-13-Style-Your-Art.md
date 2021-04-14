@@ -23,8 +23,6 @@ Created by Thibault Dody, 06/13/2020.
     <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/oil-paint-banner.jpg" style="height:288px;">
 </figure>
 
-A live version can be accessed <a href="http://52.71.228.3/" target=" _blank "><b>HERE</b></a>.
-
 ________
 ## Goal
 
@@ -338,13 +336,13 @@ The F-1 score on the training set is 0.43 (macro average) and 0.44 (weighted ave
         <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_Normalize_confusion_matrix.png">
-            </figure>
+            </figure>s
         </td>
     </tr>
 </table>
 
-<table style="border-collapse: collapse; border: none;">
-    <tr style="border-collapse: collapse; border: none;">
+<table style="border-collapse: collapse; border: 0px;">
+    <tr style="border-collapse: collapse; border: 0px;">
         <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_confusion_matrix.png">
@@ -408,8 +406,8 @@ As shown below the training accuracy plateaus at 57% (benchmark accuracy is 5.6%
 The F-1 score on the training set is 0.79 (macro average) and 0.71 (weighted average).
 The F-1 score on the training set is 0.45 (macro average) and 0.45 (weighted average).
 
-<table style="border-collapse: collapse; border: none;">>
-    <tr style="border-collapse: collapse; border: none;">
+<table style="border-collapse: collapse; border: 0px;">
+    <tr style="border-collapse: collapse; border: 0px;">
         <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_AUC_ROC.png" style="width:600px;">
@@ -425,7 +423,7 @@ The F-1 score on the training set is 0.45 (macro average) and 0.45 (weighted ave
 
 **Predictions**
 <table style="border-collapse: collapse; border: 0px;">
-    <tr style="border-collapse: collapse; border: none;">
+    <tr style="border-collapse: collapse; border: 0px;">
         <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_confusion_matrix.png">
@@ -440,7 +438,7 @@ The F-1 score on the training set is 0.45 (macro average) and 0.45 (weighted ave
 </table>
 
 <table style="border-collapse: collapse; border: 0px;">
-    <tr style="border-collapse: collapse; border: none;">
+    <tr style="border-collapse: collapse; border: 0px;">
         <td style="border-collapse: collapse; border: 0px;">
             <figure>
                 <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_confusion_matrix.png">
