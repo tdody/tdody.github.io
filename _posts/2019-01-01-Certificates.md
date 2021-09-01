@@ -32,16 +32,8 @@ image: "https://tdody.github.io/assets/img/2019-01-01-Certificates/tile.jpeg"
     <ul>
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/advanced.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
-            <a class="zoombtn"> Advanced Machine Learning: </a>
-            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/GGMNVWSBAGT5" target="_blank">Introduction</a>
+            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/Q47594C54PVS" target="_blank">Advanced Machine Learning - Specialization</a>
             <a class="zoombtn">/</a>
-            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/UPSMQP3K4G6X" target="_blank">Data Competitions</a>
-            <a class="zoombtn">/</a>
-            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/W2EDL45XSXM6" target="_blank">Bayesian Methods</a>
-            <a class="zoombtn">/</a>
-            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/FW3A2YDB4XM9" target="_blank">Reinforcement Learning</a>
-            <a class="zoombtn">/</a>
-            <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/certificate/X6R29MCNZPQX" target="_blank">Computer Vision</a>
             <p>Coursera / HSE, 250 hours</p>
         </li>
     </ul>
