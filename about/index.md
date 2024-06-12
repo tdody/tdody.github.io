@@ -9,7 +9,7 @@ comments: false
 # ABOUT ME
 
 <div class="article_content">
-            <p><img src="https://tdody.github.io/assets/img/Personal.png" style="float:left;width:191px;height:280px;padding-right:20px;">
+            <p><img src="https://tdody.github.io/assets/img/Personal.png" style="float:left;width:280px;height:280px;padding-right:20px;">
 My name is Thibault Dody. I am a data scientist with a strong background in mathematics and engineering.<br>
 
 I am currently a Senior Data Scientist at <a href="https://faraday.ai/" target="_blank">Faraday</a>. I research, develop, and maintain machine learning models to help companies better understand their customers. I also work on developing new features and improving the performance of the existing models. In the recent years, my focus has been on propensity models, bias detection and mitigation, and recommender engines.<br>
