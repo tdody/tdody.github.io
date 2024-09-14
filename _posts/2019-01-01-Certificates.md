@@ -33,7 +33,6 @@ image: "https://tdody.github.io/assets/img/2019-01-01-Certificates/tile.jpeg"
         <li  class="wow fadeInLeft" data-wow-duration="1.5s" style="visibility: visible; animation-duration: 1.5s; animation-name: fadeInLeft;">
             <img src="https://tdody.github.io/assets/img/2019-01-01-Certificates/advanced.jpeg" style="float:left;width:100px;height:100px;padding-right:10px">
             <a class="zoombtn" href="https://www.coursera.org/account/accomplishments/specialization/certificate/Q47594C54PVS" target="_blank">Advanced Machine Learning - Specialization</a>
-            <a class="zoombtn">/</a>
             <p>Coursera / HSE, 250 hours</p>
         </li>
     </ul>
