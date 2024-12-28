@@ -1,0 +1,999 @@
+<footer id="attribution" style="float:right; color:#999; background:#fff;">
+Created by Thibault Dody, 08/28/2019.
+</footer>
+
+<h1 id="spam-detection">Spam Detection</h1>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-09-06-Spam-Detection/Banner.png" style="width:642px;height=288px;" />
+</figure>
+
+<h2 id="table-of-content">Table of Content</h2>
+
+<p><a href="#Section_1"><strong>1. Introduction</strong></a><br />
+<a href="#Section_2"><strong>2. Data Import</strong></a><br />
+    <a href="#Section_21">2.1. Import Libraries</a><br />
+    <a href="#Section_22">2.2. Load Emails and Spams</a><br />
+    <a href="#Section_23">2.3. Handle Attachments and Complex Email Structures</a><br />
+<a href="#Section_3"><strong>3. Model</strong></a><br />
+    <a href="#Section_31">3.1. Data Preparation</a><br />
+    <a href="#Section_32">3.2. Classifier</a><br />
+    <a href="#Section_33">3.3. Model Tuning</a><br />
+<a href="#Section_4"><strong>4. Conclusion</strong></a></p>
+
+<p><a id="Section_1"></a></p>
+<h2 id="1-introduction">1. Introduction</h2>
+
+<p>Whether it is to an individual or to a company, spams are typically sent for commercial purpose but can also lead to phishing attacks or scamming. Spams appear in the early 90s and are now accounting for roughly 65% of the email traffic. Companies like Google or Yahoo have developed filtering systems to prevent spams from being listed in their users’ mailbox. In this Notebook, we will go over the implementation of a SPAM detection algorithm.</p>
+
+<hr />
+<p><a id="Section_2"></a></p>
+<h2 id="2-data-import">2. Data Import</h2>
+
+<p>For this project, we will be using an email dataset containing spams and regular emails. The dataset is hosted by <a href="https://spamassassin.apache.org/">spamassassin</a>. The dataset documentation can be found <a href="http://spamassassin.apache.org/old/publiccorpus/readme.html">here</a>.</p>
+
+<p><a id="Section_21"></a></p>
+<h3 id="21-import-libraries">2.1 Import Libraries</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">os</span>
+<span class="kn">import</span> <span class="n">tarfile</span>
+<span class="kn">import</span> <span class="n">urllib</span>
+<span class="kn">import</span> <span class="n">email</span>
+<span class="kn">import</span> <span class="n">email.policy</span>
+<span class="kn">from</span> <span class="n">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+
+<span class="kn">from</span> <span class="n">bs4</span> <span class="kn">import</span> <span class="n">BeautifulSoup</span>
+<span class="kn">from</span> <span class="n">html</span> <span class="kn">import</span> <span class="n">unescape</span>
+<span class="kn">import</span> <span class="n">re</span>
+<span class="kn">import</span> <span class="n">nltk</span>
+<span class="kn">from</span> <span class="n">urlextract</span> <span class="kn">import</span> <span class="n">URLExtract</span>
+
+<span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+
+<span class="kn">from</span> <span class="n">TAD_tools_v00</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="kn">from</span> <span class="n">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="n">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
+<span class="kn">from</span> <span class="n">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">from</span> <span class="n">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span> <span class="n">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">cross_val_score</span>
+<span class="kn">from</span> <span class="n">sklearn.metrics</span> <span class="kn">import</span> <span class="n">precision_score</span><span class="p">,</span> <span class="n">recall_score</span>
+<span class="kn">from</span> <span class="n">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">GridSearchCV</span>
+</code></pre></div></div>
+
+<p><a id="Section_22"></a></p>
+<h3 id="22-load-emails-and-spams">2.2 Load Emails and Spams</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># file locations
+</span><span class="n">ROOT_SITE</span> <span class="o">=</span> <span class="sh">'</span><span class="s">http://spamassassin.apache.org/old/publiccorpus/</span><span class="sh">'</span>
+<span class="n">HAM_URL</span> <span class="o">=</span> <span class="n">ROOT_SITE</span> <span class="o">+</span> <span class="sh">"</span><span class="s">20030228_easy_ham.tar.bz2</span><span class="sh">"</span>   <span class="c1"># set of regular emails
+</span><span class="n">SPAM_URL</span> <span class="o">=</span> <span class="n">ROOT_SITE</span> <span class="o">+</span> <span class="sh">"</span><span class="s">20030228_spam.tar.bz2</span><span class="sh">"</span>      <span class="c1"># set of spam emails
+</span><span class="n">FOLDER_LOC</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="sh">'</span><span class="s">dataset</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">download_data</span><span class="p">(</span><span class="n">data_path</span><span class="o">=</span><span class="n">FOLDER_LOC</span><span class="p">,</span> <span class="n">spam_url</span><span class="o">=</span><span class="n">SPAM_URL</span><span class="p">,</span> <span class="n">ham_url</span><span class="o">=</span><span class="n">HAM_URL</span><span class="p">):</span>
+    <span class="sh">'''</span><span class="s">
+    Helper function:
+        - create folders
+        - load data from urls
+    </span><span class="sh">'''</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">**LOADING EMAILS AND SPAMS**</span><span class="sh">'</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">   loading data...</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="c1"># create folder if necessary
+</span>    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">isdir</span><span class="p">(</span><span class="n">data_path</span><span class="p">):</span>
+        <span class="n">os</span><span class="p">.</span><span class="nf">mkdir</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
+    
+    <span class="c1"># download spam and ham data
+</span>    <span class="k">for</span> <span class="n">filename</span><span class="p">,</span> <span class="n">url</span> <span class="ow">in</span> <span class="p">[(</span><span class="sh">'</span><span class="s">ham.tar.bz2</span><span class="sh">'</span><span class="p">,</span> <span class="n">ham_url</span><span class="p">),(</span><span class="sh">'</span><span class="s">spam.tar.bz2</span><span class="sh">'</span><span class="p">,</span> <span class="n">spam_url</span><span class="p">)]:</span>
+        <span class="c1"># create full path and check if file has been dowloaded
+</span>        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">isfile</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="c1"># download file
+</span>            <span class="n">urllib</span><span class="p">.</span><span class="n">request</span><span class="p">.</span><span class="nf">urlretrieve</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
+        
+        <span class="c1"># open tar file and extract content
+</span>        <span class="k">with</span> <span class="n">tarfile</span><span class="p">.</span><span class="nf">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">)</span> <span class="k">as</span> <span class="n">tar_bz2_file</span><span class="p">:</span>
+            <span class="n">tar_bz2_file</span><span class="p">.</span><span class="nf">extractall</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">data_path</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">   import completed...</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># download emails (spams and regular) and extract content of tar files
+</span><span class="nf">download_data</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>**LOADING EMAILS AND SPAMS**
+   loading data...
+   import completed...
+</code></pre></div></div>
+
+<p>Now that the data has been loaded, we store the spam and non-spam (ham) file names into two separate lists.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># folder paths
+</span><span class="n">HAM_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">FOLDER_LOC</span><span class="p">,</span> <span class="sh">"</span><span class="s">easy_ham</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">SPAM_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">FOLDER_LOC</span><span class="p">,</span> <span class="sh">"</span><span class="s">spam</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># collect spam and ham files (a cmds appears when the content of the tar file are retrieved, this file is not included in collection)
+</span><span class="n">ham_filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">filename</span> <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="nf">sorted</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="nf">listdir</span><span class="p">(</span><span class="n">HAM_DIR</span><span class="p">))</span> <span class="k">if</span> <span class="n">filename</span><span class="o">!=</span><span class="sh">'</span><span class="s">cmds</span><span class="sh">'</span><span class="p">]</span>
+<span class="n">spam_filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">filename</span> <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="nf">sorted</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="nf">listdir</span><span class="p">(</span><span class="n">SPAM_DIR</span><span class="p">))</span> <span class="k">if</span> <span class="n">filename</span><span class="o">!=</span><span class="sh">'</span><span class="s">cmds</span><span class="sh">'</span><span class="p">]</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># count emails and spams
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Dataset contains {} emails.</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">ham_filenames</span><span class="p">)))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Dataset contains {} spams.</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">spam_filenames</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Dataset contains 2500 emails.
+Dataset contains 500 spams.
+</code></pre></div></div>
+
+<p>We can retrieve the content of an email by simply opening the file as read-only and printing its content.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># inspect a file to understand its structure
+</span><span class="n">sample_filename</span> <span class="o">=</span> <span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">HAM_DIR</span><span class="p">,</span> <span class="n">ham_filenames</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span class="n">sample_file_content</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="n">sample_filename</span><span class="p">,</span> <span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">).</span><span class="nf">read</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">sample_file_content</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>From timc@2ubh.com  Thu Aug 22 13:52:59 2002
+Return-Path: &lt;timc@2ubh.com&gt;
+Delivered-To: zzzz@localhost.netnoteinc.com
+Received: from localhost (localhost [127.0.0.1])
+	by phobos.labs.netnoteinc.com (Postfix) with ESMTP id 0314547C66
+	for &lt;zzzz@localhost&gt;; Thu, 22 Aug 2002 08:52:58 -0400 (EDT)
+Received: from phobos [127.0.0.1]
+	by localhost with IMAP (fetchmail-5.9.0)
+	for zzzz@localhost (single-drop); Thu, 22 Aug 2002 13:52:59 +0100 (IST)
+Received: from n16.grp.scd.yahoo.com (n16.grp.scd.yahoo.com
+    [66.218.66.71]) by dogma.slashnull.org (8.11.6/8.11.6) with SMTP id
+    g7MCrdZ07070 for &lt;zzzz@spamassassin.taint.org&gt;; Thu, 22 Aug 2002 13:53:39 +0100
+X-Egroups-Return: sentto-2242572-52733-1030020820-zzzz=spamassassin.taint.org@returns.groups.yahoo.com
+Received: from [66.218.67.198] by n16.grp.scd.yahoo.com with NNFMP;
+    22 Aug 2002 12:53:40 -0000
+X-Sender: timc@2ubh.com
+X-Apparently-To: zzzzteana@yahoogroups.com
+Received: (EGP: mail-8_1_0_1); 22 Aug 2002 12:53:39 -0000
+Received: (qmail 76099 invoked from network); 22 Aug 2002 12:53:39 -0000
+Received: from unknown (66.218.66.218) by m5.grp.scd.yahoo.com with QMQP;
+    22 Aug 2002 12:53:39 -0000
+Received: from unknown (HELO rhenium.btinternet.com) (194.73.73.93) by
+    mta3.grp.scd.yahoo.com with SMTP; 22 Aug 2002 12:53:39 -0000
+Received: from host217-36-23-185.in-addr.btopenworld.com ([217.36.23.185])
+    by rhenium.btinternet.com with esmtp (Exim 3.22 #8) id 17hrT0-0004gj-00
+    for forteana@yahoogroups.com; Thu, 22 Aug 2002 13:53:38 +0100
+X-Mailer: Microsoft Outlook Express Macintosh Edition - 4.5 (0410)
+To: zzzzteana &lt;zzzzteana@yahoogroups.com&gt;
+X-Priority: 3
+Message-Id: &lt;E17hrT0-0004gj-00@rhenium.btinternet.com&gt;
+From: "Tim Chapman" &lt;timc@2ubh.com&gt;
+X-Yahoo-Profile: tim2ubh
+MIME-Version: 1.0
+Mailing-List: list zzzzteana@yahoogroups.com; contact
+    forteana-owner@yahoogroups.com
+Delivered-To: mailing list zzzzteana@yahoogroups.com
+Precedence: bulk
+List-Unsubscribe: &lt;mailto:zzzzteana-unsubscribe@yahoogroups.com&gt;
+Date: Thu, 22 Aug 2002 13:52:38 +0100
+Subject: [zzzzteana] Moscow bomber
+Reply-To: zzzzteana@yahoogroups.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+
+Man Threatens Explosion In Moscow 
+
+Thursday August 22, 2002 1:40 PM
+MOSCOW (AP) - Security officers on Thursday seized an unidentified man who
+said he was armed with explosives and threatened to blow up his truck in
+front of Russia's Federal Security Services headquarters in Moscow, NTV
+television reported.
+The officers seized an automatic rifle the man was carrying, then the man
+got out of the truck and was taken into custody, NTV said. No other details
+were immediately available.
+The man had demanded talks with high government officials, the Interfax and
+ITAR-Tass news agencies said. Ekho Moskvy radio reported that he wanted to
+talk with Russian President Vladimir Putin.
+Police and security forces rushed to the Security Service building, within
+blocks of the Kremlin, Red Square and the Bolshoi Ballet, and surrounded the
+man, who claimed to have one and a half tons of explosives, the news
+agencies said. Negotiations continued for about one and a half hours outside
+the building, ITAR-Tass and Interfax reported, citing witnesses.
+The man later drove away from the building, under police escort, and drove
+to a street near Moscow's Olympic Penta Hotel, where authorities held
+further negotiations with him, the Moscow police press service said. The
+move appeared to be an attempt by security services to get him to a more
+secure location. 
+
+------------------------ Yahoo! Groups Sponsor ---------------------~--&gt;
+4 DVDs Free +s&amp;p Join Now
+http://us.click.yahoo.com/pt6YBB/NXiEAA/mG3HAA/7gSolB/TM
+---------------------------------------------------------------------~-&gt;
+
+To unsubscribe from this group, send an email to:
+forteana-unsubscribe@egroups.com
+
+ 
+
+Your use of Yahoo! Groups is subject to http://docs.yahoo.com/info/terms/ 
+</code></pre></div></div>
+
+<p><strong>NOTE</strong><br />
+As shown above, there are a few important features that can be identified from the email content:</p>
+<ol>
+  <li>Sender address, date, and time</li>
+  <li>Receiver address</li>
+  <li>Metadata</li>
+  <li>Content data type information</li>
+  <li>Title</li>
+  <li>Content</li>
+</ol>
+
+<p>Fortunately, there are a few libraries which can be used to handle email content. We will use the most common one to extract specific portion of the email which are relevant to its content.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">load_email</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">is_spam</span><span class="p">,</span> <span class="n">data_path</span><span class="o">=</span><span class="n">FOLDER_LOC</span><span class="p">):</span>
+    <span class="sh">'''</span><span class="s">
+    Helper function:
+        - read email file and convert it into email object
+    </span><span class="sh">'''</span>
+    <span class="n">subdirectory</span> <span class="o">=</span> <span class="sh">'</span><span class="s">spam</span><span class="sh">'</span> <span class="k">if</span> <span class="n">is_spam</span> <span class="k">else</span> <span class="sh">'</span><span class="s">easy_ham</span><span class="sh">'</span>
+    
+    <span class="c1"># open file (read binary)
+</span>    <span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span> <span class="n">subdirectory</span><span class="p">,</span> <span class="n">filename</span><span class="p">),</span> <span class="sh">'</span><span class="s">rb</span><span class="sh">'</span><span class="p">)</span> <span class="k">as</span> <span class="n">mail</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">email</span><span class="p">.</span><span class="n">parser</span><span class="p">.</span><span class="nc">BytesParser</span><span class="p">(</span><span class="n">policy</span><span class="o">=</span><span class="n">email</span><span class="p">.</span><span class="n">policy</span><span class="p">.</span><span class="n">default</span><span class="p">).</span><span class="nf">parse</span><span class="p">(</span><span class="n">mail</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load all files
+</span><span class="n">ham_files</span> <span class="o">=</span> <span class="p">[</span><span class="nf">load_email</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">ham_filenames</span><span class="p">]</span>
+<span class="n">spam_files</span> <span class="o">=</span> <span class="p">[</span><span class="nf">load_email</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">spam_filenames</span><span class="p">]</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># verify that the extraction worked
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Dataset contains {} emails.</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">ham_files</span><span class="p">)))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Dataset contains {} spams.</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">spam_files</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Dataset contains 2500 emails.
+Dataset contains 500 spams.
+</code></pre></div></div>
+
+<p>Now that our files have been extracted and turned into mail object, we can easily access specific fields using get functions.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># check sender information
+</span><span class="nf">print</span><span class="p">(</span><span class="n">spam_files</span><span class="p">[</span><span class="mi">10</span><span class="p">].</span><span class="nf">get_unixfrom</span><span class="p">().</span><span class="nf">strip</span><span class="p">())</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">-</span><span class="sh">'</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">()</span>
+<span class="c1"># check file content
+</span><span class="nf">print</span><span class="p">(</span><span class="n">spam_files</span><span class="p">[</span><span class="mi">10</span><span class="p">].</span><span class="nf">get_content</span><span class="p">().</span><span class="nf">strip</span><span class="p">())</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>From hurst@missouri.co.jp  Fri Aug 23 11:03:04 2002
+--------------------------------------------------------------------------------
+
+Cellular Phone Accessories All At Below Wholesale Prices!
+
+http://202.101.163.34:81/sites/merchant/sales/
+
+Hands Free Ear Buds 1.99! 
+Phone Holsters 1.98! 
+Booster Antennas Only $$0.99
+Phone Cases 1.98! 
+Car Chargers 1.98! 
+Face Plates As Low As 0.99! 
+Lithium Ion Batteries As Low As 6.94! 
+
+http://202.101.163.34:81/sites/merchant/sales/
+
+Click Below For Accessories On All NOKIA, MOTOROLA LG, NEXTEL, 
+SAMSUNG, QUALCOMM, ERICSSON, AUDIOVOX PHONES At Below 
+WHOLESALE PRICES!
+
+http://202.101.163.34:81/sites/merchant/sales/
+
+***If You Need Assistance Please Call Us (732) 751-1457***
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To be removed from future mailings please send your remove 
+request to: removemenow68994@btamail.net.cn 
+Thank You and have a super day :)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># check sender information
+</span><span class="nf">print</span><span class="p">(</span><span class="n">ham_files</span><span class="p">[</span><span class="mi">10</span><span class="p">].</span><span class="nf">get_unixfrom</span><span class="p">().</span><span class="nf">strip</span><span class="p">())</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">-</span><span class="sh">'</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">()</span>
+<span class="c1"># check file content
+</span><span class="nf">print</span><span class="p">(</span><span class="n">ham_files</span><span class="p">[</span><span class="mi">10</span><span class="p">].</span><span class="nf">get_content</span><span class="p">().</span><span class="nf">strip</span><span class="p">())</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>From spamassassin-devel-admin@lists.sourceforge.net  Thu Aug 22 15:25:29 2002
+--------------------------------------------------------------------------------
+
+Hello, have you seen and discussed this article and his approach?
+
+Thank you
+
+http://www.paulgraham.com/spam.html
+-- "Hell, there are no rules here-- we're trying to accomplish something."
+-- Thomas Alva Edison
+
+
+
+
+-------------------------------------------------------
+This sf.net email is sponsored by: OSDN - Tired of that same old
+cell phone?  Get a new here for FREE!
+https://www.inphonic.com/r.asp?r=sourceforge1&amp;refcode1=vs3390
+_______________________________________________
+Spamassassin-devel mailing list
+Spamassassin-devel@lists.sourceforge.net
+https://lists.sourceforge.net/lists/listinfo/spamassassin-devel
+</code></pre></div></div>
+
+<p><a id="Section_23"></a></p>
+<h3 id="23-handle-attachments-and-complex-email-structures">2.3 Handle Attachments and Complex Email Structures</h3>
+
+<p>Before processing the email data, the structure of the emails must be inspected for consistency. Indeed, emails can have a variety of structure (no attachements, attachements, attachements with attachements…).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">multipart_ham</span><span class="p">,</span> <span class="n">multipart_spam</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+
+<span class="k">for</span> <span class="n">email</span> <span class="ow">in</span> <span class="n">ham_files</span><span class="p">:</span>
+    <span class="n">multipart_ham</span><span class="o">+=</span><span class="n">email</span><span class="p">.</span><span class="nf">is_multipart</span><span class="p">()</span>
+    
+<span class="k">for</span> <span class="n">email</span> <span class="ow">in</span> <span class="n">spam_files</span><span class="p">:</span>
+    <span class="n">multipart_spam</span><span class="o">+=</span><span class="n">email</span><span class="p">.</span><span class="nf">is_multipart</span><span class="p">()</span>
+    
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">{} hams contain multiparts.</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">multipart_ham</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">{} spams contain multiparts.</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">multipart_spam</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>92 hams contain multiparts.
+98 spams contain multiparts.
+</code></pre></div></div>
+
+<p>The next step consists of inspecting the email structures. The goal is to understand what structures are contained in our dataset and identify if further post-processing is required.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">get_email_structure</span><span class="p">(</span><span class="n">mail</span><span class="p">):</span>
+    <span class="sh">'''</span><span class="s">
+    Recursive function used to retrieve email content
+    </span><span class="sh">'''</span>
+    <span class="c1"># for multipart email, recursion on each part
+</span>    <span class="k">if</span> <span class="n">mail</span><span class="p">.</span><span class="nf">is_multipart</span><span class="p">():</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">mail</span><span class="p">.</span><span class="nf">get_payload</span><span class="p">()</span>
+        <span class="k">return</span> <span class="sh">"</span><span class="s">multipart({})</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="sh">'</span><span class="s">, </span><span class="sh">'</span><span class="p">.</span><span class="nf">join</span><span class="p">([</span><span class="nf">get_email_structure</span><span class="p">(</span><span class="n">sub_mail</span><span class="p">)</span> <span class="k">for</span> <span class="n">sub_mail</span> <span class="ow">in</span> <span class="n">payload</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mail</span><span class="p">.</span><span class="nf">get_content_type</span><span class="p">()</span>
+    
+<span class="k">def</span> <span class="nf">structures_counter</span><span class="p">(</span><span class="n">emails</span><span class="p">):</span>
+    <span class="sh">'''</span><span class="s">
+    Return counter containing key: email structure, value: count
+    </span><span class="sh">'''</span>
+    <span class="c1"># use counter instead of dictionary to handle key initialization
+</span>    <span class="n">structures</span> <span class="o">=</span> <span class="nc">Counter</span><span class="p">()</span>
+    
+    <span class="c1"># loop over email -&gt; get structure -&gt; update counter
+</span>    <span class="k">for</span> <span class="n">email</span> <span class="ow">in</span> <span class="n">emails</span><span class="p">:</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="nf">get_email_structure</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+        <span class="n">structures</span><span class="p">[</span><span class="n">structure</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">structures</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">structures_counter</span><span class="p">(</span><span class="n">ham_files</span><span class="p">).</span><span class="nf">most_common</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[('text/plain', 2408),
+ ('multipart(text/plain, application/pgp-signature)', 66),
+ ('multipart(text/plain, text/html)', 8),
+ ('multipart(text/plain, text/plain)', 4),
+ ('multipart(text/plain)', 3),
+ ('multipart(text/plain, application/octet-stream)', 2),
+ ('multipart(text/plain, text/enriched)', 1),
+ ('multipart(text/plain, application/ms-tnef, text/plain)', 1),
+ ('multipart(multipart(text/plain, text/plain, text/plain), application/pgp-signature)',
+  1),
+ ('multipart(text/plain, video/mng)', 1),
+ ('multipart(text/plain, multipart(text/plain))', 1),
+ ('multipart(text/plain, application/x-pkcs7-signature)', 1),
+ ('multipart(text/plain, multipart(text/plain, text/plain), text/rfc822-headers)',
+  1),
+ ('multipart(text/plain, multipart(text/plain, text/plain), multipart(multipart(text/plain, application/x-pkcs7-signature)))',
+  1),
+ ('multipart(text/plain, application/x-java-applet)', 1)]
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">structures_counter</span><span class="p">(</span><span class="n">spam_files</span><span class="p">).</span><span class="nf">most_common</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[('text/plain', 218),
+ ('text/html', 183),
+ ('multipart(text/plain, text/html)', 45),
+ ('multipart(text/html)', 20),
+ ('multipart(text/plain)', 19),
+ ('multipart(multipart(text/html))', 5),
+ ('multipart(text/plain, image/jpeg)', 3),
+ ('multipart(text/html, application/octet-stream)', 2),
+ ('multipart(text/plain, application/octet-stream)', 1),
+ ('multipart(text/html, text/plain)', 1),
+ ('multipart(multipart(text/html), application/octet-stream, image/jpeg)', 1),
+ ('multipart(multipart(text/plain, text/html), image/gif)', 1),
+ ('multipart/alternative', 1)]
+</code></pre></div></div>
+
+<p><strong>Note</strong>:<br />
+The most common structures are the text/plain and text/html structures. A glance at the structures show that the text/html strcuture is fairly common for spams but not for regular emails.</p>
+
+<hr />
+<p><a id="Section_3"></a></p>
+<h2 id="3-model">3. Model</h2>
+<p><a id="Section_31"></a></p>
+<h3 id="31-data-preparation">3.1. Data Preparation</h3>
+
+<p>Before diving into the dataset, it is important to split it into a training and test sets.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create y array containing binary classification
+</span><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="n">ham_files</span> <span class="o">+</span> <span class="n">spam_files</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nf">len</span><span class="p">(</span><span class="n">ham_files</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nf">len</span><span class="p">(</span><span class="n">spam_files</span><span class="p">))</span>
+
+<span class="c1"># split dataset
+</span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="nf">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Training set size: </span><span class="se">\t</span><span class="s">{}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Test set size: </span><span class="se">\t\t</span><span class="s">{}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X_test</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Target train set size: </span><span class="se">\t</span><span class="s">{}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">y_train</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Target test set size: </span><span class="se">\t</span><span class="s">{}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">y_test</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Training set size: 	(2400,)
+Test set size: 		(600,)
+Target train set size: 	(2400,)
+Target test set size: 	(600,)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># helper function: retrieve text content from html content
+</span>
+<span class="k">def</span> <span class="nf">html_to_plain_text</span><span class="p">(</span><span class="n">htlm</span><span class="p">):</span>
+    <span class="sh">'''</span><span class="s">
+    Return plain text from html content.
+    </span><span class="sh">'''</span>
+    
+    <span class="c1"># replace hyperlink
+</span>    <span class="c1"># flags
+</span>    <span class="c1"># re.I: ignore case
+</span>    <span class="c1"># re.M: multiline
+</span>    <span class="c1"># re.S: make / match newline
+</span>    <span class="n">htlm</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="nf">sub</span><span class="p">(</span><span class="sh">'</span><span class="s">&lt;a\s.*?&gt;</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s"> HYPERLINK </span><span class="sh">'</span><span class="p">,</span> <span class="n">htlm</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="p">.</span><span class="n">M</span> <span class="o">|</span> <span class="n">re</span><span class="p">.</span><span class="n">S</span> <span class="o">|</span> <span class="n">re</span><span class="p">.</span><span class="n">I</span><span class="p">)</span>
+    
+    <span class="n">soup</span> <span class="o">=</span> <span class="nc">BeautifulSoup</span><span class="p">(</span><span class="n">htlm</span><span class="p">,</span> <span class="sh">'</span><span class="s">html.parser</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="c1"># kill all script and style elements
+</span>    <span class="k">for</span> <span class="n">script</span> <span class="ow">in</span> <span class="nf">soup</span><span class="p">([</span><span class="sh">"</span><span class="s">script</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">style</span><span class="sh">"</span><span class="p">]):</span>
+        <span class="n">script</span><span class="p">.</span><span class="nf">extract</span><span class="p">()</span>    <span class="c1"># rip it out
+</span>
+    <span class="c1"># get text
+</span>    <span class="n">text</span> <span class="o">=</span> <span class="n">soup</span><span class="p">.</span><span class="nf">get_text</span><span class="p">()</span>
+    
+    <span class="c1"># break into lines and remove leading and trailing space on each
+</span>    <span class="n">lines</span> <span class="o">=</span> <span class="p">(</span><span class="n">line</span><span class="p">.</span><span class="nf">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">text</span><span class="p">.</span><span class="nf">splitlines</span><span class="p">())</span>
+    
+    <span class="c1"># break multi-headlines into a line each
+</span>    <span class="n">chunks</span> <span class="o">=</span> <span class="p">(</span><span class="n">phrase</span><span class="p">.</span><span class="nf">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span> <span class="k">for</span> <span class="n">phrase</span> <span class="ow">in</span> <span class="n">line</span><span class="p">.</span><span class="nf">split</span><span class="p">(</span><span class="sh">"</span><span class="s">  </span><span class="sh">"</span><span class="p">))</span>
+    
+    <span class="c1"># drop blank lines
+</span>    <span class="n">text</span> <span class="o">=</span> <span class="sh">'</span><span class="se">\n</span><span class="sh">'</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">chunk</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">chunks</span> <span class="k">if</span> <span class="n">chunk</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="nf">unescape</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Let’s try if our script works on some html content. Note that based on our inspection of the email structures, the html strucutre is only used for spams.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># find spam with the text/html structure
+</span><span class="n">html_spam_emails</span> <span class="o">=</span> <span class="p">[</span><span class="n">email</span> <span class="k">for</span> <span class="n">email</span> <span class="ow">in</span> <span class="n">X_train</span><span class="p">[</span><span class="n">y_train</span><span class="o">==</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nf">get_email_structure</span><span class="p">(</span><span class="n">email</span><span class="p">)</span> <span class="o">==</span> <span class="sh">"</span><span class="s">text/html</span><span class="sh">"</span><span class="p">]</span>
+
+<span class="c1"># select a candidate
+</span><span class="n">sample_html_spam</span> <span class="o">=</span> <span class="n">html_spam_emails</span><span class="p">[</span><span class="mi">24</span><span class="p">]</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">sample_html_spam</span><span class="p">.</span><span class="nf">get_content</span><span class="p">().</span><span class="nf">strip</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5000</span><span class="p">],</span><span class="sh">'</span><span class="s">.....</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;html&gt;
+&lt;head&gt;
+&lt;meta http-equiv="Content-Type" content="text/html; 
+charset=iso-8859-1"&gt;
+&lt;/head&gt;
+
+&lt;body bgcolor="#FFFFFF"&gt;
+&lt;table width="58%" height="257"&gt;
+  &lt;tr valign="top"&gt; 
+    &lt;td height="253"&gt; 
+      &lt;p&gt;&lt;font size="3"&gt;&lt;b&gt;Fortunes are literally being made in this new marketplace.&lt;/b&gt;&lt;/font&gt; 
+      &lt;/p&gt;
+      &lt;p&gt;O&lt;font size="3"&gt;&lt;/font&gt;&lt;font size="3"&gt;ver &lt;b&gt;$$9 Billion&lt;/b&gt; in merchandise 
+        was sold on &lt;b&gt;eBay&lt;/b&gt; in 2001 by people just like you - &lt;u&gt;right from 
+        their homes&lt;/u&gt;! &lt;/font&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;font size="3"&gt;Now you too can learn the secrets of &lt;b&gt;successful selling 
+        &lt;/b&gt;on&lt;b&gt; eBay&lt;/b&gt; and &lt;b&gt;make a staggering income&lt;/b&gt; from the comfort 
+        of &lt;b&gt;your own home&lt;/b&gt;. If you are &lt;b&gt;motivated&lt;/b&gt;, capable of having 
+        an&lt;b&gt; open mind&lt;/b&gt;, and can follow simple directions, then &lt;a href="http://www.nationalbizcorp.com/ebooks"&gt;visit 
+        us here&lt;/a&gt;. If server busy - &lt;a href="http://www.generaledu.com/ebooks"&gt;alternate.&lt;/a&gt;&lt;/font&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;font size="2"&gt;You received this offer as a result of an affiliate relationship 
+        with one of our marketing partners. If you are not interested in future 
+        offers &lt;a href="http://www.nationalbizcorp.com/remove.html"&gt;go here.&lt;/a&gt;&lt;/font&gt;&lt;/p&gt;
+      &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp; &lt;/p&gt;
+&lt;p&gt;&amp;nbsp;&lt;/p&gt;
+&lt;p&gt;&amp;nbsp; &lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt; .....
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="nf">html_to_plain_text</span><span class="p">(</span><span class="n">sample_html_spam</span><span class="p">.</span><span class="nf">get_content</span><span class="p">())[:</span><span class="mi">5000</span><span class="p">],</span> <span class="sh">"</span><span class="s">...</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Fortunes are literally being made in this new marketplace.
+Over $$9 Billion in merchandise
+was sold on eBay in 2001 by people just like you - right from
+their homes!
+Now you too can learn the secrets of successful selling
+on eBay and make a staggering income from the comfort
+of your own home. If you are motivated, capable of having
+an open mind, and can follow simple directions, then
+HYPERLINK visit
+us here. If server busy -
+HYPERLINK alternate.
+You received this offer as a result of an affiliate relationship
+with one of our marketing partners. If you are not interested in future
+offers
+HYPERLINK go here. ...
+</code></pre></div></div>
+
+<p>We now have a conversion function for html content, we now need a tool to process any email regardless its content and return a string.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">email_to_text</span><span class="p">(</span><span class="n">email</span><span class="p">):</span>
+    <span class="sh">'''</span><span class="s">
+    Return text/plain email structure or converted html structure.
+    </span><span class="sh">'''</span>
+    
+    <span class="c1"># loop over email content to find text/plain or text/html
+</span>    <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">email</span><span class="p">.</span><span class="nf">walk</span><span class="p">():</span>
+        
+        <span class="c1"># retrieve content type
+</span>        <span class="n">content_type</span> <span class="o">=</span> <span class="n">part</span><span class="p">.</span><span class="nf">get_content_type</span><span class="p">()</span>
+        
+        <span class="c1"># skip content if type is not text/plain or text/html
+</span>        <span class="k">if</span> <span class="ow">not</span> <span class="n">content_type</span> <span class="ow">in</span> <span class="p">(</span><span class="sh">'</span><span class="s">text/plain</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">text/html</span><span class="sh">'</span><span class="p">):</span>
+            <span class="k">continue</span>
+        
+        <span class="c1"># try to extract content (error with encoding)
+</span>        <span class="k">try</span><span class="p">:</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">part</span><span class="p">.</span><span class="nf">get_content</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="nf">str</span><span class="p">(</span><span class="n">part</span><span class="p">.</span><span class="nf">get_payload</span><span class="p">())</span>
+        
+        <span class="c1"># return plain text or converted html
+</span>        <span class="k">if</span> <span class="n">content_type</span> <span class="o">==</span> <span class="sh">'</span><span class="s">text/plain</span><span class="sh">'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">content</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">html</span> <span class="o">=</span> <span class="n">content</span>
+            <span class="k">return</span> <span class="nf">html_to_plain_text</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="nf">email_to_text</span><span class="p">(</span><span class="n">sample_html_spam</span><span class="p">)[:</span><span class="mi">200</span><span class="p">],</span> <span class="sh">"</span><span class="s">...</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Fortunes are literally being made in this new marketplace.
+Over $$9 Billion in merchandise
+was sold on eBay in 2001 by people just like you - right from
+their homes!
+Now you too can learn the secrets o ...
+</code></pre></div></div>
+
+<p>In order to generalize the prediction of our model, we are going to use a stemmer (from nltk). A stemmer replaces a word by its root word. Let’s look at an example.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">stemmer</span> <span class="o">=</span> <span class="n">nltk</span><span class="p">.</span><span class="nc">PorterStemmer</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="p">(</span><span class="sh">'</span><span class="s">association</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">associated</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">associates</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">company</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">corporation</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">incorporated</span><span class="sh">'</span><span class="p">):</span>
+    <span class="nf">print </span><span class="p">(</span><span class="sh">'</span><span class="s">{0}: {1}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">w</span><span class="p">,</span><span class="n">stemmer</span><span class="p">.</span><span class="nf">stem</span><span class="p">(</span><span class="n">w</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>association: associ
+associated: associ
+associates: associ
+company: compani
+corporation: corpor
+incorporated: incorpor
+</code></pre></div></div>
+
+<p>One of the typical transformation when dealing with texts is to remove stop words (most common english words). Thankfully, the NLTK library contains a list of stopwords.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">nltk.corpus</span> <span class="kn">import</span> <span class="n">stopwords</span> 
+<span class="kn">from</span> <span class="n">nltk.tokenize</span> <span class="kn">import</span> <span class="n">word_tokenize</span> 
+<span class="n">nltk</span><span class="p">.</span><span class="nf">download</span><span class="p">(</span><span class="sh">'</span><span class="s">stopwords</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[nltk_data] Downloading package stopwords to
+[nltk_data]     /Users/thibault.dody/nltk_data...
+[nltk_data]   Unzipping corpora/stopwords.zip.
+
+
+
+
+
+True
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">emailToWordCount</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">replace_urls</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">stemming</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">replace_numbers</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">lower_case</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">remove_punctuation</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">remove_stop_words</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">replace_urls</span> <span class="o">=</span> <span class="n">replace_urls</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">stemming</span> <span class="o">=</span> <span class="n">stemming</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">replace_numbers</span> <span class="o">=</span> <span class="n">replace_numbers</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">lower_case</span> <span class="o">=</span> <span class="n">lower_case</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">remove_punctuation</span> <span class="o">=</span> <span class="n">remove_punctuation</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">remove_stop_words</span> <span class="o">=</span> <span class="n">remove_stop_words</span>
+        
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">self</span>
+        
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">X_transformed</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">email</span> <span class="ow">in</span> <span class="n">X</span><span class="p">:</span>
+            
+            <span class="c1"># retrieve text content
+</span>            <span class="n">text</span> <span class="o">=</span> <span class="nf">email_to_text</span><span class="p">(</span><span class="n">email</span><span class="p">)</span> <span class="ow">or</span> <span class="sh">""</span>
+            
+            <span class="c1"># convert url to token
+</span>            <span class="k">if</span> <span class="n">self</span><span class="p">.</span><span class="n">replace_urls</span><span class="p">:</span>
+                <span class="n">extractor</span> <span class="o">=</span> <span class="nc">URLExtract</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="nf">list</span><span class="p">(</span><span class="nf">set</span><span class="p">(</span><span class="n">extractor</span><span class="p">.</span><span class="nf">find_urls</span><span class="p">(</span><span class="n">text</span><span class="p">))):</span>
+                    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">.</span><span class="nf">replace</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="sh">'</span><span class="s"> URL </span><span class="sh">'</span><span class="p">)</span>
+            
+            <span class="c1"># replace float, integers, scientific notation, and percent
+</span>            <span class="k">if</span> <span class="n">self</span><span class="p">.</span><span class="n">replace_numbers</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="nf">sub</span><span class="p">(</span><span class="sa">r</span><span class="sh">'</span><span class="s">([-+]?\d*\.?\d+[eE]?[+-]?\d*[%]?)</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">NUMBER</span><span class="sh">'</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+                
+            <span class="c1"># switch content to lower case
+</span>            <span class="k">if</span> <span class="n">self</span><span class="p">.</span><span class="n">lower_case</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">.</span><span class="nf">lower</span><span class="p">()</span>
+                
+            <span class="c1"># remove punctuation
+</span>            <span class="k">if</span> <span class="n">self</span><span class="p">.</span><span class="n">remove_punctuation</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="p">.</span><span class="nf">sub</span><span class="p">(</span><span class="sa">r</span><span class="sh">'</span><span class="s">\W+</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s"> </span><span class="sh">'</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="p">.</span><span class="n">M</span><span class="p">)</span>
+                
+            <span class="c1"># split email
+</span>            <span class="n">email_spilt</span> <span class="o">=</span> <span class="n">text</span><span class="p">.</span><span class="nf">split</span><span class="p">()</span>
+            
+            <span class="c1"># remove stop words (english)
+</span>            <span class="k">if</span> <span class="n">self</span><span class="p">.</span><span class="n">remove_stop_words</span><span class="p">:</span>
+                <span class="n">stop_words</span> <span class="o">=</span> <span class="nf">set</span><span class="p">(</span><span class="n">stopwords</span><span class="p">.</span><span class="nf">words</span><span class="p">(</span><span class="sh">'</span><span class="s">english</span><span class="sh">'</span><span class="p">))</span> 
+                <span class="n">email_split_clean</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">email_spilt</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">stop_words</span><span class="p">:</span>
+                        <span class="n">email_split_clean</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                <span class="n">email_spilt</span> <span class="o">=</span> <span class="n">email_split_clean</span>
+            
+            <span class="n">word_counts</span> <span class="o">=</span> <span class="nc">Counter</span><span class="p">(</span><span class="n">email_spilt</span><span class="p">)</span>
+            
+            <span class="c1"># replace words using stemming
+</span>            <span class="k">if</span> <span class="n">self</span><span class="p">.</span><span class="n">stemming</span><span class="p">:</span>
+                <span class="n">stemmed_word_count</span> <span class="o">=</span> <span class="nc">Counter</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">word_counts</span><span class="p">.</span><span class="nf">items</span><span class="p">():</span>
+                    <span class="n">stemmed_word</span> <span class="o">=</span> <span class="n">stemmer</span><span class="p">.</span><span class="nf">stem</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+                    <span class="n">stemmed_word_count</span><span class="p">[</span><span class="n">stemmed_word</span><span class="p">]</span> <span class="o">+=</span> <span class="n">count</span>
+                
+                <span class="n">word_counts</span> <span class="o">=</span> <span class="n">stemmed_word_count</span>
+            
+            <span class="n">X_transformed</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">word_counts</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="n">X_transformed</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_sample</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">X_sample_wordcounts</span> <span class="o">=</span> <span class="nf">emailToWordCount</span><span class="p">().</span><span class="nf">fit_transform</span><span class="p">(</span><span class="n">X_sample</span><span class="p">)</span>
+<span class="n">X_sample_wordcounts</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>array([Counter({'chuck': 1, 'murcko': 1, 'wrote': 1, 'stuff': 1, 'yawn': 1, 'r': 1}),
+       Counter({'christian': 3, 'jefferson': 2, 'superstit': 2, 'one': 2, 'half': 2, 'rogueri': 2, 'teach': 2, 'jesu': 2, 'interest': 1, 'quot': 1, 'url': 1, 'thoma': 1, 'examin': 1, 'known': 1, 'word': 1, 'find': 1, 'particular': 1, 'redeem': 1, 'featur': 1, 'alik': 1, 'found': 1, 'fabl': 1, 'mytholog': 1, 'million': 1, 'innoc': 1, 'men': 1, 'women': 1, 'children': 1, 'sinc': 1, 'introduct': 1, 'burnt': 1, 'tortur': 1, 'fine': 1, 'imprison': 1, 'effect': 1, 'coercion': 1, 'make': 1, 'world': 1, 'fool': 1, 'hypocrit': 1, 'support': 1, 'error': 1, 'earth': 1, 'six': 1, 'histor': 1, 'american': 1, 'john': 1, 'e': 1, 'remsburg': 1, 'letter': 1, 'william': 1, 'short': 1, 'becom': 1, 'pervert': 1, 'system': 1, 'ever': 1, 'shone': 1, 'man': 1, 'absurd': 1, 'untruth': 1, 'perpetr': 1, 'upon': 1, 'larg': 1, 'band': 1, 'dupe': 1, 'import': 1, 'led': 1, 'paul': 1, 'first': 1, 'great': 1, 'corrupt': 1})],
+      dtype=object)
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">emailToWordCount</code> is the first segment of the full transformation pipeline. The second stage consists of a vectorizer. The goal is to convert the counter generated for each email into a vector of size \(N\) where \(N\) is the size of our vocabulary. The <code class="language-plaintext highlighter-rouge">fit</code> function will use the content of the train set to define what are the most frequent words.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">scipy.sparse</span> <span class="kn">import</span> <span class="n">csr_matrix</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">WordCountToVector</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">vocabulary_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">cap_size</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">vocabulary_size</span> <span class="o">=</span> <span class="n">vocabulary_size</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">cap_size</span> <span class="o">=</span> <span class="n">cap_size</span>
+        
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">total_count</span> <span class="o">=</span> <span class="nc">Counter</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">word_count</span> <span class="ow">in</span> <span class="n">X</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">word_count</span><span class="p">.</span><span class="nf">items</span><span class="p">():</span>
+                <span class="n">total_count</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">+=</span> <span class="nf">min</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="n">self</span><span class="p">.</span><span class="n">cap_size</span><span class="p">)</span>
+                
+        <span class="n">most_common</span> <span class="o">=</span> <span class="n">total_count</span><span class="p">.</span><span class="nf">most_common</span><span class="p">()[:</span><span class="n">self</span><span class="p">.</span><span class="n">vocabulary_size</span><span class="p">]</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">most_common</span> <span class="o">=</span> <span class="n">most_common</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">vocabulary_</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">most_common</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">self</span>
+        
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="c1"># array mapping: rows, cols, data
+</span>        <span class="c1"># then create array using the mapping
+</span>        <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>   <span class="c1"># one row per email
+</span>        <span class="n">cols</span> <span class="o">=</span> <span class="p">[]</span>   <span class="c1"># one col per word
+</span>        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>   <span class="c1"># word counter
+</span>        <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">word_count</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">word_count</span><span class="p">.</span><span class="nf">items</span><span class="p">():</span>
+                <span class="n">rows</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+                <span class="n">cols</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">vocabulary_</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">word</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>  <span class="c1"># &lt;OOV&gt; is index 0 (key is not found)
+</span>                <span class="n">data</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+        
+        <span class="c1"># csr_matrix((data, ij), [shape=(M, N)]
+</span>        <span class="k">return</span> <span class="nf">csr_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">self</span><span class="p">.</span><span class="n">vocabulary_size</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>A small sample of email is used to test the transformation.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">vocab_transformer</span> <span class="o">=</span> <span class="nc">WordCountToVector</span><span class="p">(</span><span class="n">vocabulary_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">cap_size</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">X_sample_vectors</span> <span class="o">=</span> <span class="n">vocab_transformer</span><span class="p">.</span><span class="nf">fit_transform</span><span class="p">(</span><span class="n">X_sample_wordcounts</span><span class="p">)</span>
+<span class="n">X_sample_vectors</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;2x11 sparse matrix of type '&lt;class 'numpy.int64'&gt;'
+	with 12 stored elements in Compressed Sparse Row format&gt;
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_sample_vectors</span><span class="p">.</span><span class="nf">toarray</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>array([[ 4,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1],
+       [63,  3,  2,  2,  2,  2,  2,  2,  2,  0,  0]], dtype=int64)
+</code></pre></div></div>
+
+<p>As shown above, each email is converted into a sparse vector. The weights of the vector correspond to the number of occurrence of the specific word. The index 0 corresponds to words not contained in the vocabulary.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">vocab_transformer</span><span class="p">.</span><span class="n">vocabulary_</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{'christian': 1,
+ 'jefferson': 2,
+ 'superstit': 3,
+ 'one': 4,
+ 'half': 5,
+ 'rogueri': 6,
+ 'teach': 7,
+ 'jesu': 8,
+ 'chuck': 9,
+ 'murcko': 10}
+</code></pre></div></div>
+
+<p>The mapping between the model vocabulary and the weight index in the \(X\) matrix is stored in a dictionary.</p>
+
+<p><a id="Section_32"></a></p>
+<h3 id="32-classifier">3.2. Classifier</h3>
+
+<p>Let’s start to make predictions with a simple model, a logistic regression. It is common to assess the potential of a model by simply training a model using its default hyperparameters. If the results are promising, time can then be invested to tune the model.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Create full pipeline email -&gt; wordCount -&gt; countVector
+</span><span class="n">preprocess_pipeline</span> <span class="o">=</span> <span class="nc">Pipeline</span><span class="p">([</span>
+    <span class="p">(</span><span class="sh">"</span><span class="s">email_to_wordcount</span><span class="sh">"</span><span class="p">,</span> <span class="nf">emailToWordCount</span><span class="p">()),</span>
+    <span class="p">(</span><span class="sh">"</span><span class="s">wordcount_to_vector</span><span class="sh">"</span><span class="p">,</span> <span class="nc">WordCountToVector</span><span class="p">()),</span>
+<span class="p">])</span>
+
+<span class="c1"># transform the data
+</span><span class="n">X_train_transformed</span> <span class="o">=</span> <span class="n">preprocess_pipeline</span><span class="p">.</span><span class="nf">fit_transform</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create model and perform cross-validation
+</span><span class="n">log_clf</span> <span class="o">=</span> <span class="nc">LogisticRegression</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="sh">"</span><span class="s">liblinear</span><span class="sh">"</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">score</span> <span class="o">=</span> <span class="nf">cross_val_score</span><span class="p">(</span><span class="n">log_clf</span><span class="p">,</span> <span class="n">X_train_transformed</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   3 out of   3 | elapsed:    1.6s finished
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Mean accuracy over {0} folds: {1:.2f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">score</span><span class="p">),</span><span class="n">score</span><span class="p">.</span><span class="nf">mean</span><span class="p">()</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Standard deviation accuracy over {0} folds: {1:.2f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">score</span><span class="p">),</span><span class="n">score</span><span class="p">.</span><span class="nf">std</span><span class="p">()</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Mean accuracy over 3 folds: 98.96%
+Standard deviation accuracy over 3 folds: 0.21%
+</code></pre></div></div>
+
+<p>Based on the above, it appears that the logistic regression performs relatively well. With a mean accuracy of 98.96% on a three-fold cross validation, this simple model yields promising results.</p>
+
+<p><a id="Section_33"></a></p>
+<h3 id="33-model-tuning">3.3. Model Tuning</h3>
+
+<p>Now that we have identified a promising model, we are going to tune its hyperparameters. To do so, let’s create a pipeline containing three stages.</p>
+<ol>
+  <li>Email to Word Count: we will tune the stemming (True or False) and the use of stop words (True or False)</li>
+  <li>Word Count to Vector: we will tune the cap size used to define the most used words</li>
+  <li>Logistic Regression: we will tune the regularization parameter (C) and the penalty type (L1 or L2)</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create full pipeline
+</span><span class="n">full_pipeline</span> <span class="o">=</span> <span class="nc">Pipeline</span><span class="p">([</span>
+    <span class="p">(</span><span class="sh">"</span><span class="s">email_to_wordcount</span><span class="sh">"</span><span class="p">,</span> <span class="nf">emailToWordCount</span><span class="p">()),</span>
+    <span class="p">(</span><span class="sh">"</span><span class="s">wordcount_to_vector</span><span class="sh">"</span><span class="p">,</span> <span class="nc">WordCountToVector</span><span class="p">()),</span>
+    <span class="p">(</span><span class="sh">"</span><span class="s">clf_log_reg</span><span class="sh">"</span><span class="p">,</span><span class="nc">LogisticRegression</span><span class="p">())</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create candidates value for hyperparameters
+</span><span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">"</span><span class="s">email_to_wordcount__stemming</span><span class="sh">"</span><span class="p">:[</span><span class="bp">True</span><span class="p">,</span> <span class="bp">False</span><span class="p">],</span>
+    <span class="sh">"</span><span class="s">email_to_wordcount__remove_stop_words</span><span class="sh">"</span><span class="p">:[</span><span class="bp">True</span><span class="p">,</span> <span class="bp">False</span><span class="p">],</span>
+    <span class="sh">"</span><span class="s">wordcount_to_vector__cap_size</span><span class="sh">"</span><span class="p">:[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+    <span class="sh">"</span><span class="s">clf_log_reg__penalty</span><span class="sh">"</span><span class="p">:[</span><span class="sh">'</span><span class="s">l1</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">l2</span><span class="sh">'</span><span class="p">],</span>
+    <span class="sh">"</span><span class="s">clf_log_reg__C</span><span class="sh">"</span><span class="p">:</span><span class="n">np</span><span class="p">.</span><span class="nf">logspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1"># create grid-search
+</span><span class="n">clf</span> <span class="o">=</span> <span class="nc">GridSearchCV</span><span class="p">(</span><span class="n">full_pipeline</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="c1"># fit grid-search
+</span><span class="n">best_model</span> <span class="o">=</span> <span class="n">clf</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+
+
+Fitting 3 folds for each of 120 candidates, totalling 360 fits
+
+
+[Parallel(n_jobs=4)]: Done  24 tasks      | elapsed: 15.7min
+[Parallel(n_jobs=4)]: Done 120 tasks      | elapsed: 82.0min
+[Parallel(n_jobs=4)]: Done 280 tasks      | elapsed: 172.9min
+[Parallel(n_jobs=4)]: Done 360 out of 360 | elapsed: 210.7min finished
+/anaconda3/lib/python3.6/site-packages/sklearn/linear_model/logistic.py:432: FutureWarning: Default solver will be changed to 'lbfgs' in 0.22. Specify a solver to silence this warning.
+  FutureWarning)
+</code></pre></div></div>
+
+<p>Once the tuning has been performed, we can inspect what model obtained the best accuracy on the test fold and we can also print the best combination of hyperparameters.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Grid Search best accuracy: {:.2f}%</span><span class="se">\n</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">clf</span><span class="p">.</span><span class="n">best_score_</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Grid Search best parameters:</span><span class="sh">'</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">clf</span><span class="p">.</span><span class="n">best_params_</span><span class="p">.</span><span class="nf">items</span><span class="p">():</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">  </span><span class="sh">'</span><span class="p">,</span><span class="n">param</span><span class="p">,</span><span class="sh">'</span><span class="s">=</span><span class="sh">'</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Grid Search best accuracy: 99.21%
+
+Grid Search best parameters:
+   clf_log_reg__C = 1.0
+   clf_log_reg__penalty = l2
+   email_to_wordcount__remove_stop_words = True
+   email_to_wordcount__stemming = True
+   wordcount_to_vector__cap_size = 50
+</code></pre></div></div>
+
+<p>As shown above, our model reached an accuracy of 99.21% on the test fold. This is a slight improve compared to our previous model.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create a model based on the best combination of parameters
+</span><span class="n">best_clf</span> <span class="o">=</span> <span class="nc">LogisticRegression</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="sh">"</span><span class="s">liblinear</span><span class="sh">"</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">C</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">penalty</span><span class="o">=</span><span class="sh">'</span><span class="s">l2</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">best_clf</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span><span class="n">X_train_transformed</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+                   intercept_scaling=1, l1_ratio=None, max_iter=100,
+                   multi_class='warn', n_jobs=None, penalty='l2',
+                   random_state=42, solver='liblinear', tol=0.0001, verbose=0,
+                   warm_start=False)
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_4"></a></p>
+<h2 id="4-conclusion">4. Conclusion</h2>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># make prediction on training set
+</span><span class="n">y_train_pred</span> <span class="o">=</span> <span class="n">best_clf</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">X_train_transformed</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Results on training set</span><span class="se">\n</span><span class="sh">'</span><span class="p">)</span>
+<span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">y_train_pred</span><span class="p">,</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]),</span> <span class="n">title</span><span class="o">=</span><span class="sh">'</span><span class="s">Results on train set</span><span class="sh">'</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Precision: {:.2f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">precision_score</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">y_train_pred</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Recall: {:.2f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">recall_score</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">y_train_pred</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Results on training set
+
+Precision: 100.00%
+Recall: 99.01%
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-09-06-Spam-Detection/output_71_1.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># make prediction on test set
+</span><span class="n">X_test_transformed</span> <span class="o">=</span> <span class="n">preprocess_pipeline</span><span class="p">.</span><span class="nf">transform</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+<span class="n">y_test_pred</span> <span class="o">=</span> <span class="n">best_clf</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">X_test_transformed</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Results on test set</span><span class="se">\n</span><span class="sh">'</span><span class="p">)</span>
+<span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">,</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]),</span> <span class="n">title</span><span class="o">=</span><span class="sh">'</span><span class="s">Results on test set</span><span class="sh">'</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Precision: {:.2f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">precision_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Recall: {:.2f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">recall_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_test_pred</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Results on test set
+
+Precision: 98.89%
+Recall: 93.68%
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-09-06-Spam-Detection/output_72_1.png" />
+</figure>
+
+<p><strong>Note on the metrics</strong>:<br />
+The basic metric for this problem is the accuracy (i.e. the ratio of the number of correct predictions and the number of total predictions). However, for cases such as email spam, one can decide to look at the problem from a different angle. Indeed, should we be concern about the type of errors the model is making? For the case of spam detection, do we care more if an email is incorrectly specified as a spam or if a spam is incorrectly specified as a normal email. It seems that the misclassification of emails as spams can cause the most harm to a user (professionally or personally). Indeed, users tend to never look into their spam folder. So if an important email is classified as spam, our users may be more impacted than having one spam in his folder. One additional aspect of this problem is human performance. Even if a spam is incorrectly filtered and ends up in the user’s mailbox, human are good at identifying text content and therefore detect spam content. In conclusion, for two models leading to the same accuracy, the model with the highest <strong>Precision</strong> (TP / [TP+FP] ) is to be chosen.</p>
+
+<p>One of the benefits of using linear models such as linear regressions or logistic regressions lies in their interpretability. We can now look at the model weights and relate them to the vocabulary words they stand for.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Extract vocabulary from pipeline
+</span><span class="n">word_to_index_vocab</span> <span class="o">=</span> <span class="n">preprocess_pipeline</span><span class="p">.</span><span class="n">named_steps</span><span class="p">[</span><span class="sh">'</span><span class="s">wordcount_to_vector</span><span class="sh">'</span><span class="p">].</span><span class="n">vocabulary_</span>
+<span class="n">index_to_word_vocab</span> <span class="o">=</span> <span class="nf">dict</span><span class="p">(</span><span class="nf">zip</span><span class="p">(</span><span class="n">word_to_index_vocab</span><span class="p">.</span><span class="nf">values</span><span class="p">(),</span> <span class="n">word_to_index_vocab</span><span class="p">.</span><span class="nf">keys</span><span class="p">()))</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sorted_weights</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">argsort</span><span class="p">(</span><span class="n">best_clf</span><span class="p">.</span><span class="n">coef_</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># print the 20 words with the largest weights leading to the 'ham' classification
+</span><span class="k">for</span> <span class="n">loc</span> <span class="ow">in</span> <span class="n">sorted_weights</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">20</span><span class="p">:]:</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">index: {0}, word: {1}, coeff: {2:.3f}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">index_to_word_vocab</span><span class="p">[</span><span class="n">loc</span><span class="p">],</span> <span class="n">best_clf</span><span class="p">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">loc</span><span class="p">]))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>index: 413, word: repli, coeff: 0.413
+index: 3283, word: vip, coeff: 0.430
+index: 411, word: card, coeff: 0.433
+index: 96, word: site, coeff: 0.435
+index: 128, word: offer, coeff: 0.437
+index: 137, word: today, coeff: 0.466
+index: 987, word: adult, coeff: 0.468
+index: 37, word: receiv, coeff: 0.469
+index: 1474, word: freebsd, coeff: 0.483
+index: 474, word: guarante, coeff: 0.514
+index: 12, word: email, coeff: 0.524
+index: 235, word: access, coeff: 0.529
+index: 9687, word: 全球email地址销售网, coeff: 0.530
+index: 18, word: free, coeff: 0.634
+index: 62, word: remov, coeff: 0.717
+index: 4982, word: webmak, coeff: 0.744
+index: 512, word: visit, coeff: 1.006
+index: 55, word: pleas, coeff: 1.067
+index: 40, word: hyperlink, coeff: 1.366
+index: 81, word: click, coeff: 1.801
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># print the 20 words with the largest weights leading to the 'spam' classification
+</span><span class="k">for</span> <span class="n">loc</span> <span class="ow">in</span> <span class="n">sorted_weights</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="mi">20</span><span class="p">]:</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">index: {0}, word: {1}, coeff: {2:.3f}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">index_to_word_vocab</span><span class="p">[</span><span class="n">loc</span><span class="p">],</span> <span class="n">best_clf</span><span class="p">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">loc</span><span class="p">]))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>index: 23, word: date, coeff: -1.836
+index: 22, word: wrote, coeff: -1.253
+index: 139, word: numbernumbertnumb, coeff: -1.149
+index: 4, word: use, coeff: -0.727
+index: 27, word: spamassassin, coeff: -0.653
+index: 210, word: suppli, coeff: -0.614
+index: 34, word: group, coeff: -0.570
+index: 21, word: rpm, coeff: -0.514
+index: 31, word: think, coeff: -0.511
+index: 47, word: said, coeff: -0.509
+index: 124, word: sep, coeff: -0.489
+index: 50, word: say, coeff: -0.489
+index: 2, word: url, coeff: -0.471
+index: 19, word: user, coeff: -0.434
+index: 48, word: could, coeff: -0.422
+index: 46, word: spam, coeff: -0.408
+index: 41, word: _______________________________________________, coeff: -0.408
+index: 106, word: write, coeff: -0.399
+index: 11, word: messag, coeff: -0.394
+index: 35, word: tri, coeff: -0.389
+</code></pre></div></div>
+

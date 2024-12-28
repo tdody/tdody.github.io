@@ -1,0 +1,488 @@
+<footer id="attribution" style="float:right; color:#999; background:#fff;">
+Created by Thibault Dody, 06/13/2020.
+</footer>
+
+<h1 id="art-style-predictions">Art Style Predictions</h1>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/oil-paint-banner.jpg" style="height:288px;" />
+</figure>
+
+<hr />
+<h2 id="goal">Goal</h2>
+
+<p>The available dataset consists of all the paintings and artworks from Wikiart.<br />
+The objective is to build a model able to predict the style of an uploaded image amongst the top 18 most popular styles.</p>
+
+<p>My main objective through this project was to build and deploy a model and an associated API.<br />
+The python code is available in my <a href="https://github.com/tdody/StyleYourArt" target=" _blank ">Github repository</a>.</p>
+
+<p>For the deployment of this model, I have chosen the following:</p>
+<ol>
+  <li>Build a flask app to create a web interface.</li>
+  <li>Host some of the data into a MongoDB database.</li>
+  <li>Deploy a live version using an AWS instance (EC2+S3).</li>
+</ol>
+
+<hr />
+<h2 id="api">API</h2>
+
+<h3 id="deployed-api">Deployed API</h3>
+
+<p>A live version can be accessed <a href="http://52.71.228.3/" target=" _blank "><b>HERE</b></a>.</p>
+
+<h3 id="architecture">Architecture</h3>
+
+<p>The application is built using:</p>
+<ul>
+  <li>Wikiart Web Scraper (<a href="https://github.com/lucasdavid/wikiart/" target="_blank">Repository</a>)</li>
+  <li>MongoDB database containing meta information about every artwork</li>
+  <li>Keras models</li>
+  <li>Flask API</li>
+  <li>The application is stored on Amazon S3</li>
+  <li>The instance of the application is hosted on an Ubuntu 18.04 server (Amazon EC2)</li>
+</ul>
+
+<figure>
+    <p align="center">
+        <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/Architecture.png" alt="schema " style="width:850 " />
+    </p>
+</figure>
+
+<h3 id="interface">Interface</h3>
+
+<p align="center">
+    <iframe width="720px" height="456px" src=" https://www.youtube.com/embed/ZJSRZ6CiEwM "></iframe>
+</p>
+
+<hr />
+<h2 id="data">Data</h2>
+
+<p>Keras can use the directory structure to determine the image classes. To do so, we need to store each image into a folder titled with the painting style.
+A python function <code class="language-plaintext highlighter-rouge">organize_directories</code> in module <code class="language-plaintext highlighter-rouge">models.py</code> is used to move each picture in its corresponding style directory. Note that the images are also resized as <code class="language-plaintext highlighter-rouge">224x224x3</code> and saved as <code class="language-plaintext highlighter-rouge">png</code>. Finally, the distribution is done by splitting the dataset into a train and test sets. The split is done by stratifying the styles and assigning randomly 20% of each styles into the test set.</p>
+
+<figure>
+    <p align="center">
+        <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/output_22_0.png" />
+    </p>
+</figure>
+
+<p>As shown above, the dataset has been divided into the train and test set while maintaining the class proportion. In order to avoid bias over class that are overly represented (Impressionism, Realism…). The metrics of interest will be weighted so that each class is assigned the same importance.</p>
+
+<figure>
+    <p align="center">
+        <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/StyleTrend.png" />
+    </p>
+</figure>
+
+<hr />
+<h2 id="model">Model</h2>
+
+<h3 id="convolutional-neural-network">Convolutional Neural Network</h3>
+<p>In this section, we will train a CNN to predict the species feature. The approach is divided between the following steps:</p>
+
+<ul>
+  <li>Encode the target feature</li>
+  <li>Download the data</li>
+  <li>Split the data between a training and test set</li>
+  <li>Perform data augmentation</li>
+  <li>Determine the cost function to be optimized</li>
+  <li>Data Loader, Validation and Data Augmentation</li>
+</ul>
+
+<p>In order for our model to generalize well on unseen data, a good practice consists of using image transformation to create new unseen examples.
+We need to ensure that our model does not over fit the training data. To do so, we are using a training set and a test set both taken from the original dataset.</p>
+
+<p>Keras contains useful tools to help process image files and feed them in batches to the model. We will be using a generator for both the train and test phases.</p>
+
+<p>First, we must create a new feature to our dataset which contains the full path to each image.
+Then, we can create two generators, the training generator will contains several data augmentation transformation (horizontal and vertical flips, zoom).
+Both the train and test generator will normalize the pixel values.
+Finally, the images will be sent to the model using batches of 16 RGB images reshaped at 224x224.</p>
+
+<h3 id="transfer-learning---first-generation">Transfer Learning - First Generation</h3>
+
+<p>Before we train a model on the entire dataset, we need to investigate the following modeling choices:</p>
+<ol>
+  <li>Architecture</li>
+  <li>Optimization metrics</li>
+  <li>Callbacks</li>
+  <li>Optimizers</li>
+</ol>
+
+<p>During this initial phase, we will test 5 different base models using only 1,000 images per class. The considered base models are:</p>
+<ul>
+  <li>ResNet50</li>
+  <li>Inception V3</li>
+  <li>MobileNet V2</li>
+  <li>Xception</li>
+  <li>VGG16</li>
+</ul>
+
+<p>For each model, we remove the top layer and add a custom model to it. This top model is defined as follows:</p>
+<ul>
+  <li>Conv2D (512, 2, relu)</li>
+  <li>Flatten</li>
+  <li>Dense (2048, relu)</li>
+  <li>Dense (1024, relu)</li>
+  <li>Dense (512, relu)</li>
+  <li>Dense (256, relu)</li>
+  <li>Dense (64, relu)</li>
+  <li>Dense (18, softmax)</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">## load results
+</span><span class="n">results</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="nf">read_csv</span><span class="p">(</span><span class="sh">'</span><span class="s">../data/training_phase1.csv</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">results</span><span class="p">[</span><span class="sh">'</span><span class="s">size_total_MB</span><span class="sh">'</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="sh">'</span><span class="s">size_base_MB</span><span class="sh">'</span><span class="p">]</span> <span class="o">+</span> <span class="n">results</span><span class="p">[</span><span class="sh">'</span><span class="s">size_top_MB</span><span class="sh">'</span><span class="p">]</span>
+<span class="n">results</span>
+</code></pre></div></div>
+
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>model</th>
+      <th>tag</th>
+      <th>val_loss</th>
+      <th>val_accuracy</th>
+      <th>loss</th>
+      <th>accuracy</th>
+      <th>size_base_MB</th>
+      <th>size_top_MB</th>
+      <th>size_total_MB</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1.a.1000</td>
+      <td>ResNet50</td>
+      <td>2.512670</td>
+      <td>0.208333</td>
+      <td>2.610792</td>
+      <td>0.181167</td>
+      <td>94.7</td>
+      <td>131.6</td>
+      <td>226.3</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1.b.1000</td>
+      <td>VGG16</td>
+      <td>1.930195</td>
+      <td>0.373611</td>
+      <td>1.895698</td>
+      <td>0.385111</td>
+      <td>58.9</td>
+      <td>106.5</td>
+      <td>165.4</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1.c.1000</td>
+      <td>InceptionV3</td>
+      <td>1.890462</td>
+      <td>0.391667</td>
+      <td>1.687830</td>
+      <td>0.453889</td>
+      <td>87.9</td>
+      <td>89.7</td>
+      <td>177.6</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1.d.1000</td>
+      <td>MobileNetV2</td>
+      <td>1.745986</td>
+      <td>0.436389</td>
+      <td>1.514181</td>
+      <td>0.501667</td>
+      <td>9.4</td>
+      <td>119.0</td>
+      <td>128.4</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>1.e.1000</td>
+      <td>Xception</td>
+      <td>1.799670</td>
+      <td>0.419722</td>
+      <td>1.740675</td>
+      <td>0.439667</td>
+      <td>83.7</td>
+      <td>131.6</td>
+      <td>215.3</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">results</span><span class="p">[[</span><span class="sh">'</span><span class="s">tag</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">val_accuracy</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">accuracy</span><span class="sh">'</span><span class="p">]].</span><span class="nf">set_index</span><span class="p">(</span><span class="sh">'</span><span class="s">tag</span><span class="sh">'</span><span class="p">).</span><span class="nf">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="sh">'</span><span class="s">barh</span><span class="sh">'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">])</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Model Accuracy</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Accuracy</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">show</span><span class="p">();</span>
+</code></pre></div></div>
+
+<figure>
+<p align="center">
+    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art//output_27_0.png" />
+    </p>
+</figure>
+
+<p>The MobileNet V2 seems to be the best choice, it scores the highest in term of validation accuracy and is also the lightest model (128M). However, this weight is still a bit much to easily deploy on a Heroku instance. We make a new version of the top model by decreasing the size of the top model first dense layer from 2048 neurons to 1024.</p>
+
+<h3 id="transfer-learning---second-generation">Transfer Learning - Second Generation</h3>
+
+<h4 id="architecture---mobilenet-v2">Architecture - MobileNet V2</h4>
+
+<figure>
+<p align="center">
+    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/MobileNetV2.png" style="width:500px;" />
+    </p>
+</figure>
+
+<ul>
+  <li>There are 3 layers for both types of blocks.</li>
+  <li>The first layer is 1×1 convolution with ReLU6.</li>
+  <li>The second layer is the depthwise convolution.</li>
+  <li>The third layer is another 1×1 convolution but without any non-linearity. It is claimed that if ReLU is used again, the deep networks only have the power of a linear classifier on the non-zero volume part of the output domain.</li>
+</ul>
+
+<figure>
+<p align="center">
+    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/MobileNetV2_structure.png" style="width:400px;" />
+    </p>
+</figure>
+
+<figure>
+<p align="center">
+    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/MobileNetV2_overall.png" style="width:350px;" />
+    </p>
+</figure>
+
+<p>where:</p>
+<ul>
+  <li>t: expansion factor</li>
+  <li>c: number of output channels</li>
+  <li>n: repeating number</li>
+  <li>s: stride.</li>
+  <li>3×3 kernels are used for spatial convolution.</li>
+</ul>
+
+<p>This top model is defined as follows:</p>
+<ul>
+  <li>Conv2D (512, 2, relu)</li>
+  <li>Flatten</li>
+  <li>Dense (1024, relu)</li>
+  <li>Dense (1024, relu)</li>
+  <li>Dense (512, relu)</li>
+  <li>Dense (256, relu)</li>
+  <li>Dense (64, relu)</li>
+  <li>Dense (18, softmax)</li>
+</ul>
+
+<h4 id="results">Results</h4>
+
+<p><strong>Training</strong></p>
+
+<p>As shown below the training accuracy plateaus at 56% (benchmark accuracy is 5.6%) while the accuracy on the test set is 43%.</p>
+
+<figure>
+<img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/history.png" style="width:1920px;" />
+</figure>
+
+<p>The F-1 score on the training set is 0.78 (macro average) and 0.78 (weighted average).
+The F-1 score on the training set is 0.43 (macro average) and 0.44 (weighted average).</p>
+
+<table style="border:0px;">
+    <tr style="border:0px;">
+        <td style="border:0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_AUC_ROC.png" style="width:600px;" />
+            </figure>
+        </td>
+        <td style="border:0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_AUC_ROC.png" style="width:600px;" />
+            </figure>
+        </td>
+    </tr>
+</table>
+
+<p><strong>Predictions</strong></p>
+<table style="border-collapse: collapse; border: 0px;">
+    <tr style="border-collapse: collapse; border: 0px;">
+        <td style="border-collapse: collapse; border: 0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_confusion_matrix.png" />
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Train_Set_Normalize_confusion_matrix.png" />
+            </figure>
+        </td>
+    </tr>
+</table>
+
+<table style="border-collapse: collapse; border: 0px;">
+    <tr style="border-collapse: collapse; border: 0px;">
+        <td style="border-collapse: collapse; border: 0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_confusion_matrix.png" />
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/1.d.1000/Test_Set_Normalize_confusion_matrix.png" />
+            </figure>
+        </td>
+    </tr>
+</table>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">## load prediction reports
+</span><span class="n">train_report</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="nf">read_csv</span><span class="p">(</span><span class="sh">"</span><span class="s">../models/1.d.1000/Train_Set_report.csv</span><span class="sh">"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)[[</span><span class="sh">'</span><span class="s">precision</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">recall</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">f1-score</span><span class="sh">'</span><span class="p">]]</span>
+<span class="n">test_report</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="nf">read_csv</span><span class="p">(</span><span class="sh">"</span><span class="s">../models/1.d.1000/Test_Set_report.csv</span><span class="sh">"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)[[</span><span class="sh">'</span><span class="s">precision</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">recall</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">f1-score</span><span class="sh">'</span><span class="p">]]</span>
+
+<span class="n">train_report</span> <span class="o">=</span> <span class="n">train_report</span><span class="p">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">,:]</span>
+<span class="n">test_report</span> <span class="o">=</span> <span class="n">test_report</span><span class="p">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">,:]</span>
+
+<span class="n">report</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="n">train_report</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="n">test_report</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="sh">'</span><span class="s">_train</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">_test</span><span class="sh">'</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">## plot report
+</span><span class="n">sns</span><span class="p">.</span><span class="nf">set</span><span class="p">(</span><span class="n">font_scale</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">)</span>
+<span class="n">sns</span><span class="p">.</span><span class="nf">set_style</span><span class="p">(</span><span class="sh">'</span><span class="s">whitegrid</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">report</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="p">[</span><span class="sh">'</span><span class="s">--</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">:</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">-.</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">--</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">:</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">-.</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">g</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">orange</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">mediumpurple</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">crimson</span><span class="sh">'</span><span class="p">])</span>
+
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xticks</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">18</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xticklabels</span><span class="p">(</span><span class="n">report</span><span class="p">.</span><span class="n">index</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">xticks</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">ha</span> <span class="o">=</span> <span class="sh">'</span><span class="s">right</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="p">.</span><span class="nf">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="sh">'</span><span class="s">upper center</span><span class="sh">'</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">),</span><span class="n">fancybox</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Prediction Report</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">17</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">tight_layout</span><span class="p">();</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/output_38_0.png" />
+</figure>
+
+<h3 id="transfer-learning---third-generation">Transfer Learning - Third Generation</h3>
+
+<p><strong>Training</strong></p>
+
+<p>As shown below the training accuracy plateaus at 57% (benchmark accuracy is 5.6%) while the accuracy on the test set is 45%.</p>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/history.png" style="width:1920px;" />
+</figure>
+
+<p>The F-1 score on the training set is 0.79 (macro average) and 0.71 (weighted average).
+The F-1 score on the training set is 0.45 (macro average) and 0.45 (weighted average).</p>
+
+<table style="border-collapse: collapse; border: 0px;">
+    <tr style="border-collapse: collapse; border: 0px;">
+        <td style="border-collapse: collapse; border: 0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_AUC_ROC.png" style="width:600px;" />
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_AUC_ROC.png" style="width:600px;" />
+            </figure>
+        </td>
+    </tr>
+</table>
+
+<p><strong>Predictions</strong></p>
+<table style="border-collapse: collapse; border: 0px;">
+    <tr style="border-collapse: collapse; border: 0px;">
+        <td style="border-collapse: collapse; border: 0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_confusion_matrix.png" />
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Train_Set_Normalize_confusion_matrix.png" />
+            </figure>
+        </td>
+    </tr>
+</table>
+
+<table style="border-collapse: collapse; border: 0px;">
+    <tr style="border-collapse: collapse; border: 0px;">
+        <td style="border-collapse: collapse; border: 0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_confusion_matrix.png" />
+            </figure>
+        </td>
+        <td style="border-collapse: collapse; border: 0px;">
+            <figure>
+                <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/2_d/Test_Set_Normalize_confusion_matrix.png" />
+            </figure>
+        </td>
+    </tr>
+</table>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">## load prediction reports
+</span><span class="n">train_report</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="nf">read_csv</span><span class="p">(</span><span class="sh">"</span><span class="s">../models/2_d/Train_Set_report.csv</span><span class="sh">"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)[[</span><span class="sh">'</span><span class="s">precision</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">recall</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">f1-score</span><span class="sh">'</span><span class="p">]]</span>
+<span class="n">test_report</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="nf">read_csv</span><span class="p">(</span><span class="sh">"</span><span class="s">../models/2_d/Test_Set_report.csv</span><span class="sh">"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)[[</span><span class="sh">'</span><span class="s">precision</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">recall</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">f1-score</span><span class="sh">'</span><span class="p">]]</span>
+
+<span class="n">train_report</span> <span class="o">=</span> <span class="n">train_report</span><span class="p">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">,:]</span>
+<span class="n">test_report</span> <span class="o">=</span> <span class="n">test_report</span><span class="p">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">,:]</span>
+
+<span class="n">report</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="nf">merge</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="n">train_report</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="n">test_report</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="sh">'</span><span class="s">_train</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">_test</span><span class="sh">'</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">## plot report
+</span><span class="n">sns</span><span class="p">.</span><span class="nf">set</span><span class="p">(</span><span class="n">font_scale</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">)</span>
+<span class="n">sns</span><span class="p">.</span><span class="nf">set_style</span><span class="p">(</span><span class="sh">'</span><span class="s">whitegrid</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">report</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="p">[</span><span class="sh">'</span><span class="s">--</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">:</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">-.</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">--</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">:</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">-.</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">g</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">orange</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">mediumpurple</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">crimson</span><span class="sh">'</span><span class="p">])</span>
+
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xticks</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">18</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xticklabels</span><span class="p">(</span><span class="n">report</span><span class="p">.</span><span class="n">index</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">xticks</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">ha</span> <span class="o">=</span> <span class="sh">'</span><span class="s">right</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="p">.</span><span class="nf">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="sh">'</span><span class="s">upper center</span><span class="sh">'</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">),</span><span class="n">fancybox</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Prediction Report</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">17</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">tight_layout</span><span class="p">();</span>
+</code></pre></div></div>
+
+<figure>
+    <p align="center">
+        <img src="https://tdody.github.io/assets/img/2020-06-13-Style-Your-Art/output_45_0.png" />
+    </p>
+</figure>
+<p><br /></p>
+
+<h2 id="references">References</h2>
+<p>[1] Wikiart,<a href="https://www.wikiart.org/" target="_blank"> https://www.wikiart.org/</a>
+<br />
+[2] Lucas Oliveira David, Wikiart Retrieval,<a href="https://github.com/lucasdavid/wikiart/" target="_blank"> GitHub</a></p>

@@ -1,0 +1,1140 @@
+<footer id="attribution" style="float:right; color:#999; background:#fff;">
+Created by Thibault Dody, 12/08/2019.
+</footer>
+
+<h1 id="image-captioning">Image Captioning</h1>
+
+<h2 id="objectives">Objectives</h2>
+
+<p>The objective of this project it to create a model to generate English captions for given images. Image captioning can be used to index images, generate automatic caption, and perform search on images using text as an input. This notebook presents the implementation of a model combining a convolutional neural network structure and a recurrent network structure.</p>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/encoder_decoder.png" />
+</figure>
+
+<p>Model architecture: CNN encoder and RNN decoder. 
+(https://research.googleblog.com/2014/11/a-picture-is-worth-thousand-coherent.html)</p>
+
+<h2 id="metric">Metric</h2>
+
+<p>For this project, we will evaluate the performances of our model based on the <strong>accuracy</strong> of the word predictions. Our model will be optimized using categorical <strong>cross-entropy</strong>.</p>
+
+<h2 id="module-import">Module Import</h2>
+
+<p>Tensorflow is used to generate our model. This library provides enough flexibility to build a complex model combining various deep learning tools (NN, CNN, RNN…)</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">sys</span>
+<span class="n">sys</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="sh">"</span><span class="s">..</span><span class="sh">"</span><span class="p">)</span>
+<span class="kn">import</span> <span class="n">grading</span>
+<span class="kn">import</span> <span class="n">download_utils</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">tensorflow</span> <span class="k">as</span> <span class="n">tf</span>
+<span class="kn">from</span> <span class="n">tensorflow.contrib</span> <span class="kn">import</span> <span class="n">keras</span>
+<span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="n">L</span> <span class="o">=</span> <span class="n">keras</span><span class="p">.</span><span class="n">layers</span>
+<span class="n">K</span> <span class="o">=</span> <span class="n">keras</span><span class="p">.</span><span class="n">backend</span>
+<span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">import</span> <span class="n">time</span>
+<span class="kn">import</span> <span class="n">zipfile</span>
+<span class="kn">import</span> <span class="n">json</span>
+<span class="kn">from</span> <span class="n">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span> <span class="n">re</span>
+<span class="kn">import</span> <span class="n">random</span>
+<span class="kn">from</span> <span class="n">random</span> <span class="kn">import</span> <span class="n">choice</span>
+<span class="kn">import</span> <span class="n">grading_utils</span>
+<span class="kn">import</span> <span class="n">os</span>
+<span class="kn">from</span> <span class="n">keras_utils</span> <span class="kn">import</span> <span class="n">reset_tf_session</span>
+<span class="kn">import</span> <span class="n">tqdm_utils</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Using TensorFlow back-end.
+</code></pre></div></div>
+
+<h2 id="prepare-the-storage-for-model-checkpoints">Prepare the storage for model checkpoints</h2>
+
+<h2 id="download-data">Download data</h2>
+
+<p>The original data is obtained from the following sources:</p>
+
+<ul>
+  <li>train images http://msvocds.blob.core.windows.net/coco2014/train2014.zip</li>
+  <li>validation images http://msvocds.blob.core.windows.net/coco2014/val2014.zip</li>
+  <li>captions for both train and validation http://msvocds.blob.core.windows.net/annotations-1-0-3/captions_train-val2014.zip
+    <h2 id="data-preparation-and-encoding">Data Preparation and Encoding</h2>
+  </li>
+</ul>
+
+<p>In order to generate caption we use a model made of two blocks:</p>
+
+<ol>
+  <li>CNN: used to extract image features (based on the InceptionV3)</li>
+  <li>RNN: used to generate the captions
+    <h3 id="extract-image-features">Extract image features</h3>
+  </li>
+</ol>
+
+<p>We will use pre-trained InceptionV3 model for CNN encoder (https://research.googleblog.com/2016/03/train-your-own-image-classifier-with.html). The original InceptionV3 model contains a CNN network terminated by a MLP and a softmax function. Since our goal is to feed the image encoding to our RNN, we will not include the MLP layers.</p>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/inceptionv3.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IMG_SIZE</span> <span class="o">=</span> <span class="mi">299</span>
+</code></pre></div></div>
+
+<p>Here is a simple diagram of our image encoding. The pre-processing of the image is intended to transform the image to meet the format requirements of the InceptionV3.</p>
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/ImgEncoding.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># we take the last hidden layer of IncetionV3 as an image embedding
+</span><span class="k">def</span> <span class="nf">get_cnn_encoder</span><span class="p">():</span>
+
+    <span class="c1"># the keras learning phase adjust the behavior of certain functions during train time and test time
+</span>    <span class="n">K</span><span class="p">.</span><span class="nf">set_learning_phase</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="c1"># load InceptionV3 and remove dense layers
+</span>    <span class="n">model</span> <span class="o">=</span> <span class="n">keras</span><span class="p">.</span><span class="n">applications</span><span class="p">.</span><span class="nc">InceptionV3</span><span class="p">(</span><span class="n">include_top</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="c1"># load preprocess_input (this will be used to apply the necessary pre-processing to our images)
+</span>    <span class="n">preprocess_for_model</span> <span class="o">=</span> <span class="n">keras</span><span class="p">.</span><span class="n">applications</span><span class="p">.</span><span class="n">inception_v3</span><span class="p">.</span><span class="n">preprocess_input</span>
+
+    <span class="c1"># define model:
+</span>    <span class="c1">#   input: inputs for InceptionV3
+</span>    <span class="c1">#   output: GlobalAveragePooling2D on InceptionV3 output
+</span>    <span class="c1">#   full model: input -&gt; preprocess InceptionV3 -&gt; AveragePooling
+</span>    <span class="n">model</span> <span class="o">=</span> <span class="n">keras</span><span class="p">.</span><span class="n">models</span><span class="p">.</span><span class="nc">Model</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">inputs</span><span class="p">,</span> <span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">GlobalAveragePooling2D</span><span class="p">()(</span><span class="n">model</span><span class="p">.</span><span class="n">output</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">preprocess_for_model</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load pre-trained model
+</span><span class="nf">reset_tf_session</span><span class="p">()</span>
+<span class="n">encoder</span><span class="p">,</span> <span class="n">preprocess_for_model</span> <span class="o">=</span> <span class="nf">get_cnn_encoder</span><span class="p">()</span>
+
+<span class="c1"># extract train features
+</span><span class="n">train_img_embeds</span><span class="p">,</span> <span class="n">train_img_fns</span> <span class="o">=</span> <span class="n">utils</span><span class="p">.</span><span class="nf">apply_model</span><span class="p">(</span>
+    <span class="sh">"</span><span class="s">train2014.zip</span><span class="sh">"</span><span class="p">,</span> <span class="n">encoder</span><span class="p">,</span> <span class="n">preprocess_for_model</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">IMG_SIZE</span><span class="p">))</span>
+<span class="n">utils</span><span class="p">.</span><span class="nf">save_pickle</span><span class="p">(</span><span class="n">train_img_embeds</span><span class="p">,</span> <span class="sh">"</span><span class="s">train_img_embeds.pickle</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">utils</span><span class="p">.</span><span class="nf">save_pickle</span><span class="p">(</span><span class="n">train_img_fns</span><span class="p">,</span> <span class="sh">"</span><span class="s">train_img_fns.pickle</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># extract validation features
+</span><span class="n">val_img_embeds</span><span class="p">,</span> <span class="n">val_img_fns</span> <span class="o">=</span> <span class="n">utils</span><span class="p">.</span><span class="nf">apply_model</span><span class="p">(</span>
+    <span class="sh">"</span><span class="s">val2014.zip</span><span class="sh">"</span><span class="p">,</span> <span class="n">encoder</span><span class="p">,</span> <span class="n">preprocess_for_model</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">IMG_SIZE</span><span class="p">))</span>
+<span class="n">utils</span><span class="p">.</span><span class="nf">save_pickle</span><span class="p">(</span><span class="n">val_img_embeds</span><span class="p">,</span> <span class="sh">"</span><span class="s">val_img_embeds.pickle</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">utils</span><span class="p">.</span><span class="nf">save_pickle</span><span class="p">(</span><span class="n">val_img_fns</span><span class="p">,</span> <span class="sh">"</span><span class="s">val_img_fns.pickle</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># sample images for learners
+</span><span class="k">def</span> <span class="nf">sample_zip</span><span class="p">(</span><span class="n">fn_in</span><span class="p">,</span> <span class="n">fn_out</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
+    <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">zipfile</span><span class="p">.</span><span class="nc">ZipFile</span><span class="p">(</span><span class="n">fn_in</span><span class="p">)</span> <span class="k">as</span> <span class="n">fin</span><span class="p">,</span> <span class="n">zipfile</span><span class="p">.</span><span class="nc">ZipFile</span><span class="p">(</span><span class="n">fn_out</span><span class="p">,</span> <span class="sh">"</span><span class="s">w</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">fout</span><span class="p">:</span>
+        <span class="n">sampled</span> <span class="o">=</span> <span class="nf">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">rand</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">rate</span><span class="p">,</span> <span class="n">fin</span><span class="p">.</span><span class="n">filelist</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">zInfo</span> <span class="ow">in</span> <span class="n">sampled</span><span class="p">:</span>
+            <span class="n">fout</span><span class="p">.</span><span class="nf">writestr</span><span class="p">(</span><span class="n">zInfo</span><span class="p">,</span> <span class="n">fin</span><span class="p">.</span><span class="nf">read</span><span class="p">(</span><span class="n">zInfo</span><span class="p">))</span>
+            
+<span class="nf">sample_zip</span><span class="p">(</span><span class="sh">"</span><span class="s">train2014.zip</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">train2014_sample.zip</span><span class="sh">"</span><span class="p">)</span>
+<span class="nf">sample_zip</span><span class="p">(</span><span class="sh">"</span><span class="s">val2014.zip</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">val2014_sample.zip</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load prepared embeddings
+</span><span class="n">train_img_embeds</span> <span class="o">=</span> <span class="n">utils</span><span class="p">.</span><span class="nf">read_pickle</span><span class="p">(</span><span class="sh">"</span><span class="s">train_img_embeds.pickle</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">train_img_fns</span> <span class="o">=</span> <span class="n">utils</span><span class="p">.</span><span class="nf">read_pickle</span><span class="p">(</span><span class="sh">"</span><span class="s">train_img_fns.pickle</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">val_img_embeds</span> <span class="o">=</span> <span class="n">utils</span><span class="p">.</span><span class="nf">read_pickle</span><span class="p">(</span><span class="sh">"</span><span class="s">val_img_embeds.pickle</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">val_img_fns</span> <span class="o">=</span> <span class="n">utils</span><span class="p">.</span><span class="nf">read_pickle</span><span class="p">(</span><span class="sh">"</span><span class="s">val_img_fns.pickle</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># check shapes
+</span><span class="nf">print</span><span class="p">(</span><span class="n">train_img_embeds</span><span class="p">.</span><span class="n">shape</span><span class="p">,</span> <span class="nf">len</span><span class="p">(</span><span class="n">train_img_fns</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">val_img_embeds</span><span class="p">.</span><span class="n">shape</span><span class="p">,</span> <span class="nf">len</span><span class="p">(</span><span class="n">val_img_fns</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(82783, 2048) 82783
+(40504, 2048) 40504
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># check prepared samples of images
+</span><span class="nf">list</span><span class="p">(</span><span class="nf">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">.</span><span class="nf">endswith</span><span class="p">(</span><span class="sh">"</span><span class="s">_sample.zip</span><span class="sh">"</span><span class="p">),</span> <span class="n">os</span><span class="p">.</span><span class="nf">listdir</span><span class="p">(</span><span class="sh">"</span><span class="s">.</span><span class="sh">"</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>['val2014_sample.zip', 'train2014_sample.zip']
+</code></pre></div></div>
+
+<h3 id="extract-captions-for-images">Extract captions for images</h3>
+
+<p>Our file structure is set up as follows:</p>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">captions_train-val2014.zip</code> - zip file containing on folder <code class="language-plaintext highlighter-rouge">annotations</code>. This folder contains 2 json files.<br />
+ a. <code class="language-plaintext highlighter-rouge">captions_train2014.json</code><br />
+ b. <code class="language-plaintext highlighter-rouge">captions_val2014.json</code></li>
+  <li><code class="language-plaintext highlighter-rouge">train2014_sample.zip</code> - contain a folder <code class="language-plaintext highlighter-rouge">train2014</code> which itself contains <code class="language-plaintext highlighter-rouge">jpg</code> images.</li>
+  <li><code class="language-plaintext highlighter-rouge">val2014_sample.zip</code> - contain a folder <code class="language-plaintext highlighter-rouge">val2014</code> which itself contains <code class="language-plaintext highlighter-rouge">jpg</code> images.</li>
+  <li><code class="language-plaintext highlighter-rouge">train_img_embeds.pickle</code> - batch outputs of our train set using the image encoder.</li>
+  <li><code class="language-plaintext highlighter-rouge">train_img_fns.pickle</code> - list of strings containing file names of training set pictures.</li>
+  <li><code class="language-plaintext highlighter-rouge">val_img_embeds.pickle</code> - batch outputs of our validation set using the image encoder.</li>
+  <li><code class="language-plaintext highlighter-rouge">val_img_fns.pickle</code> - list of strings containing file names of validation set pictures.</li>
+</ol>
+
+<p>Before we can perform any modeling, the datasets need to be prepared to be feed into our model. The first step consists of extracting file names and captions from our json files. The following function is used to create a list of file names and a corresponding list of lists of captions.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># extract captions from zip
+</span><span class="k">def</span> <span class="nf">get_captions_for_fns</span><span class="p">(</span><span class="n">fns</span><span class="p">,</span> <span class="n">zip_fn</span><span class="p">,</span> <span class="n">zip_json_path</span><span class="p">):</span>
+    <span class="c1"># fns = list of image names (COCO_train2014_000000270070.jpg)
+</span>    <span class="c1"># zip_fn = zip file
+</span>    <span class="c1"># zip_json_path = json file path
+</span>
+    <span class="c1"># create ZipFile object
+</span>    <span class="c1"># contains two json files (train and validation)
+</span>    <span class="c1"># json contains an image ID and a caption
+</span>    <span class="n">zf</span> <span class="o">=</span> <span class="n">zipfile</span><span class="p">.</span><span class="nc">ZipFile</span><span class="p">(</span><span class="n">zip_fn</span><span class="p">)</span>
+
+    <span class="c1"># load either train or validation json
+</span>    <span class="n">j</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="n">zf</span><span class="p">.</span><span class="nf">read</span><span class="p">(</span><span class="n">zip_json_path</span><span class="p">).</span><span class="nf">decode</span><span class="p">(</span><span class="sh">"</span><span class="s">utf8</span><span class="sh">"</span><span class="p">))</span>
+
+    <span class="c1"># comprehension of images tags:
+</span>    <span class="c1"># id for image id                'id': 391895
+</span>    <span class="c1"># file_name for file name        'file_name': 'COCO_val2014_000000522418.jpg'
+</span>    <span class="c1"># dictionary contains
+</span>    <span class="c1">#   key = image_id
+</span>    <span class="c1">#   value = file_name
+</span>    <span class="n">id_to_fn</span> <span class="o">=</span> <span class="p">{</span><span class="n">img</span><span class="p">[</span><span class="sh">"</span><span class="s">id</span><span class="sh">"</span><span class="p">]:</span> <span class="n">img</span><span class="p">[</span><span class="sh">"</span><span class="s">file_name</span><span class="sh">"</span><span class="p">]</span> <span class="k">for</span> <span class="n">img</span> <span class="ow">in</span> <span class="n">j</span><span class="p">[</span><span class="sh">"</span><span class="s">images</span><span class="sh">"</span><span class="p">]}</span>
+
+    <span class="c1"># use default dict to make it easier to compile several caption into one
+</span>    <span class="n">fn_to_caps</span> <span class="o">=</span> <span class="nf">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="c1"># annotations contains
+</span>    <span class="c1"># image_id, id,  caption
+</span>
+    <span class="c1"># dictionary contains
+</span>    <span class="c1">#   key = image_id
+</span>    <span class="c1">#   values = list of captions
+</span>    <span class="k">for</span> <span class="n">cap</span> <span class="ow">in</span> <span class="n">j</span><span class="p">[</span><span class="sh">'</span><span class="s">annotations</span><span class="sh">'</span><span class="p">]:</span>
+        <span class="n">fn_to_caps</span><span class="p">[</span><span class="n">id_to_fn</span><span class="p">[</span><span class="n">cap</span><span class="p">[</span><span class="sh">'</span><span class="s">image_id</span><span class="sh">'</span><span class="p">]]].</span><span class="nf">append</span><span class="p">(</span><span class="n">cap</span><span class="p">[</span><span class="sh">'</span><span class="s">caption</span><span class="sh">'</span><span class="p">])</span>
+
+    <span class="c1"># convert to normal dictionary
+</span>    <span class="n">fn_to_caps</span> <span class="o">=</span> <span class="nf">dict</span><span class="p">(</span><span class="n">fn_to_caps</span><span class="p">)</span>
+
+    <span class="c1"># create a list of lists
+</span>    <span class="c1"># smart ordering
+</span>    <span class="c1"># the captions are retrieved based on the image order from fns
+</span>    <span class="k">return</span> <span class="nf">list</span><span class="p">(</span><span class="nf">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">fn_to_caps</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">fns</span><span class="p">))</span>
+    
+<span class="n">train_captions</span> <span class="o">=</span> <span class="nf">get_captions_for_fns</span><span class="p">(</span><span class="n">train_img_fns</span><span class="p">,</span> <span class="sh">"</span><span class="s">captions_train-val2014.zip</span><span class="sh">"</span><span class="p">,</span> 
+                                      <span class="sh">"</span><span class="s">annotations/captions_train2014.json</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="n">val_captions</span> <span class="o">=</span> <span class="nf">get_captions_for_fns</span><span class="p">(</span><span class="n">val_img_fns</span><span class="p">,</span> <span class="sh">"</span><span class="s">captions_train-val2014.zip</span><span class="sh">"</span><span class="p">,</span> 
+                                      <span class="sh">"</span><span class="s">annotations/captions_val2014.json</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># check shape
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Captions in training set: {}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">train_img_fns</span><span class="p">)))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Captions in validation set: {}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">val_img_fns</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Captions in training set: 82783
+Captions in validation set: 40504
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># look at training example (each has 5 captions)
+</span><span class="k">def</span> <span class="nf">show_trainig_example</span><span class="p">(</span><span class="n">train_img_fns</span><span class="p">,</span> <span class="n">train_captions</span><span class="p">,</span> <span class="n">example_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    You can change example_idx and see different images
+    </span><span class="sh">"""</span>
+
+    <span class="c1"># file containing all the images (training)
+</span>    <span class="n">zf</span> <span class="o">=</span> <span class="n">zipfile</span><span class="p">.</span><span class="nc">ZipFile</span><span class="p">(</span><span class="sh">"</span><span class="s">train2014_sample.zip</span><span class="sh">"</span><span class="p">)</span>
+
+    <span class="c1"># create dictionary: image name : image captions
+</span>    <span class="n">captions_by_file</span> <span class="o">=</span> <span class="nf">dict</span><span class="p">(</span><span class="nf">zip</span><span class="p">(</span><span class="n">train_img_fns</span><span class="p">,</span> <span class="n">train_captions</span><span class="p">))</span>
+
+    <span class="c1"># set of all the image files
+</span>    <span class="n">all_files</span> <span class="o">=</span> <span class="nf">set</span><span class="p">(</span><span class="n">train_img_fns</span><span class="p">)</span>
+
+    <span class="c1"># isolate selected file
+</span>    <span class="n">found_files</span> <span class="o">=</span> <span class="nf">list</span><span class="p">(</span><span class="nf">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">.</span><span class="n">filename</span><span class="p">.</span><span class="nf">rsplit</span><span class="p">(</span><span class="sh">"</span><span class="s">/</span><span class="sh">"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">all_files</span><span class="p">,</span> <span class="n">zf</span><span class="p">.</span><span class="n">filelist</span><span class="p">))</span>
+    <span class="n">example</span> <span class="o">=</span> <span class="n">found_files</span><span class="p">[</span><span class="n">example_idx</span><span class="p">]</span>
+
+    <span class="c1"># decode image corresponding to selected file
+</span>    <span class="n">img</span> <span class="o">=</span> <span class="n">utils</span><span class="p">.</span><span class="nf">decode_image_from_buf</span><span class="p">(</span><span class="n">zf</span><span class="p">.</span><span class="nf">read</span><span class="p">(</span><span class="n">example</span><span class="p">))</span>
+    
+    <span class="c1"># plot image and set captions as title
+</span>    <span class="n">plt</span><span class="p">.</span><span class="nf">imshow</span><span class="p">(</span><span class="n">utils</span><span class="p">.</span><span class="nf">image_center_crop</span><span class="p">(</span><span class="n">img</span><span class="p">))</span>
+    <span class="n">plt</span><span class="p">.</span><span class="nf">title</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="sh">"</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="n">captions_by_file</span><span class="p">[</span><span class="n">example</span><span class="p">.</span><span class="n">filename</span><span class="p">.</span><span class="nf">rsplit</span><span class="p">(</span><span class="sh">"</span><span class="s">/</span><span class="sh">"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]))</span>
+    <span class="n">plt</span><span class="p">.</span><span class="nf">show</span><span class="p">()</span>
+    
+<span class="nf">show_trainig_example</span><span class="p">(</span><span class="n">train_img_fns</span><span class="p">,</span> <span class="n">train_captions</span><span class="p">,</span> <span class="n">example_idx</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_22_0.png" />
+</figure>
+
+<h3 id="prepare-captions-for-training">Prepare captions for training</h3>
+
+<p>Now that we have organized our images, we need to focus on the captions. Our captions are currently stored as list of strings. In order to be used in our RNN network, we will go through the following process:</p>
+<ol>
+  <li>Generate a vocabulary list.</li>
+  <li>Add special encoding tokens:<br />
+ a. padding<br />
+ b. unknown word<br />
+ c. start<br />
+ d. end</li>
+  <li>Use Word2Vec encoding on each caption.</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># special tokens
+</span><span class="n">PAD</span> <span class="o">=</span> <span class="sh">"</span><span class="s">#PAD#</span><span class="sh">"</span>
+<span class="n">UNK</span> <span class="o">=</span> <span class="sh">"</span><span class="s">#UNK#</span><span class="sh">"</span>
+<span class="n">START</span> <span class="o">=</span> <span class="sh">"</span><span class="s">#START#</span><span class="sh">"</span>
+<span class="n">END</span> <span class="o">=</span> <span class="sh">"</span><span class="s">#END#</span><span class="sh">"</span>
+
+<span class="k">def</span> <span class="nf">split_sentence</span><span class="p">(</span><span class="n">sentence</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nf">list</span><span class="p">(</span><span class="nf">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nf">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">re</span><span class="p">.</span><span class="nf">split</span><span class="p">(</span><span class="sh">'</span><span class="s">\W+</span><span class="sh">'</span><span class="p">,</span> <span class="n">sentence</span><span class="p">.</span><span class="nf">lower</span><span class="p">())))</span>
+
+<span class="k">def</span> <span class="nf">generate_vocabulary</span><span class="p">(</span><span class="n">train_captions</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Return {token: index} for all train tokens (words) that occur 5 times or more, 
+        `index` should be from 0 to N, where N is a number of unique tokens in the resulting dictionary.
+    Use `split_sentence` function to split sentence into tokens.
+    Also, add PAD (for batch padding), UNK (unknown, out of vocabulary), 
+        START (start of sentence) and END (end of sentence) tokens into the vocabulary.
+    </span><span class="sh">"""</span>
+
+    <span class="c1"># vocab contains all the words which appear 5 times or more
+</span>    <span class="n">vocab</span> <span class="o">=</span> <span class="nf">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="c1"># create dictionary of "word": occurence_count
+</span>    <span class="k">for</span> <span class="n">captions</span> <span class="ow">in</span> <span class="n">train_captions</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">caption</span> <span class="ow">in</span> <span class="n">captions</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="nf">split_sentence</span><span class="p">(</span><span class="n">caption</span><span class="p">):</span>
+                <span class="n">vocab</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">+=</span><span class="mi">1</span>
+
+    <span class="c1"># filter vocab to only keep word with occurence &gt;=5
+</span>    <span class="n">vocab_filter</span> <span class="o">=</span> <span class="p">{</span><span class="n">word</span><span class="p">:</span><span class="n">occur</span> <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">occur</span> <span class="ow">in</span> <span class="n">vocab</span><span class="p">.</span><span class="nf">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">occur</span><span class="o">&gt;=</span><span class="mi">5</span><span class="p">}</span>
+
+    <span class="c1"># add special tokens
+</span>    <span class="n">vocab_filter</span><span class="p">[</span><span class="n">PAD</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">vocab_filter</span><span class="p">[</span><span class="n">UNK</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">vocab_filter</span><span class="p">[</span><span class="n">START</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">vocab_filter</span><span class="p">[</span><span class="n">END</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="n">token</span><span class="p">:</span> <span class="n">index</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">token</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="nf">sorted</span><span class="p">(</span><span class="n">vocab_filter</span><span class="p">))}</span>
+    
+<span class="k">def</span> <span class="nf">caption_tokens_to_indices</span><span class="p">(</span><span class="n">captions</span><span class="p">,</span> <span class="n">vocab</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    `captions` argument is an array of arrays:
+    [
+        [
+            </span><span class="sh">"</span><span class="s">image1 caption1</span><span class="sh">"</span><span class="s">,
+            </span><span class="sh">"</span><span class="s">image1 caption2</span><span class="sh">"</span><span class="s">,
+</span><span class="gp">            ...</span>
+        <span class="p">],</span>
+        <span class="p">[</span>
+            <span class="sh">"</span><span class="s">image2 caption1</span><span class="sh">"</span><span class="p">,</span>
+            <span class="sh">"</span><span class="s">image2 caption2</span><span class="sh">"</span><span class="p">,</span>
+            <span class="bp">...</span>
+        <span class="p">],</span>
+        <span class="bp">...</span>
+    <span class="p">]</span>
+    <span class="n">Use</span> <span class="sb">`split_sentence`</span> <span class="n">function</span> <span class="n">to</span> <span class="n">split</span> <span class="n">sentence</span> <span class="n">into</span> <span class="n">tokens</span><span class="p">.</span>
+    <span class="n">Replace</span> <span class="nb">all</span> <span class="n">tokens</span> <span class="k">with</span> <span class="n">vocabulary</span> <span class="n">indices</span><span class="p">,</span> <span class="n">use</span> <span class="n">UNK</span> <span class="k">for</span> <span class="n">unknown</span> <span class="nf">words </span><span class="p">(</span><span class="n">out</span> <span class="n">of</span> <span class="n">vocabulary</span><span class="p">).</span>
+    <span class="n">Add</span> <span class="n">START</span> <span class="ow">and</span> <span class="n">END</span> <span class="n">tokens</span> <span class="n">to</span> <span class="n">start</span> <span class="ow">and</span> <span class="n">end</span> <span class="n">of</span> <span class="n">each</span> <span class="n">sentence</span> <span class="n">respectively</span><span class="p">.</span>
+    <span class="n">For</span> <span class="n">the</span> <span class="n">example</span> <span class="n">above</span> <span class="n">you</span> <span class="n">should</span> <span class="n">produce</span> <span class="n">the</span> <span class="n">following</span><span class="p">:</span>
+    <span class="p">[</span>
+        <span class="p">[</span>
+            <span class="p">[</span><span class="n">vocab</span><span class="p">[</span><span class="n">START</span><span class="p">],</span> <span class="n">vocab</span><span class="p">[</span><span class="sh">"</span><span class="s">image1</span><span class="sh">"</span><span class="p">],</span> <span class="n">vocab</span><span class="p">[</span><span class="sh">"</span><span class="s">caption1</span><span class="sh">"</span><span class="p">],</span> <span class="n">vocab</span><span class="p">[</span><span class="n">END</span><span class="p">]],</span>
+            <span class="p">[</span><span class="n">vocab</span><span class="p">[</span><span class="n">START</span><span class="p">],</span> <span class="n">vocab</span><span class="p">[</span><span class="sh">"</span><span class="s">image1</span><span class="sh">"</span><span class="p">],</span> <span class="n">vocab</span><span class="p">[</span><span class="sh">"</span><span class="s">caption2</span><span class="sh">"</span><span class="p">],</span> <span class="n">vocab</span><span class="p">[</span><span class="n">END</span><span class="p">]],</span>
+            <span class="bp">...</span>
+        <span class="p">],</span>
+        <span class="bp">...</span>
+    <span class="p">]</span>
+    <span class="sh">"""</span>
+    <span class="c1"># results
+</span>    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># loop over captions
+</span>    <span class="k">for</span> <span class="n">caption_group</span> <span class="ow">in</span> <span class="n">captions</span><span class="p">:</span>
+
+        <span class="c1"># save results for caption group
+</span>        <span class="n">caption_group_res</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">caption</span> <span class="ow">in</span> <span class="n">caption_group</span><span class="p">:</span>
+            <span class="n">words</span> <span class="o">=</span> <span class="nf">split_sentence</span><span class="p">(</span><span class="n">caption</span><span class="p">)</span>
+            <span class="n">word_index</span> <span class="o">=</span> <span class="nf">list</span><span class="p">(</span><span class="nf">map</span><span class="p">(</span><span class="n">vocab</span><span class="p">.</span><span class="n">get</span><span class="p">,</span> <span class="n">words</span><span class="p">))</span>
+            
+            <span class="c1"># insert START and END TOKEN
+</span>            <span class="n">word_index</span><span class="p">.</span><span class="nf">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">vocab</span><span class="p">[</span><span class="n">START</span><span class="p">])</span>
+            <span class="n">word_index</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">vocab</span><span class="p">[</span><span class="n">END</span><span class="p">])</span>
+
+            <span class="c1"># replace failed matches with UNKNOW
+</span>            <span class="n">word_index</span> <span class="o">=</span> <span class="p">[</span><span class="n">vocab</span><span class="p">[</span><span class="n">UNK</span><span class="p">]</span> <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">word_index</span><span class="p">]</span>
+            
+            <span class="c1"># save results
+</span>            <span class="n">caption_group_res</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">word_index</span><span class="p">)</span>
+
+        <span class="n">res</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">caption_group_res</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">res</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># prepare vocabulary
+</span><span class="n">vocab</span> <span class="o">=</span> <span class="nf">generate_vocabulary</span><span class="p">(</span><span class="n">train_captions</span><span class="p">)</span>
+<span class="n">vocab_inverse</span> <span class="o">=</span> <span class="p">{</span><span class="n">idx</span><span class="p">:</span> <span class="n">w</span> <span class="k">for</span> <span class="n">w</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">vocab</span><span class="p">.</span><span class="nf">items</span><span class="p">()}</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Vocabulary size: {}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">vocab</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Vocabulary size: 8769
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># replace tokens with indices
+</span><span class="n">train_captions_indexed</span> <span class="o">=</span> <span class="nf">caption_tokens_to_indices</span><span class="p">(</span><span class="n">train_captions</span><span class="p">,</span> <span class="n">vocab</span><span class="p">)</span>
+<span class="n">val_captions_indexed</span> <span class="o">=</span> <span class="nf">caption_tokens_to_indices</span><span class="p">(</span><span class="n">val_captions</span><span class="p">,</span> <span class="n">vocab</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Word2Vec example:</span><span class="sh">'</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">   caption:</span><span class="sh">'</span><span class="p">,</span><span class="n">train_captions</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">   tokenized caption:</span><span class="sh">'</span><span class="p">,</span><span class="n">train_captions_indexed</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">decoded</span> <span class="o">=</span> <span class="p">[</span><span class="n">vocab_inverse</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">train_captions_indexed</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">   decoded caption:</span><span class="sh">'</span><span class="p">,</span> <span class="n">decoded</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Word2Vec example:
+   caption: A long dirt road going through a forest.
+   tokenized caption: [2, 54, 4462, 2305, 6328, 3354, 7848, 54, 3107, 0]
+   decoded caption: ['#START#', 'a', 'long', 'dirt', 'road', 'going', 'through', 'a', 'forest', '#END#']
+</code></pre></div></div>
+
+<p>Captions have different length, but we need to batch them, that’s why we will add PAD tokens so that all sentences have an equal length.</p>
+
+<p>Note: Padding tokens are ignore in the loss calculation.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># we will use this during training
+</span><span class="k">def</span> <span class="nf">batch_captions_to_matrix</span><span class="p">(</span><span class="n">batch_captions</span><span class="p">,</span> <span class="n">pad_idx</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    `batch_captions` is an array of arrays:
+    [
+        [vocab[START], ..., vocab[END]],
+        [vocab[START], ..., vocab[END]],
+</span><span class="gp">        ...</span>
+    <span class="p">]</span>
+    <span class="n">Put</span> <span class="n">vocabulary</span> <span class="n">indexed</span> <span class="n">captions</span> <span class="n">into</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span> <span class="n">of</span> <span class="nf">shape </span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">batch_captions</span><span class="p">),</span> <span class="n">columns</span><span class="p">),</span>
+        <span class="n">where</span> <span class="sh">"</span><span class="s">columns</span><span class="sh">"</span> <span class="ow">is</span> <span class="nf">max</span><span class="p">(</span><span class="nf">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">batch_captions</span><span class="p">))</span> <span class="n">when</span> <span class="n">max_len</span> <span class="ow">is</span> <span class="bp">None</span>
+        <span class="ow">and</span> <span class="sh">"</span><span class="s">columns</span><span class="sh">"</span> <span class="o">=</span> <span class="nf">min</span><span class="p">(</span><span class="n">max_len</span><span class="p">,</span> <span class="nf">max</span><span class="p">(</span><span class="nf">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">batch_captions</span><span class="p">)))</span> <span class="n">otherwise</span><span class="p">.</span>
+
+<span class="s">    Add padding with pad_idx where necessary.
+    Input example: [[1, 2, 3], [4, 5]]
+    Output example: np.array([[1, 2, 3], [4, 5, pad_idx]]) if max_len=None
+    Output example: np.array([[1, 2], [4, 5]]) if max_len=2
+    Output example: np.array([[1, 2, 3], [4, 5, pad_idx]]) if max_len=100
+    Try to use numpy, we need this function to be fast!
+    </span><span class="sh">"""</span>
+    <span class="c1"># find max len
+</span>    <span class="k">if</span> <span class="n">max_len</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">max_len</span> <span class="o">=</span> <span class="nf">max</span><span class="p">(</span><span class="nf">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">batch_captions</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">max_len</span> <span class="o">=</span> <span class="nf">min</span><span class="p">(</span><span class="n">max_len</span><span class="p">,</span> <span class="nf">max</span><span class="p">(</span><span class="nf">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">batch_captions</span><span class="p">)))</span>
+
+    <span class="c1"># create result matrix
+</span>    <span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">full</span><span class="p">((</span><span class="nf">len</span><span class="p">(</span><span class="n">batch_captions</span><span class="p">),</span> <span class="n">max_len</span><span class="p">),</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">pad_idx</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    
+    <span class="c1"># fill matrix
+</span>    <span class="k">for</span> <span class="n">caption_idx</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">batch_captions</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">word_idx</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">batch_captions</span><span class="p">[</span><span class="n">caption_idx</span><span class="p">])):</span>
+
+            <span class="c1"># fill if word_idx &lt;= max_len - 1
+</span>            <span class="k">if</span> <span class="n">word_idx</span> <span class="o">&gt;=</span> <span class="n">max_len</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">matrix</span><span class="p">[</span><span class="n">caption_idx</span><span class="p">,</span> <span class="n">word_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">batch_captions</span><span class="p">[</span><span class="n">caption_idx</span><span class="p">][</span><span class="n">word_idx</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">matrix</span>
+</code></pre></div></div>
+
+<h1 id="model">Model</h1>
+
+<h2 id="define-architecture">Define architecture</h2>
+
+<p>The image encoding produced by the CNN is used as an input to our RNN model in addition to the captions. In other words, to predict the k-th word of a caption, we use the image encoding and the (k-1) first words as an input.</p>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/encoder_decoder_explained.png" />
+</figure>
+
+<p>In order to start building our architecture, we need to ensure shape compatibility at the junction of our two modules (CNN and RNN).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">output shape of the image encoder:, (?,{})</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">train_img_embeds</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>output shape of the image encoder:, (?,2048)
+</code></pre></div></div>
+
+<p>As shown above, the image encoder currently outputs a vector of size 2048 for each image. This vector size is too large for typical models, we will therefore insert a bottleneck block between the CNN and the RNN.</p>
+
+<p>In addition, word embedding is also used to convey word meaning into our LSTM model.</p>
+
+<p>Therefore, the following steps must be taken:</p>
+
+<p><strong>Images:</strong></p>
+<ol>
+  <li>Pass encoded image into bottleneck.</li>
+  <li>Pass bottleneck output into a dense layer so output is expanded to match LSTM size.</li>
+  <li>Feed bottleneck output into an LSTM cell.</li>
+</ol>
+
+<p><strong>Captions:</strong></p>
+<ol>
+  <li>Pass Word2Vec structure into a word embedding layer.</li>
+  <li>Feed embedding into LSTM cell.</li>
+  <li>Pass LSTM output into a Dense layer</li>
+  <li>Predict next word of caption.</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IMG_EMBED_SIZE</span> <span class="o">=</span> <span class="n">train_img_embeds</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>      <span class="c1"># training image size (2048) stored in [None, IMG_EMBED_SIZE] array (images after passing through network minus last layer)
+</span><span class="n">IMG_EMBED_BOTTLENECK</span> <span class="o">=</span> <span class="mi">120</span>                      <span class="c1"># dimension used for the bottleneck reduction from the embedded images 2048 -&gt; 120
+</span><span class="n">WORD_EMBED_SIZE</span> <span class="o">=</span> <span class="mi">100</span>                           <span class="c1"># word embedding after LSTM
+</span><span class="n">LSTM_UNITS</span> <span class="o">=</span> <span class="mi">300</span>                                <span class="c1"># numer of units for LSTM layer
+</span><span class="n">LOGIT_BOTTLENECK</span> <span class="o">=</span> <span class="mi">120</span>                          <span class="c1"># bottleneck output of LSTM
+</span><span class="n">pad_idx</span> <span class="o">=</span> <span class="n">vocab</span><span class="p">[</span><span class="n">PAD</span><span class="p">]</span>                            <span class="c1"># index of #PAD# tag
+</span>
+<span class="c1"># print info
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">IMG_EMBED_SIZE </span><span class="se">\t\t</span><span class="sh">"</span><span class="p">,</span> <span class="n">IMG_EMBED_SIZE</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">IMG_EMBED_BOTTLENECK</span><span class="se">\t</span><span class="sh">"</span><span class="p">,</span> <span class="n">IMG_EMBED_BOTTLENECK</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">WORD_EMBED_SIZE</span><span class="se">\t\t</span><span class="sh">"</span><span class="p">,</span> <span class="n">WORD_EMBED_SIZE</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">LSTM_UNITS</span><span class="se">\t\t</span><span class="sh">"</span><span class="p">,</span> <span class="n">LSTM_UNITS</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">LOGIT_BOTTLENECK</span><span class="se">\t</span><span class="sh">"</span><span class="p">,</span> <span class="n">LOGIT_BOTTLENECK</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>IMG_EMBED_SIZE 		 2048
+IMG_EMBED_BOTTLENECK	 120
+WORD_EMBED_SIZE		 100
+LSTM_UNITS		 300
+LOGIT_BOTTLENECK	 120
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># remember to reset your graph if you want to start building it from scratch!
+</span><span class="n">s</span> <span class="o">=</span> <span class="nf">reset_tf_session</span><span class="p">()</span>
+<span class="n">tf</span><span class="p">.</span><span class="nf">set_random_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/Model.PNG" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">decoder</span><span class="p">:</span>
+
+    <span class="c1">############
+</span>    <span class="c1"># IMAGES
+</span>    <span class="c1">############
+</span>
+    <span class="c1"># encoding -&gt; bottleneck -&gt; reshape for RNN
+</span>
+    <span class="c1"># start with encoded images
+</span>    <span class="c1"># [batch_size, IMG_EMBED_SIZE] of CNN image features
+</span>    <span class="n">img_embeds</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nf">placeholder</span><span class="p">(</span><span class="sh">'</span><span class="s">float32</span><span class="sh">'</span><span class="p">,</span> <span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="n">IMG_EMBED_SIZE</span><span class="p">],</span><span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">img_embeds</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="c1"># we use bottleneck here to reduce the number of parameters
+</span>    <span class="c1"># image embedding -&gt; bottleneck
+</span>    <span class="n">img_embed_to_bottleneck</span> <span class="o">=</span> <span class="n">L</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="n">IMG_EMBED_BOTTLENECK</span><span class="p">,</span> 
+                                      <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">IMG_EMBED_SIZE</span><span class="p">),</span> 
+                                      <span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">elu</span><span class="sh">'</span><span class="p">,</span>
+                                      <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">img_embed_to_bottleneck</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="c1"># image embedding bottleneck -&gt; lstm initial state
+</span>    <span class="n">img_embed_bottleneck_to_h0</span> <span class="o">=</span> <span class="n">L</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="n">LSTM_UNITS</span><span class="p">,</span>
+                                         <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">IMG_EMBED_BOTTLENECK</span><span class="p">),</span>
+                                         <span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">elu</span><span class="sh">'</span><span class="p">,</span>
+                                         <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">img_embed_bottleneck_to_h0</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="c1">############
+</span>    <span class="c1"># WORDS
+</span>    <span class="c1">############
+</span>
+    <span class="c1"># [batch_size, time steps] of word ids
+</span>    <span class="n">sentences</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nf">placeholder</span><span class="p">(</span><span class="sh">'</span><span class="s">int32</span><span class="sh">'</span><span class="p">,</span> <span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">sentences</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="c1"># word -&gt; embedding
+</span>    <span class="c1"># size: len(vocab) x WORD_EMBED_SIZE
+</span>    <span class="n">word_embed</span> <span class="o">=</span> <span class="n">L</span><span class="p">.</span><span class="nc">Embedding</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">vocab</span><span class="p">),</span> <span class="n">WORD_EMBED_SIZE</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">word_embed</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="c1"># lstm cell (from tensorflow)
+</span>    <span class="n">lstm</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">rnn_cell</span><span class="p">.</span><span class="nc">LSTMCell</span><span class="p">(</span><span class="n">LSTM_UNITS</span><span class="p">)</span>
+    
+    <span class="c1"># we use bottleneck here to reduce model complexity
+</span>    <span class="c1"># lstm output -&gt; logits bottleneck
+</span>    <span class="n">token_logits_bottleneck</span> <span class="o">=</span> <span class="n">L</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="n">LOGIT_BOTTLENECK</span><span class="p">,</span> 
+                                      <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">LSTM_UNITS</span><span class="p">),</span>
+                                      <span class="n">activation</span><span class="o">=</span><span class="sh">"</span><span class="s">elu</span><span class="sh">"</span><span class="p">,</span>
+                                      <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">token_logits_bottleneck</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="c1"># logits bottleneck -&gt; logits for next token prediction
+</span>    <span class="n">token_logits</span> <span class="o">=</span> <span class="n">L</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">vocab</span><span class="p">),</span>
+                           <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="n">LOGIT_BOTTLENECK</span><span class="p">),</span>
+                           <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">token_logits</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="c1"># initial lstm cell state of shape (None, LSTM_UNITS),
+</span>    <span class="c1"># we need to condition it on `img_embeds` placeholder.
+</span>    <span class="n">c0</span> <span class="o">=</span> <span class="n">h0</span> <span class="o">=</span> <span class="nf">img_embed_bottleneck_to_h0</span><span class="p">(</span><span class="nf">img_embed_to_bottleneck</span><span class="p">(</span><span class="n">img_embeds</span><span class="p">))</span>
+    <span class="c1"># c0 = hidden state 0
+</span>    <span class="c1"># h0 = output 0
+</span>
+    <span class="c1"># embed all tokens but the last for lstm input,
+</span>    <span class="c1"># remember that L.Embedding is callable,
+</span>    <span class="c1"># use `sentences` placeholder as input.
+</span>    <span class="n">word_embeds</span> <span class="o">=</span> <span class="nf">word_embed</span><span class="p">(</span><span class="n">sentences</span><span class="p">[:,:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    
+    <span class="c1"># during training we use ground truth tokens `word_embeds` as context for next token prediction.
+</span>    <span class="c1"># that means that we know all the inputs for our lstm and can get 
+</span>    <span class="c1"># all the hidden states with one tensorflow operation (tf.nn.dynamic_rnn).
+</span>    <span class="c1"># `hidden_states` has a shape of [batch_size, time steps, LSTM_UNITS].
+</span>    <span class="c1"># the final output is not used.
+</span>    <span class="n">hidden_states</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="nf">dynamic_rnn</span><span class="p">(</span><span class="n">cell</span><span class="o">=</span><span class="n">lstm</span><span class="p">,</span> <span class="n">inputs</span><span class="o">=</span><span class="n">word_embeds</span><span class="p">,</span>
+                                         <span class="n">initial_state</span><span class="o">=</span><span class="n">tf</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">rnn_cell</span><span class="p">.</span><span class="nc">LSTMStateTuple</span><span class="p">(</span><span class="n">c0</span><span class="p">,</span> <span class="n">h0</span><span class="p">))</span>
+    <span class="c1"># tf.nn.rnn_cell.LSTMStateTuple takes two input:
+</span>    <span class="c1"># Tuple used by LSTM Cells for `state_size`, `zero_state`, and output state.
+</span>
+    <span class="c1"># now we need to calculate token logits for all the hidden states
+</span>    
+    <span class="c1"># first, we reshape `hidden_states` to [-1, LSTM_UNITS]
+</span>    <span class="c1"># current hidden stats are: [batch_size, time steps, LSTM_UNITS]
+</span>    <span class="n">flat_hidden_states</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">hidden_states</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">LSTM_UNITS</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">flat_hidden_states</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="c1"># then, we calculate logits for next tokens using `token_logits_bottleneck` and `token_logits` layers
+</span>    <span class="c1"># Step 1: take flat_hidden_states and pass them into the token_logits_bottleneck
+</span>    <span class="c1"># Step 2: take the output and pass into token_logits
+</span>    <span class="n">flat_token_logits</span> <span class="o">=</span> <span class="nf">token_logits</span><span class="p">(</span><span class="nf">token_logits_bottleneck</span><span class="p">(</span><span class="n">flat_hidden_states</span><span class="p">))</span>
+    
+    <span class="c1"># then, we flatten the ground truth token ids.
+</span>    <span class="c1"># remember, that we predict next tokens for each time step,
+</span>    <span class="c1"># use `sentences` placeholder.
+</span>    <span class="n">flat_ground_truth</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">sentences</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">flat_ground_truth</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="c1"># we need to know where we have real tokens (not padding) in `flat_ground_truth`,
+</span>    <span class="c1"># we don't want to propagate the loss for padded output tokens,
+</span>    <span class="c1"># fill `flat_loss_mask` with 1.0 for real tokens (not pad_idx) and 0.0 otherwise.
+</span>    <span class="n">flat_loss_mask</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nf">cast</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="nf">not_equal</span><span class="p">(</span><span class="n">flat_ground_truth</span><span class="p">,</span> <span class="n">pad_idx</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tf</span><span class="p">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">flat_loss_mask</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="c1"># compute cross-entropy between `flat_ground_truth` and `flat_token_logits` predicted by lstm
+</span>    <span class="n">xent</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="nf">sparse_softmax_cross_entropy_with_logits</span><span class="p">(</span>
+        <span class="n">labels</span><span class="o">=</span><span class="n">flat_ground_truth</span><span class="p">,</span> 
+        <span class="n">logits</span><span class="o">=</span><span class="n">flat_token_logits</span>
+    <span class="p">)</span>
+
+    <span class="c1"># compute average `xent` over tokens with nonzero `flat_loss_mask`.
+</span>    <span class="c1"># we don't want to account misclassification of PAD tokens, because that doesn't make sense,
+</span>    <span class="c1"># we have PAD tokens for batching purposes only!
+</span>    <span class="n">loss</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nf">reduce_sum</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="nf">multiply</span><span class="p">(</span><span class="n">xent</span><span class="p">,</span> <span class="n">flat_loss_mask</span><span class="p">))</span><span class="o">/</span><span class="n">tf</span><span class="p">.</span><span class="nf">reduce_sum</span><span class="p">(</span><span class="n">flat_loss_mask</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># define optimizer operation to minimize the loss
+</span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">train</span><span class="p">.</span><span class="nc">AdamOptimizer</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span>
+<span class="n">train_step</span> <span class="o">=</span> <span class="n">optimizer</span><span class="p">.</span><span class="nf">minimize</span><span class="p">(</span><span class="n">decoder</span><span class="p">.</span><span class="n">loss</span><span class="p">)</span>
+
+<span class="c1"># will be used to save/load network weights.
+# you need to reset your default graph and define it in the same way to be able to load the saved weights!
+</span><span class="n">saver</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">train</span><span class="p">.</span><span class="nc">Saver</span><span class="p">()</span>
+
+<span class="c1"># initialize all variables
+</span><span class="n">s</span><span class="p">.</span><span class="nf">run</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="nf">global_variables_initializer</span><span class="p">())</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">writer</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">summary</span><span class="p">.</span><span class="nc">FileWriter</span><span class="p">(</span><span class="sh">'</span><span class="s">./logs</span><span class="sh">'</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">graph</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/TensorBoard.PNG" />
+</figure>
+
+<h2 id="training-loop">Training loop</h2>
+
+<p>Before we can train the model, we need to generate our training and validation batches. Each batch contains a set of embedded images (from the InceptionV3 encoder) and indexed captions.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train_captions_indexed</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="n">train_captions_indexed</span><span class="p">)</span>
+<span class="n">val_captions_indexed</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="n">val_captions_indexed</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># generate batch via random sampling of images and captions,
+# we use `max_len` parameter to control the length of the captions (truncating long captions)
+</span><span class="k">def</span> <span class="nf">generate_batch</span><span class="p">(</span><span class="n">images_embeddings</span><span class="p">,</span> <span class="n">indexed_captions</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    `images_embeddings` is a np.array of shape [number of images, IMG_EMBED_SIZE].
+    `indexed_captions` holds 5 vocabulary indexed captions for each image:
+    [
+        [
+            [vocab[START], vocab[</span><span class="sh">"</span><span class="s">image1</span><span class="sh">"</span><span class="s">], vocab[</span><span class="sh">"</span><span class="s">caption1</span><span class="sh">"</span><span class="s">], vocab[END]],
+            [vocab[START], vocab[</span><span class="sh">"</span><span class="s">image1</span><span class="sh">"</span><span class="s">], vocab[</span><span class="sh">"</span><span class="s">caption2</span><span class="sh">"</span><span class="s">], vocab[END]],
+</span><span class="gp">            ...</span>
+        <span class="p">],</span>
+        <span class="bp">...</span>
+    <span class="p">]</span>
+    <span class="n">Generate</span> <span class="n">a</span> <span class="n">random</span> <span class="n">batch</span> <span class="n">of</span> <span class="n">size</span> <span class="sb">`batch_size`</span><span class="p">.</span>
+    <span class="n">Take</span> <span class="n">random</span> <span class="n">images</span> <span class="ow">and</span> <span class="n">choose</span> <span class="n">one</span> <span class="n">random</span> <span class="n">caption</span> <span class="k">for</span> <span class="n">each</span> <span class="n">image</span><span class="p">.</span>
+    <span class="n">Remember</span> <span class="n">to</span> <span class="n">use</span> <span class="sb">`batch_captions_to_matrix`</span> <span class="k">for</span> <span class="n">padding</span> <span class="ow">and</span> <span class="n">respect</span> <span class="sb">`max_len`</span> <span class="n">parameter</span><span class="p">.</span>
+    <span class="n">Return</span> <span class="n">feed</span> <span class="nb">dict</span> <span class="p">{</span><span class="n">decoder</span><span class="p">.</span><span class="n">img_embeds</span><span class="p">:</span> <span class="p">...,</span> <span class="n">decoder</span><span class="p">.</span><span class="n">sentences</span><span class="p">:</span> <span class="p">...}.</span>
+    <span class="sh">"""</span>
+    <span class="n">batch_image_embeddings</span> <span class="o">=</span> <span class="nf">list</span><span class="p">()</span>
+    <span class="n">batch_captions_matrix</span> <span class="o">=</span> <span class="nf">list</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+
+        <span class="c1"># select a random image
+</span>        <span class="n">img_idx</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">choice</span><span class="p">(</span><span class="n">images_embeddings</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">batch_image_embeddings</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">images_embeddings</span><span class="p">[</span><span class="n">img_idx</span><span class="p">])</span>
+
+        <span class="c1"># select a random caption amongst the 5 for each images
+</span>        <span class="n">caption_idx</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">choice</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">batch_captions_matrix</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">indexed_captions</span><span class="p">[</span><span class="n">img_idx</span><span class="p">][</span><span class="n">caption_idx</span><span class="p">])</span>
+
+    <span class="c1"># pad the batch if necessary
+</span>    <span class="n">batch_captions_matrix</span> <span class="o">=</span> <span class="nf">batch_captions_to_matrix</span><span class="p">(</span><span class="n">batch_captions_matrix</span><span class="p">,</span> <span class="n">pad_idx</span><span class="p">,</span> <span class="n">max_len</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="p">{</span><span class="n">decoder</span><span class="p">.</span><span class="n">img_embeds</span><span class="p">:</span> <span class="n">batch_image_embeddings</span><span class="p">,</span> 
+            <span class="n">decoder</span><span class="p">.</span><span class="n">sentences</span><span class="p">:</span> <span class="n">batch_captions_matrix</span><span class="p">}</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">batch_size</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">n_epochs</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">n_batches_per_epoch</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">n_validation_batches</span> <span class="o">=</span> <span class="mi">100</span>  <span class="c1"># how many batches are used for validation after each epoch
+</span></code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># you can load trained weights here
+# uncomment the next line if you need to load weights
+# saver.restore(s, get_checkpoint_path(epoch=4))
+</span></code></pre></div></div>
+
+<p>Look at the training and validation loss, they should be decreasing!</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># actual training loop
+</span><span class="n">MAX_LEN</span> <span class="o">=</span> <span class="mi">20</span>  <span class="c1"># truncate long captions to speed up training
+</span>
+<span class="c1"># to make training reproducible
+</span><span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">random</span><span class="p">.</span><span class="nf">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="n">losses_train</span> <span class="o">=</span> <span class="p">[]</span> 
+<span class="n">losses_val</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># loop over n_epochs
+</span><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">):</span>
+    
+    <span class="c1"># set loss to 0
+</span>    <span class="n">train_loss</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm_utils</span><span class="p">.</span><span class="nf">tqdm_notebook_failsafe</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="n">n_batches_per_epoch</span><span class="p">))</span>
+    <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
+
+        <span class="c1"># run optimizer and save loss
+</span>        <span class="c1"># genenrate batch
+</span>        <span class="n">train_loss</span> <span class="o">+=</span> <span class="n">s</span><span class="p">.</span><span class="nf">run</span><span class="p">([</span><span class="n">decoder</span><span class="p">.</span><span class="n">loss</span><span class="p">,</span> <span class="n">train_step</span><span class="p">],</span> 
+                            <span class="nf">generate_batch</span><span class="p">(</span><span class="n">train_img_embeds</span><span class="p">,</span> 
+                                           <span class="n">train_captions_indexed</span><span class="p">,</span> 
+                                           <span class="n">batch_size</span><span class="p">,</span> 
+                                           <span class="n">MAX_LEN</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># couter to average the loss
+</span>        <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">pbar</span><span class="p">.</span><span class="nf">set_description</span><span class="p">(</span><span class="sh">"</span><span class="s">Training loss: %f</span><span class="sh">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">train_loss</span> <span class="o">/</span> <span class="n">counter</span><span class="p">))</span>
+    
+    <span class="c1"># average loss per epochs
+</span>    <span class="n">train_loss</span> <span class="o">/=</span> <span class="n">n_batches_per_epoch</span>
+    
+    <span class="c1"># set validation loss = 0
+</span>    <span class="n">val_loss</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># perform validation over n_validation_batches
+</span>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">n_validation_batches</span><span class="p">):</span>
+        <span class="n">val_loss</span> <span class="o">+=</span> <span class="n">s</span><span class="p">.</span><span class="nf">run</span><span class="p">(</span><span class="n">decoder</span><span class="p">.</span><span class="n">loss</span><span class="p">,</span> <span class="nf">generate_batch</span><span class="p">(</span><span class="n">val_img_embeds</span><span class="p">,</span>
+                                                       <span class="n">val_captions_indexed</span><span class="p">,</span> 
+                                                       <span class="n">batch_size</span><span class="p">,</span> 
+                                                       <span class="n">MAX_LEN</span><span class="p">))</span>
+    <span class="n">val_loss</span> <span class="o">/=</span> <span class="n">n_validation_batches</span>
+    
+    <span class="n">losses_train</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">train_loss</span><span class="p">)</span>
+    <span class="n">losses_val</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">val_loss</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Epoch: {}, train loss: {}, val loss: {}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">epoch</span><span class="p">,</span> <span class="n">train_loss</span><span class="p">,</span> <span class="n">val_loss</span><span class="p">))</span>
+
+    <span class="c1"># save weights after finishing epoch
+</span>    <span class="n">saver</span><span class="p">.</span><span class="nf">save</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nf">get_checkpoint_path</span><span class="p">(</span><span class="n">epoch</span><span class="p">))</span>
+    
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Finished!</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>**************************************************
+Training loss: 4.304580
+Epoch: 0, train loss: 4.304580224990845, val loss: 3.7320654726028444
+**************************************************
+Training loss: 3.423155
+Epoch: 1, train loss: 3.423154556274414, val loss: 3.1873935198783876
+**************************************************
+Training loss: 3.025284
+Epoch: 2, train loss: 3.0252837190628052, val loss: 2.9603699707984923
+**************************************************
+Training loss: 2.874783
+Epoch: 3, train loss: 2.8747830657958984, val loss: 2.870602424144745
+**************************************************
+Training loss: 2.775481
+Epoch: 4, train loss: 2.7754814348220824, val loss: 2.789423477649689
+**************************************************
+Training loss: 2.701144
+Epoch: 5, train loss: 2.701143687963486, val loss: 2.749979841709137
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/tensorflow_core/python/training/saver.py:963: remove_checkpoint (from tensorflow.python.training.checkpoint_management) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use standard file APIs to delete files with this prefix.
+**************************************************
+Training loss: 2.645951
+Epoch: 6, train loss: 2.645950514793396, val loss: 2.7031424283981322
+**************************************************
+Training loss: 2.606195
+Epoch: 7, train loss: 2.606195085763931, val loss: 2.6634791040420533
+**************************************************
+Training loss: 2.573536
+Epoch: 8, train loss: 2.5735364294052125, val loss: 2.652997634410858
+**************************************************
+Training loss: 2.536031
+Epoch: 9, train loss: 2.536031443834305, val loss: 2.6406166887283327
+**************************************************
+Training loss: 2.517448
+Epoch: 10, train loss: 2.517448023319244, val loss: 2.6462294101715087
+**************************************************
+Training loss: 2.500151
+Epoch: 11, train loss: 2.50015096616745, val loss: 2.603032250404358
+**************************************************
+Training loss: 2.474091
+Epoch: 12, train loss: 2.474090936422348, val loss: 2.6064940333366393
+**************************************************
+Training loss: 2.454694
+Epoch: 13, train loss: 2.4546935455799104, val loss: 2.5683004093170165
+**************************************************
+Training loss: 2.438749
+Epoch: 14, train loss: 2.4387487576007842, val loss: 2.5649581503868104
+**************************************************
+Training loss: 2.420365
+Epoch: 15, train loss: 2.420364526987076, val loss: 2.5585679984092713
+**************************************************
+Training loss: 2.407471
+Epoch: 16, train loss: 2.407471377849579, val loss: 2.5467315411567686
+**************************************************
+Training loss: 2.395392
+Epoch: 17, train loss: 2.3953915696144104, val loss: 2.523040156364441
+**************************************************
+Training loss: 2.386266
+Epoch: 18, train loss: 2.3862663419246672, val loss: 2.5338460755348207
+**************************************************
+Training loss: 2.367717
+Epoch: 19, train loss: 2.3677170577049256, val loss: 2.521715567111969
+**************************************************
+Training loss: 2.362852
+Epoch: 20, train loss: 2.3628519823551177, val loss: 2.528599863052368
+**************************************************
+Training loss: 2.349724
+Epoch: 21, train loss: 2.349724320650101, val loss: 2.508955328464508
+**************************************************
+Training loss: 2.344105
+Epoch: 22, train loss: 2.344105479001999, val loss: 2.5082675886154173
+**************************************************
+Training loss: 2.334501
+Epoch: 23, train loss: 2.334501156330109, val loss: 2.5232016921043394
+**************************************************
+Training loss: 2.325773
+Epoch: 24, train loss: 2.3257727496623994, val loss: 2.497510917186737
+**************************************************
+Training loss: 2.320536
+Epoch: 25, train loss: 2.320536171793938, val loss: 2.4894205212593077
+**************************************************
+Training loss: 2.312937
+Epoch: 26, train loss: 2.3129370038509367, val loss: 2.4940505599975586
+**************************************************
+Training loss: 2.303621
+Epoch: 27, train loss: 2.3036206084489823, val loss: 2.49146288394928
+**************************************************
+Training loss: 2.298418
+Epoch: 28, train loss: 2.2984176824092866, val loss: 2.4823158597946167
+**************************************************
+Training loss: 2.295024
+Epoch: 29, train loss: 2.2950236924886704, val loss: 2.4892579102516175
+Finished!
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="sh">'</span><span class="s">#348ABD</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">#A60628</span><span class="sh">'</span><span class="p">]</span>
+<span class="n">epochs</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">)</span>
+<span class="n">losses</span> <span class="o">=</span> <span class="p">[</span><span class="n">losses_train</span><span class="p">,</span> <span class="n">losses_val</span><span class="p">]</span> 
+
+<span class="n">plt</span><span class="p">.</span><span class="nf">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">losses</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">training</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">epochs</span><span class="p">,</span> <span class="n">losses</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">validation</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="nf">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">loss</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">epoch</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">title</span><span class="p">(</span><span class="sh">'</span><span class="s">Training metric</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_53_0.png" />
+</figure>
+
+<p>After approximately 20 epochs, the validation loss starts to plateau. The gap between the training loss and validation loss increases and it is therefore a good decision to stop the learning at around 30 epochs. This will prevent over-fitting the training set.</p>
+
+<p>With our newly trained model, we can now start making predictions.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># check that it's learnt something, outputs accuracy of next word prediction (should be around 0.5)
+</span><span class="kn">from</span> <span class="n">sklearn.metrics</span> <span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">log_loss</span>
+
+<span class="c1"># create sentence based on word mapping
+</span><span class="k">def</span> <span class="nf">decode_sentence</span><span class="p">(</span><span class="n">sentence_indices</span><span class="p">):</span>
+    <span class="k">return</span> <span class="sh">"</span><span class="s"> </span><span class="sh">"</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">map</span><span class="p">(</span><span class="n">vocab_inverse</span><span class="p">.</span><span class="n">get</span><span class="p">,</span> <span class="n">sentence_indices</span><span class="p">)))</span>
+
+<span class="k">def</span> <span class="nf">check_after_training</span><span class="p">(</span><span class="n">n_examples</span><span class="p">):</span>
+    <span class="c1"># create batches
+</span>    <span class="n">fd</span> <span class="o">=</span> <span class="nf">generate_batch</span><span class="p">(</span><span class="n">train_img_embeds</span><span class="p">,</span> <span class="n">train_captions_indexed</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">)</span>
+
+    <span class="c1"># flatten token and pass sentence through netowrk
+</span>    <span class="n">logits</span> <span class="o">=</span> <span class="n">decoder</span><span class="p">.</span><span class="n">flat_token_logits</span><span class="p">.</span><span class="nf">eval</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+    <span class="n">truth</span> <span class="o">=</span> <span class="n">decoder</span><span class="p">.</span><span class="n">flat_ground_truth</span><span class="p">.</span><span class="nf">eval</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">decoder</span><span class="p">.</span><span class="n">flat_loss_mask</span><span class="p">.</span><span class="nf">eval</span><span class="p">(</span><span class="n">fd</span><span class="p">).</span><span class="nf">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+
+    <span class="c1"># compute loss and accuracy
+</span>    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Loss:</span><span class="sh">"</span><span class="p">,</span> <span class="n">decoder</span><span class="p">.</span><span class="n">loss</span><span class="p">.</span><span class="nf">eval</span><span class="p">(</span><span class="n">fd</span><span class="p">))</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Accuracy:</span><span class="sh">"</span><span class="p">,</span> <span class="nf">accuracy_score</span><span class="p">(</span><span class="n">logits</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="n">mask</span><span class="p">],</span> <span class="n">truth</span><span class="p">[</span><span class="n">mask</span><span class="p">]))</span>
+    <span class="nf">print</span><span class="p">()</span>
+
+    <span class="c1"># display prediction for n random examples
+</span>    <span class="k">for</span> <span class="n">example_idx</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">n_examples</span><span class="p">):</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Example</span><span class="sh">"</span><span class="p">,</span> <span class="n">example_idx</span><span class="p">)</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Predicted:</span><span class="sh">"</span><span class="p">,</span> <span class="nf">decode_sentence</span><span class="p">(</span><span class="n">logits</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">).</span><span class="nf">reshape</span><span class="p">((</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))[</span><span class="n">example_idx</span><span class="p">]))</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Truth:</span><span class="sh">"</span><span class="p">,</span> <span class="nf">decode_sentence</span><span class="p">(</span><span class="n">truth</span><span class="p">.</span><span class="nf">reshape</span><span class="p">((</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))[</span><span class="n">example_idx</span><span class="p">]))</span>
+        <span class="nf">print</span><span class="p">(</span><span class="sh">""</span><span class="p">)</span>
+
+<span class="nf">check_after_training</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Loss: 2.2630808
+Accuracy: 0.4940867279894875
+
+Example 0
+Predicted: a bike group of bicycles parked in to each building #END# #END# #END# #END# #END# #END# #END# #END# #END# #END# #END# #END# #END#
+Truth: a large group of bikes parked next to a building #END# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD#
+
+Example 1
+Predicted: a kitchen kitchen with with appliances and and utensils #END# #END# #END# #END# #END# #END# #END# #END# #END# #END# #END# #END# #END# #END#
+Truth: a white kitchen filled with pots pans and dishes #END# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD#
+
+Example 2
+Predicted: a adult zebra is a younger zebra in a of a zebra #END# a zoo #END# #END# #END# #END# #END# #END# #END# #END#
+Truth: an older zebra and a younger one in front of a lake at a zoo #END# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD# #PAD#
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># save last graph weights to file!
+</span><span class="n">saver</span><span class="p">.</span><span class="nf">save</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nf">get_checkpoint_path</span><span class="p">())</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>'/content/gdrive/My Drive/colab/weights'
+</code></pre></div></div>
+
+<h1 id="applying-model">Applying model</h1>
+
+<p>Now that we have trained our model, we need to adjust its structure to make predictions. We will keep the weights obtained during training and adjust the behavior so that the model predicts one word at a time and uses the first k words to predict word (k+1).</p>
+
+<p>It will work as follows:</p>
+<ul>
+  <li>take an image as an input and embed it</li>
+  <li>condition lstm on that embedding</li>
+  <li>predict the next token given a START input token</li>
+  <li>use predicted token as an input at next time step</li>
+  <li>iterate until you predict an END token</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">final_model</span><span class="p">:</span>
+    <span class="c1"># CNN encoder
+</span>    <span class="n">encoder</span><span class="p">,</span> <span class="n">preprocess_for_model</span> <span class="o">=</span> <span class="nf">get_cnn_encoder</span><span class="p">()</span>
+    <span class="n">saver</span><span class="p">.</span><span class="nf">restore</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nf">get_checkpoint_path</span><span class="p">())</span>  <span class="c1"># keras applications corrupt our graph, so we restore trained weights
+</span>    
+    <span class="c1"># containers for current lstm state
+</span>    <span class="n">lstm_c</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nc">Variable</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="nf">zeros</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="n">LSTM_UNITS</span><span class="p">]),</span> <span class="n">name</span><span class="o">=</span><span class="sh">"</span><span class="s">cell</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">lstm_h</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nc">Variable</span><span class="p">(</span><span class="n">tf</span><span class="p">.</span><span class="nf">zeros</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="n">LSTM_UNITS</span><span class="p">]),</span> <span class="n">name</span><span class="o">=</span><span class="sh">"</span><span class="s">hidden</span><span class="sh">"</span><span class="p">)</span>
+
+    <span class="c1"># input images
+</span>    <span class="n">input_images</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nf">placeholder</span><span class="p">(</span><span class="sh">'</span><span class="s">float32</span><span class="sh">'</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">IMG_SIZE</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">images</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="c1"># get image embeddings
+</span>    <span class="n">img_embeds</span> <span class="o">=</span> <span class="nf">encoder</span><span class="p">(</span><span class="n">input_images</span><span class="p">)</span>
+
+    <span class="c1"># initialize lstm state conditioned on image
+</span>    <span class="n">init_c</span> <span class="o">=</span> <span class="n">init_h</span> <span class="o">=</span> <span class="n">decoder</span><span class="p">.</span><span class="nf">img_embed_bottleneck_to_h0</span><span class="p">(</span><span class="n">decoder</span><span class="p">.</span><span class="nf">img_embed_to_bottleneck</span><span class="p">(</span><span class="n">img_embeds</span><span class="p">))</span>
+    <span class="n">init_lstm</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nf">assign</span><span class="p">(</span><span class="n">lstm_c</span><span class="p">,</span> <span class="n">init_c</span><span class="p">),</span> <span class="n">tf</span><span class="p">.</span><span class="nf">assign</span><span class="p">(</span><span class="n">lstm_h</span><span class="p">,</span> <span class="n">init_h</span><span class="p">)</span>
+    
+    <span class="c1"># current word index
+</span>    <span class="n">current_word</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="nf">placeholder</span><span class="p">(</span><span class="sh">'</span><span class="s">int32</span><span class="sh">'</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="sh">'</span><span class="s">current_input</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="c1"># embedding for current word
+</span>    <span class="n">word_embed</span> <span class="o">=</span> <span class="n">decoder</span><span class="p">.</span><span class="nf">word_embed</span><span class="p">(</span><span class="n">current_word</span><span class="p">)</span>
+
+    <span class="c1"># apply lstm cell, get new lstm states
+</span>    <span class="n">new_c</span><span class="p">,</span> <span class="n">new_h</span> <span class="o">=</span> <span class="n">decoder</span><span class="p">.</span><span class="nf">lstm</span><span class="p">(</span><span class="n">word_embed</span><span class="p">,</span> <span class="n">tf</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">rnn_cell</span><span class="p">.</span><span class="nc">LSTMStateTuple</span><span class="p">(</span><span class="n">lstm_c</span><span class="p">,</span> <span class="n">lstm_h</span><span class="p">))[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># compute logits for next token
+</span>    <span class="n">new_logits</span> <span class="o">=</span> <span class="n">decoder</span><span class="p">.</span><span class="nf">token_logits</span><span class="p">(</span><span class="n">decoder</span><span class="p">.</span><span class="nf">token_logits_bottleneck</span><span class="p">(</span><span class="n">new_h</span><span class="p">))</span>
+    
+    <span class="c1"># compute probabilities for next token
+</span>    <span class="n">new_probs</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="nf">softmax</span><span class="p">(</span><span class="n">new_logits</span><span class="p">)</span>
+
+    <span class="c1"># `one_step` outputs probabilities of next token and updates lstm hidden state
+</span>    <span class="n">one_step</span> <span class="o">=</span> <span class="n">new_probs</span><span class="p">,</span> <span class="n">tf</span><span class="p">.</span><span class="nf">assign</span><span class="p">(</span><span class="n">lstm_c</span><span class="p">,</span> <span class="n">new_c</span><span class="p">),</span> <span class="n">tf</span><span class="p">.</span><span class="nf">assign</span><span class="p">(</span><span class="n">lstm_h</span><span class="p">,</span> <span class="n">new_h</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>INFO:tensorflow:Restoring parameters from /content/gdrive/My Drive/colab/weights
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># look at how temperature works for probability distributions
+# for high temperature we have more uniform distribution
+</span><span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">]:</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s"> </span><span class="sh">"</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="nf">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">_</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">t</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">_</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">t</span><span class="p">)))),</span> <span class="sh">"</span><span class="s">with temperature</span><span class="sh">"</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.9999999997962965 2.0370359759195462e-10 1.2676505999700117e-70 with temperature 0.01
+0.9030370433250645 0.09696286420394223 9.247099323648666e-08 with temperature 0.1
+0.5 0.4 0.1 with temperature 1
+0.35344772639219624 0.34564811360592396 0.3009041600018798 with temperature 10
+0.33536728048099185 0.33461976434857876 0.3300129551704294 with temperature 100
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># this is an actual prediction loop
+</span><span class="k">def</span> <span class="nf">generate_caption</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">sample</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Generate caption for given image.
+    if `sample` is True, we will sample next token from predicted probability distribution.
+    `t` is a temperature during that sampling,
+        higher `t` causes more uniform-like distribution = more chaos.
+    </span><span class="sh">"""</span>
+    <span class="c1"># condition lstm on the image
+</span>    <span class="n">s</span><span class="p">.</span><span class="nf">run</span><span class="p">(</span><span class="n">final_model</span><span class="p">.</span><span class="n">init_lstm</span><span class="p">,</span> 
+          <span class="p">{</span><span class="n">final_model</span><span class="p">.</span><span class="n">input_images</span><span class="p">:</span> <span class="p">[</span><span class="n">image</span><span class="p">]})</span>
+    
+    <span class="c1"># current caption
+</span>    <span class="c1"># start with only START token
+</span>    <span class="n">caption</span> <span class="o">=</span> <span class="p">[</span><span class="n">vocab</span><span class="p">[</span><span class="n">START</span><span class="p">]]</span>
+    
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">max_len</span><span class="p">):</span>
+        <span class="n">next_word_probs</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="nf">run</span><span class="p">(</span><span class="n">final_model</span><span class="p">.</span><span class="n">one_step</span><span class="p">,</span> 
+                                <span class="p">{</span><span class="n">final_model</span><span class="p">.</span><span class="n">current_word</span><span class="p">:</span> <span class="p">[</span><span class="n">caption</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]})[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">next_word_probs</span> <span class="o">=</span> <span class="n">next_word_probs</span><span class="p">.</span><span class="nf">ravel</span><span class="p">()</span>
+        
+        <span class="c1"># apply temperature
+</span>        <span class="n">next_word_probs</span> <span class="o">=</span> <span class="n">next_word_probs</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">t</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">next_word_probs</span><span class="o">**</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">t</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">sample</span><span class="p">:</span>
+            <span class="n">next_word</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">choice</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">vocab</span><span class="p">)),</span> <span class="n">p</span><span class="o">=</span><span class="n">next_word_probs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">next_word</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">next_word_probs</span><span class="p">)</span>
+
+        <span class="n">caption</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">next_word</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">next_word</span> <span class="o">==</span> <span class="n">vocab</span><span class="p">[</span><span class="n">END</span><span class="p">]:</span>
+            <span class="k">break</span>
+       
+    <span class="k">return</span> <span class="nf">list</span><span class="p">(</span><span class="nf">map</span><span class="p">(</span><span class="n">vocab_inverse</span><span class="p">.</span><span class="n">get</span><span class="p">,</span> <span class="n">caption</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># look at validation prediction example
+</span><span class="k">def</span> <span class="nf">apply_model_to_image_raw_bytes</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">utils</span><span class="p">.</span><span class="nf">decode_image_from_buf</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">7</span><span class="p">))</span>
+    <span class="n">plt</span><span class="p">.</span><span class="nf">grid</span><span class="p">(</span><span class="sh">'</span><span class="s">off</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="p">.</span><span class="nf">axis</span><span class="p">(</span><span class="sh">'</span><span class="s">off</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="p">.</span><span class="nf">imshow</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">utils</span><span class="p">.</span><span class="nf">crop_and_preprocess</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="p">(</span><span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">IMG_SIZE</span><span class="p">),</span> <span class="n">final_model</span><span class="p">.</span><span class="n">preprocess_for_model</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s"> </span><span class="sh">'</span><span class="p">.</span><span class="nf">join</span><span class="p">(</span><span class="nf">generate_caption</span><span class="p">(</span><span class="n">img</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">plt</span><span class="p">.</span><span class="nf">show</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">show_valid_example</span><span class="p">(</span><span class="n">val_img_fns</span><span class="p">,</span> <span class="n">example_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">zf</span> <span class="o">=</span> <span class="n">zipfile</span><span class="p">.</span><span class="nc">ZipFile</span><span class="p">(</span><span class="sh">"</span><span class="s">val2014_sample.zip</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">all_files</span> <span class="o">=</span> <span class="nf">set</span><span class="p">(</span><span class="n">val_img_fns</span><span class="p">)</span>
+    <span class="n">found_files</span> <span class="o">=</span> <span class="nf">list</span><span class="p">(</span><span class="nf">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">.</span><span class="n">filename</span><span class="p">.</span><span class="nf">rsplit</span><span class="p">(</span><span class="sh">"</span><span class="s">/</span><span class="sh">"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">all_files</span><span class="p">,</span> <span class="n">zf</span><span class="p">.</span><span class="n">filelist</span><span class="p">))</span>
+    <span class="n">example</span> <span class="o">=</span> <span class="n">found_files</span><span class="p">[</span><span class="n">example_idx</span><span class="p">]</span>
+    <span class="nf">apply_model_to_image_raw_bytes</span><span class="p">(</span><span class="n">zf</span><span class="p">.</span><span class="nf">read</span><span class="p">(</span><span class="n">example</span><span class="p">))</span>
+    
+<span class="nf">show_valid_example</span><span class="p">(</span><span class="n">val_img_fns</span><span class="p">,</span> <span class="n">example_idx</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a baseball player is swinging at a pitch
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_61_1.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># sample more images from validation
+</span><span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">choice</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">zipfile</span><span class="p">.</span><span class="nc">ZipFile</span><span class="p">(</span><span class="sh">"</span><span class="s">val2014_sample.zip</span><span class="sh">"</span><span class="p">).</span><span class="n">filelist</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">10</span><span class="p">):</span>
+    <span class="nf">show_valid_example</span><span class="p">(</span><span class="n">val_img_fns</span><span class="p">,</span> <span class="n">example_idx</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span>
+    <span class="n">time</span><span class="p">.</span><span class="nf">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a group of people standing around a table with a cake
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_62_1.png" />
+</figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a woman sitting at a table with a plate of food
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_62_3.png" />
+</figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a plate with a sandwich and a cup of coffee on it
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_62_5.png" />
+</figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a man and a woman on a boat on a river
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_62_7.png" />
+</figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a group of people riding skis down a snow covered slope
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_62_9.png" />
+</figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a dog is eating a banana with a toy
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_62_11.png" />
+</figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a man is playing tennis on a court
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_62_13.png" />
+</figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a group of people standing in a room with a remote
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_62_15.png" />
+</figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a black bear is standing in the woods
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_62_17.png" />
+</figure>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a pizza with cheese and toppings on a plate
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-12-08-Image-Caption/output_62_19.png" />
+</figure>
+

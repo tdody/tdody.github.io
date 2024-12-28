@@ -1,0 +1,824 @@
+<footer id="attribution" style="float:right; color:#999; background:#fff;">
+Created by Thibault Dody, 06/28/2019.
+</footer>
+
+<h1 id="neural-network">Neural Network</h1>
+
+<p>This notebook covers the basics of neural networks and their implementation in Python. In <a href="https://tdody.github.io//Logistic-Regression/">Part 1</a> of this series, we went over the logistic regression and concluded with mixed feelings. Indeed, the logistic regression appeared to be a simple yet effective model with important limitations. In this new post, we will see how we can leverage the theory behind logistic regression to build a model with improved predictive power. These is where <strong>Neural Networks</strong> come into play.</p>
+
+<p>Neural Networks were created in an intent to mimic the human vision and the brain structure. Instead of having the entire information process by a neuron, it is process by an network of neurons. Each neuron serves a basic function (detect curves, detect straight lines…) then the information is conveyed to another layer in charge of detecting more complex patter.</p>
+
+<h2 id="table-of-content">Table of Content</h2>
+
+<p><a href="#Section_0">1. Notation  </a><br />
+<a href="#Section_1">2. Theory  </a><br />
+<a href="#Section_2">3. Implementation in Python  </a><br />
+<a href="#Section_3">4. Data  </a><br />
+<a href="#Section_4">5. Simple Neural Network</a><br />
+<a href="#Section_5">6. Effect of the Hidden Layer Size</a><br />
+<a href="#Section_6">7. Conclusion</a></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load libraries
+</span><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="n">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+
+<span class="c1"># personal tools
+</span><span class="kn">import</span> <span class="n">TAD_tools_v00</span>
+
+<span class="c1"># data generator and data manipulation
+</span><span class="kn">from</span> <span class="n">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_classification</span><span class="p">,</span> <span class="n">make_blobs</span><span class="p">,</span> <span class="n">make_moons</span><span class="p">,</span> <span class="n">make_circles</span><span class="p">,</span> <span class="n">make_classification</span>
+<span class="kn">from</span> <span class="n">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="n">sklearn.metrics</span> <span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">confusion_matrix</span>
+
+<span class="c1"># plotting tools
+</span><span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="n">seaborn</span> <span class="k">as</span> <span class="n">sns</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">style</span><span class="p">.</span><span class="nf">use</span><span class="p">(</span><span class="sh">'</span><span class="s">ggplot</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_0"></a></p>
+<h2 id="1-notations">1. Notations</h2>
+
+<p>The following notations are used in this notebook:</p>
+<ul>
+  <li>\(m\) is the number of feature of the input
+    <ul>
+      <li>Type: integer</li>
+    </ul>
+  </li>
+  <li>\(n\) is the number of input examples
+    <ul>
+      <li>Type: integer</li>
+    </ul>
+  </li>
+  <li>\(x\) is the set of input data
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((m*n)\)</li>
+      <li>Components: \(x^{(i)}\) of size \((m*1)\)</li>
+    </ul>
+  </li>
+  <li>\(n^{[1]}\) is the number of neurons in the hidden layer
+    <ul>
+      <li>Type: integer</li>
+    </ul>
+  </li>
+  <li>\(W^{[1]}\) are the weights of the layer 1 (hidden)
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((n^{[1]}*m)\)</li>
+    </ul>
+  </li>
+  <li>\(W^{[2]}\) are the weights of the layer 2 (output)
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((1*n^{[1]})\)</li>
+    </ul>
+  </li>
+  <li>\(b^{[l]}\) are the bias of the layer 1 (hidden)
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((n^{[1]}*1)\)</li>
+    </ul>
+  </li>
+  <li>\(b^{[2]}\) are the bias of the layer 2 (output)
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((1*1)\)</li>
+    </ul>
+  </li>
+  <li>\(a^{[1]}\) is the output of the first layer
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((n^{[1]}*n)\)</li>
+      <li>Components: \(a^{[1] (i)}\)</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+<p><a id="Section_1"></a></p>
+<h2 id="2-theory">2. Theory</h2>
+
+<h3 id="21-components">2.1. Components</h3>
+
+<p>The simple neural network model is made of the following components:</p>
+<ol>
+  <li>The input layer (i.e. the input data)</li>
+  <li>One hidden layer</li>
+  <li>One output layer</li>
+</ol>
+
+<p>The hidden layer is made of an ensemble of neurons each equipped with the following two tools:</p>
+<ol>
+  <li>A set of weights \(\{w_{1},..,w_{m}\}\) and a bias term \(b\).</li>
+  <li>An activation function which adds a non-linear behavior to its neuron.</li>
+</ol>
+
+<h3 id="22-architecture">2.2. Architecture</h3>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/simple_nn.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/simple_nn.png" height="350" /></a>
+</figure>
+
+<p>As shown above, the input vector \(X=\{x_{1},x_{2}\}\) passes through the first hidden layer. The output of the hidden layer are then used as an input for the output layer. Finally, the output of the last layer is used to make a prediction.</p>
+
+<p>Let’s take an example where the hidden layer is made of 3 hidden units. The equations of the model are:</p>
+
+\[a_{1}^{[1]}=g(w_{1,1}^{[1]}*x_{1}+w_{1,2}^{[1]}*x_{2}+b_{1}^{[1]})\]
+
+\[a_{2}^{[1]}=g(w_{2,1}^{[1]}*x_{1}+w_{2,2}^{[1]}*x_{2}+b_{2}^{[1]})\]
+
+<p>Then:</p>
+
+\[y_{prob}=\sigma(w_{1}^{[2]}*a_{1}^{[1]}+w_{2}^{[2]}*a_{2}^{[1]}+b^{[2]})\]
+
+<h3 id="23-activation-functions">2.3. Activation Functions</h3>
+
+<p>The activation of the output layer is the sigmoid. This choice is based on the nature of the output, the output layer gives a probability (between 0 and 1). However, the activation layer of the hidden units can be chosen amongst a larger set of functions:</p>
+
+<ul>
+  <li>tanh</li>
+  <li>ReLU (Rectified Linear Unit)</li>
+  <li>Leaky RelU</li>
+  <li>Step</li>
+  <li>Linear</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Define the range for plot
+</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="c1"># Define activation functions over range
+</span><span class="n">f_tanh</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">tanh</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">f_relu</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">f_leaky_relu</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mf">0.01</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+<span class="n">f_step</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span>
+<span class="n">f_linear</span> <span class="o">=</span> <span class="n">x</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Plot activation functions
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_tanh</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">tanh</span><span class="sh">'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="sh">'</span><span class="s">-.</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_step</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">step</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_linear</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">linear</span><span class="sh">'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">orchid</span><span class="sh">'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="sh">'</span><span class="s">--</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_relu</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">ReLU: max(x, 0)</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_leaky_relu</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">Leaky ReLU: max(x, 0.01*x)</span><span class="sh">'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="sh">'</span><span class="s">--</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">legend</span><span class="p">()</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">legend</span><span class="p">()</span>
+<span class="n">fig</span><span class="p">.</span><span class="nf">suptitle</span><span class="p">(</span><span class="sh">'</span><span class="s">Activation Functions</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_11_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_11_0.png" /></a>
+</figure>
+
+<p><strong>NOTE</strong>:
+For the rest of this post, the tanh function is used. It performs relatively well as it creates the non-linearity needed while spanning between -1 and 1. Small values helps with the optimization.</p>
+
+<h3 id="24-cost-function">2.4. Cost Function</h3>
+
+<p>Finally, we define the <strong>Cost Function</strong> as the average of the <strong>Loss Function</strong> over the entire set of examples.</p>
+
+\[J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)})\]
+
+<h3 id="25-optimization">2.5. Optimization</h3>
+
+<p>Similarly to the logistic regression, a gradient descent is performed to optimize the various weights of the network. The optimization is performed as a three-step process:</p>
+<ol>
+  <li>Forward propagation: Compute the predictions and the various outputs of each layer.</li>
+  <li>Backward propagation: Use the results from the previous step to compute the partial derivative of the cost function with respect to each weight.</li>
+  <li>Update the weights</li>
+</ol>
+
+<p>Below are the formulas used to compute the gradients.</p>
+
+\[\frac{\partial J }{ \partial z_{2}^{(i)} } = \frac{1}{m} (a^{[2](i)} - y^{(i)})\]
+
+\[\frac{\partial J }{ \partial W_2 } = \frac{\partial J }{ \partial z_{2}^{(i)} } a^{[1] (i) T}\]
+
+\[\frac{\partial J }{ \partial b_2 } = \sum_i{\frac{\partial J }{ \partial z_{2}^{(i)}}}\]
+
+\[\frac{\partial J }{ \partial z_{1}^{(i)} } =  W_2^T \frac{\partial J }{ \partial z_{2}^{(i)} } * ( 1 - a^{[1] (i) 2})\]
+
+\[\frac{\partial J }{ \partial W_1 } = \frac{\partial J }{ \partial z_{1}^{(i)} }  X^T\]
+
+\[\frac{\partial J _i }{ \partial b_1 } = \sum_i{\frac{\partial J }{ \partial z_{1}^{(i)}}}\]
+
+<ul>
+  <li>Note that \(*\) denotes element-wise multiplication.</li>
+  <li>The notation you will use is common in deep learning coding:
+    <ul>
+      <li>dW1 = \(\frac{\partial J }{ \partial W_1 }\)</li>
+      <li>db1 = \(\frac{\partial J }{ \partial b_1 }\)</li>
+      <li>dW2 = \(\frac{\partial J }{ \partial W_2 }\)</li>
+      <li>db2 = \(\frac{\partial J }{ \partial b_2 }\)</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+<p><a id="Section_2"></a></p>
+<h2 id="3-implementation-in-python">3. Implementation in Python</h2>
+
+<p>The functions below are used to define the neural network model. They are defined as follows:</p>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">layer_sizes</code>: Establish the architecture of the model</li>
+  <li><code class="language-plaintext highlighter-rouge">initialize_parameters</code>: Initialize the weight matrices</li>
+  <li><code class="language-plaintext highlighter-rouge">forward_propagation</code>: Forward propagation</li>
+  <li><code class="language-plaintext highlighter-rouge">compute_cost</code>: Compute binary cross-entropy</li>
+  <li><code class="language-plaintext highlighter-rouge">backward_propagation</code>: Compute gradients</li>
+  <li><code class="language-plaintext highlighter-rouge">update_parameters</code>: Update weights based on computed gradients</li>
+  <li><code class="language-plaintext highlighter-rouge">nn_model</code>: Builds the neural network model</li>
+  <li><code class="language-plaintext highlighter-rouge">predict</code>: Make prediction using the trained model</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">layer_sizes</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">n_h</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Arguments:
+    X -- input dataset of shape (input size, number of examples)
+    Y -- labels of shape (output size, number of examples)
+    n_h -- number of hidden units
+    
+    Returns:
+    n_x -- the size of the input layer
+    n_h -- the size of the hidden layer
+    n_y -- the size of the output layer
+    </span><span class="sh">"""</span>
+    
+    <span class="n">n_x</span> <span class="o">=</span> <span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">n_y</span> <span class="o">=</span> <span class="n">Y</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="nf">return </span><span class="p">(</span><span class="n">n_x</span><span class="p">,</span> <span class="n">n_h</span><span class="p">,</span> <span class="n">n_y</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">initialize_parameters</span><span class="p">(</span><span class="n">n_x</span><span class="p">,</span> <span class="n">n_h</span><span class="p">,</span> <span class="n">n_y</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Argument:
+    n_x -- size of the input layer
+    n_h -- size of the hidden layer
+    n_y -- size of the output layer
+    
+    Returns:
+    params -- python dictionary containing your parameters:
+                    W1 -- weight matrix of shape (n_h, n_x)
+                    b1 -- bias vector of shape (n_h, 1)
+                    W2 -- weight matrix of shape (n_y, n_h)
+                    b2 -- bias vector of shape (n_y, 1)
+    </span><span class="sh">"""</span>
+    
+    <span class="c1"># set random seed
+</span>    <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">seed</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    
+    <span class="c1"># hidden layer
+</span>    <span class="n">W1</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">randn</span><span class="p">(</span><span class="n">n_h</span><span class="p">,</span> <span class="n">n_x</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.01</span>
+    <span class="n">b1</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">zeros</span><span class="p">((</span><span class="n">n_h</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    
+    <span class="c1"># output layer
+</span>    <span class="n">W2</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">randn</span><span class="p">(</span><span class="n">n_y</span><span class="p">,</span> <span class="n">n_h</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.01</span>
+    <span class="n">b2</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">zeros</span><span class="p">((</span><span class="n">n_y</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    
+    <span class="c1"># store results
+</span>    <span class="n">paramters</span> <span class="o">=</span> <span class="p">{</span><span class="sh">'</span><span class="s">W1</span><span class="sh">'</span><span class="p">:</span><span class="n">W1</span><span class="p">,</span>
+                 <span class="sh">'</span><span class="s">b1</span><span class="sh">'</span><span class="p">:</span><span class="n">b1</span><span class="p">,</span>
+                 <span class="sh">'</span><span class="s">W2</span><span class="sh">'</span><span class="p">:</span><span class="n">W2</span><span class="p">,</span>
+                 <span class="sh">'</span><span class="s">b2</span><span class="sh">'</span><span class="p">:</span><span class="n">b2</span><span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">paramters</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">forward_propagation</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Argument:
+    X -- input data of size (n_x, m)
+    parameters -- python dictionary containing your parameters (output of initialization function)
+    
+    Returns:
+    A2 -- The sigmoid output of the second activation
+    cache -- a dictionary containing </span><span class="sh">"</span><span class="s">Z1</span><span class="sh">"</span><span class="s">, </span><span class="sh">"</span><span class="s">A1</span><span class="sh">"</span><span class="s">, </span><span class="sh">"</span><span class="s">Z2</span><span class="sh">"</span><span class="s"> and </span><span class="sh">"</span><span class="s">A2</span><span class="sh">"</span><span class="s">
+    </span><span class="sh">"""</span>
+    <span class="c1"># retrieve parameters
+</span>    <span class="n">W1</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W1</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># hidden layer
+</span>    <span class="n">b1</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b1</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># hidden layer
+</span>    <span class="n">W2</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W2</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># output layer
+</span>    <span class="n">b2</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b2</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># output layer
+</span>    
+    <span class="c1"># Implement Forward Propagation to calculate A2 (probabilities)
+</span>    <span class="n">Z1</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">W1</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span> <span class="o">+</span> <span class="n">b1</span>
+    <span class="n">A1</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">tanh</span><span class="p">(</span><span class="n">Z1</span><span class="p">)</span>
+    <span class="n">Z2</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">W2</span><span class="p">,</span> <span class="n">A1</span><span class="p">)</span> <span class="o">+</span> <span class="n">b2</span>
+    <span class="n">A2</span> <span class="o">=</span> <span class="n">TAD_tools_v00</span><span class="p">.</span><span class="nf">sigmoid</span><span class="p">(</span><span class="n">Z2</span><span class="p">)</span>
+    
+    <span class="nf">assert</span><span class="p">(</span><span class="n">A2</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    
+    <span class="n">cache</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">Z1</span><span class="sh">"</span><span class="p">:</span> <span class="n">Z1</span><span class="p">,</span>
+             <span class="sh">"</span><span class="s">A1</span><span class="sh">"</span><span class="p">:</span> <span class="n">A1</span><span class="p">,</span>
+             <span class="sh">"</span><span class="s">Z2</span><span class="sh">"</span><span class="p">:</span> <span class="n">Z2</span><span class="p">,</span>
+             <span class="sh">"</span><span class="s">A2</span><span class="sh">"</span><span class="p">:</span> <span class="n">A2</span><span class="p">}</span>
+    
+    <span class="k">return</span> <span class="n">A2</span><span class="p">,</span> <span class="n">cache</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">compute_cost</span><span class="p">(</span><span class="n">A2</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Computes the cross-entropy cost given in equation (13)
+    
+    Arguments:
+    A2 -- The sigmoid output of the second activation, of shape (1, number of examples)
+    Y -- </span><span class="sh">"</span><span class="s">true</span><span class="sh">"</span><span class="s"> labels vector of shape (1, number of examples)
+    parameters -- python dictionary containing your parameters W1, b1, W2 and b2
+    
+    Returns:
+    cost -- cross-entropy cost given equation (13)
+    </span><span class="sh">"""</span>
+    
+    <span class="c1"># number of training examples
+</span>    <span class="n">m</span> <span class="o">=</span> <span class="n">Y</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="c1"># compute cost and squeeze to single float
+</span>    <span class="n">cost</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="n">m</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">multiply</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="n">A2</span><span class="p">),</span><span class="n">Y</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="p">.</span><span class="nf">multiply</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">A2</span><span class="p">),</span><span class="mi">1</span> <span class="o">-</span> <span class="n">Y</span><span class="p">))</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">squeeze</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">cost</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">backward_propagation</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the backward propagation using the instructions above.
+    
+    Arguments:
+    parameters -- python dictionary containing our parameters 
+    cache -- a dictionary containing </span><span class="sh">"</span><span class="s">Z1</span><span class="sh">"</span><span class="s">, </span><span class="sh">"</span><span class="s">A1</span><span class="sh">"</span><span class="s">, </span><span class="sh">"</span><span class="s">Z2</span><span class="sh">"</span><span class="s"> and </span><span class="sh">"</span><span class="s">A2</span><span class="sh">"</span><span class="s">.
+    X -- input data of shape (2, number of examples)
+    Y -- </span><span class="sh">"</span><span class="s">true</span><span class="sh">"</span><span class="s"> labels vector of shape (1, number of examples)
+    
+    Returns:
+    grads -- python dictionary containing your gradients with respect to different parameters
+    </span><span class="sh">"""</span>
+    
+    <span class="c1"># number of training examples
+</span>    <span class="n">m</span> <span class="o">=</span> <span class="n">Y</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="c1"># retrieve parameters
+</span>    <span class="n">W1</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W1</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># hidden layer
+</span>    <span class="n">b1</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b1</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># hidden layer
+</span>    <span class="n">W2</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W2</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># output layer
+</span>    <span class="n">b2</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b2</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># output layer
+</span>    
+    <span class="c1"># retrieve cache
+</span>    <span class="n">Z1</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="sh">'</span><span class="s">Z1</span><span class="sh">'</span><span class="p">]</span>
+    <span class="n">A1</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="sh">'</span><span class="s">A1</span><span class="sh">'</span><span class="p">]</span>
+    <span class="n">Z2</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="sh">'</span><span class="s">Z2</span><span class="sh">'</span><span class="p">]</span>
+    <span class="n">A2</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="sh">'</span><span class="s">A2</span><span class="sh">'</span><span class="p">]</span>
+    
+    <span class="c1"># compute gradients from output layer
+</span>    <span class="n">dZ2</span> <span class="o">=</span> <span class="n">A2</span> <span class="o">-</span> <span class="n">Y</span>
+    <span class="n">dW2</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">dZ2</span><span class="p">,</span> <span class="n">A1</span><span class="p">.</span><span class="n">T</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">db2</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">dZ2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">m</span><span class="p">)</span>
+    
+    <span class="c1"># compute gradients from hidden layer
+</span>    <span class="n">dZ1</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">W2</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dZ2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="p">.</span><span class="nf">power</span><span class="p">(</span><span class="n">A1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">dW1</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">dZ1</span><span class="p">,</span> <span class="n">X</span><span class="p">.</span><span class="n">T</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">m</span><span class="p">)</span>
+    <span class="n">db1</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">dZ1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">m</span><span class="p">)</span>
+
+    <span class="c1"># store results
+</span>    <span class="n">grads</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">dW1</span><span class="sh">"</span><span class="p">:</span> <span class="n">dW1</span><span class="p">,</span>
+             <span class="sh">"</span><span class="s">db1</span><span class="sh">"</span><span class="p">:</span> <span class="n">db1</span><span class="p">,</span>
+             <span class="sh">"</span><span class="s">dW2</span><span class="sh">"</span><span class="p">:</span> <span class="n">dW2</span><span class="p">,</span>
+             <span class="sh">"</span><span class="s">db2</span><span class="sh">"</span><span class="p">:</span> <span class="n">db2</span><span class="p">}</span>
+    
+    <span class="k">return</span> <span class="n">grads</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">update_parameters</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">1.2</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Updates parameters using the gradient descent update rule given above
+    
+    Arguments:
+    parameters -- python dictionary containing your parameters 
+    grads -- python dictionary containing your gradients 
+    
+    Returns:
+    parameters -- python dictionary containing your updated parameters 
+    </span><span class="sh">"""</span>
+    
+    <span class="c1"># retrieve parameters
+</span>    <span class="n">W1</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W1</span><span class="sh">'</span><span class="p">]</span>     <span class="c1"># hidden layer
+</span>    <span class="n">b1</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b1</span><span class="sh">'</span><span class="p">]</span>     <span class="c1"># hidden layer
+</span>    <span class="n">W2</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W2</span><span class="sh">'</span><span class="p">]</span>     <span class="c1"># output layer
+</span>    <span class="n">b2</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b2</span><span class="sh">'</span><span class="p">]</span>     <span class="c1"># output layer
+</span>    
+    <span class="c1"># retrieve gradients
+</span>    <span class="n">dW1</span> <span class="o">=</span> <span class="n">grads</span><span class="p">[</span><span class="sh">'</span><span class="s">dW1</span><span class="sh">'</span><span class="p">]</span>        <span class="c1"># hidden layer
+</span>    <span class="n">db1</span> <span class="o">=</span> <span class="n">grads</span><span class="p">[</span><span class="sh">'</span><span class="s">db1</span><span class="sh">'</span><span class="p">]</span>        <span class="c1"># hidden layer
+</span>    <span class="n">dW2</span> <span class="o">=</span> <span class="n">grads</span><span class="p">[</span><span class="sh">'</span><span class="s">dW2</span><span class="sh">'</span><span class="p">]</span>        <span class="c1"># output layer
+</span>    <span class="n">db2</span> <span class="o">=</span> <span class="n">grads</span><span class="p">[</span><span class="sh">'</span><span class="s">db2</span><span class="sh">'</span><span class="p">]</span>        <span class="c1"># output layer
+</span>    
+    <span class="c1"># update parameters
+</span>    <span class="n">W1</span> <span class="o">-=</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">dW1</span>   <span class="c1"># hidden layer
+</span>    <span class="n">b1</span> <span class="o">-=</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">db1</span>   <span class="c1"># hidden layer
+</span>    <span class="n">W2</span> <span class="o">-=</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">dW2</span>   <span class="c1"># output layer
+</span>    <span class="n">b2</span> <span class="o">-=</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">db2</span>   <span class="c1"># output layer
+</span>    
+    <span class="c1"># store parameters
+</span>    <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="sh">'</span><span class="s">W1</span><span class="sh">'</span><span class="p">:</span><span class="n">W1</span><span class="p">,</span>
+                 <span class="sh">'</span><span class="s">b1</span><span class="sh">'</span><span class="p">:</span><span class="n">b1</span><span class="p">,</span>
+                 <span class="sh">'</span><span class="s">W2</span><span class="sh">'</span><span class="p">:</span><span class="n">W2</span><span class="p">,</span>
+                 <span class="sh">'</span><span class="s">b2</span><span class="sh">'</span><span class="p">:</span><span class="n">b2</span><span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">parameters</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">nn_model</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">n_h</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">print_cost</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Arguments:
+    X -- dataset of shape (2, number of examples)
+    Y -- labels of shape (1, number of examples)
+    n_h -- size of the hidden layer
+    num_iterations -- Number of iterations in gradient descent loop
+    print_cost -- if True, print the cost every 1000 iterations
+    
+    Returns:
+    parameters -- parameters learned by the model. They can then be used to predict.
+    </span><span class="sh">"""</span>
+    <span class="c1"># set random seed for parameter initialization
+</span>    <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">seed</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    
+    <span class="c1"># extract number of features from input data and dimension of prediction (1)
+</span>    <span class="n">n_x</span> <span class="o">=</span> <span class="nf">layer_sizes</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">n_h</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">n_y</span> <span class="o">=</span> <span class="nf">layer_sizes</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">n_h</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+    
+    <span class="c1"># store costs and step count
+</span>    <span class="n">iteration_steps</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cost_steps</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="c1"># initialize parameters
+</span>    <span class="n">parameters</span> <span class="o">=</span> <span class="nf">initialize_parameters</span><span class="p">(</span><span class="n">n_x</span><span class="p">,</span> <span class="n">n_h</span><span class="p">,</span> <span class="n">n_y</span><span class="p">)</span>
+    
+    <span class="c1"># retrieve initialized parameters
+</span>    <span class="n">W1</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W1</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># hidden layer
+</span>    <span class="n">b1</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b1</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># hidden layer
+</span>    <span class="n">W2</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W2</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># output layer
+</span>    <span class="n">b2</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b2</span><span class="sh">'</span><span class="p">]</span>   <span class="c1"># output layer
+</span>    
+    <span class="c1"># Forward &gt; Backward &gt; Parameter update
+</span>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_iterations</span><span class="p">):</span>
+        
+        <span class="c1"># forward propagation
+</span>        <span class="n">A2</span><span class="p">,</span> <span class="n">cache</span> <span class="o">=</span> <span class="nf">forward_propagation</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+        
+        <span class="c1"># compute cost
+</span>        <span class="n">cost</span> <span class="o">=</span> <span class="nf">compute_cost</span><span class="p">(</span><span class="n">A2</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+        
+        <span class="c1"># backward propagation
+</span>        <span class="n">grads</span> <span class="o">=</span> <span class="nf">backward_propagation</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+        
+        <span class="c1"># update parameters - gradient descent
+</span>        <span class="n">parameters</span> <span class="o">=</span> <span class="nf">update_parameters</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">1.2</span><span class="p">)</span>
+        
+        <span class="c1"># print the cost every 1000 iterations
+</span>        <span class="n">iteration_steps</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">cost_steps</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">print_cost</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">1000</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nf">print </span><span class="p">(</span><span class="sh">"</span><span class="s">Cost after iteration %i: %f</span><span class="sh">"</span> <span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">cost</span><span class="p">))</span>
+            
+    <span class="c1"># print termination and final accuracy
+</span>    <span class="n">y_proba</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="nf">forward_propagation</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+    <span class="n">y_pred</span> <span class="o">=</span> <span class="n">y_proba</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
+    <span class="n">accuracy</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">y_pred</span><span class="o">==</span><span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="n">y</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Training: DONE....</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Train Accuracy: {0:.2%}</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">accuracy</span><span class="p">))</span>
+            
+    <span class="k">return</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">iteration_steps</span><span class="p">,</span> <span class="n">cost_steps</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Using the learned parameters, predicts a class for each example in X
+    
+    Arguments:
+    parameters -- python dictionary containing your parameters 
+    X -- input data of size (n_x, m)
+    
+    Returns
+    predictions -- vector of predictions of our model (red: 0 / blue: 1)
+    </span><span class="sh">"""</span>
+    
+    <span class="n">A2</span><span class="p">,</span> <span class="n">cache</span> <span class="o">=</span> <span class="nf">forward_propagation</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">A2</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
+    
+    <span class="k">return</span> <span class="n">predictions</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_3"></a></p>
+<h2 id="4-data">4. Data</h2>
+
+<p>Let’s first test the model against the four datasets generated at the end of the <a href="https://tdody.github.io//Logistic-Regression/">Part 1 post</a>.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># number of data-points
+</span><span class="n">n_samples</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="n">outliers_fraction</span> <span class="o">=</span> <span class="mf">0.15</span>
+<span class="n">n_outliers</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">outliers_fraction</span> <span class="o">*</span> <span class="n">n_samples</span><span class="p">)</span>
+<span class="n">n_inliers</span> <span class="o">=</span> <span class="n">n_samples</span> <span class="o">-</span> <span class="n">n_outliers</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">blobs_params</span> <span class="o">=</span> <span class="nf">dict</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="n">n_inliers</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">datasets</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="nf">make_blobs</span><span class="p">(</span><span class="n">centers</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">cluster_std</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+               <span class="o">**</span><span class="n">blobs_params</span><span class="p">),</span>
+    <span class="nf">make_circles</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="p">.</span><span class="mi">3</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="p">.</span><span class="mi">05</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+    <span class="nf">make_blobs</span><span class="p">(</span><span class="n">centers</span><span class="o">=</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">cluster_std</span><span class="o">=</span><span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">],</span>
+               <span class="o">**</span><span class="n">blobs_params</span><span class="p">),</span>
+    <span class="nf">make_moons</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="p">.</span><span class="mi">05</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)]</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Visualize the data:
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+        <span class="n">axs</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">scatter</span><span class="p">(</span><span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="n">col</span><span class="p">][</span><span class="mi">0</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">],</span>
+                             <span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="n">col</span><span class="p">][</span><span class="mi">0</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">],</span>
+                             <span class="n">c</span><span class="o">=</span><span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="n">col</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                             <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+                             <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="p">.</span><span class="n">cm</span><span class="p">.</span><span class="n">Spectral</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Dataset {}:</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="n">col</span><span class="p">));</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_31_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_31_0.png" /></a>
+</figure>
+
+<p>From the plots shown above, one can expect the model to perfectly predict the classes for Dataset 1 and 3. Indeed, the class distributions for the datasets 0 and 2 are not clearly defined.</p>
+
+<hr />
+<p><a id="Section_4"></a></p>
+<h2 id="5-simple-neural-network">5. Simple Neural Network</h2>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Tool function
+</span><span class="k">def</span> <span class="nf">plot_decision_boundary</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+    <span class="c1"># Set min and max values and give it some padding
+</span>    <span class="n">x_min</span><span class="p">,</span> <span class="n">x_max</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:].</span><span class="nf">min</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:].</span><span class="nf">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">y_min</span><span class="p">,</span> <span class="n">y_max</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:].</span><span class="nf">min</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:].</span><span class="nf">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span>
+    
+    <span class="n">h</span> <span class="o">=</span> <span class="mf">0.01</span>
+    
+    <span class="c1"># Generate a grid of points with distance h between them
+</span>    <span class="n">xx</span><span class="p">,</span> <span class="n">yy</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="n">x_min</span><span class="p">,</span> <span class="n">x_max</span><span class="p">,</span> <span class="n">h</span><span class="p">),</span> <span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="n">y_min</span><span class="p">,</span> <span class="n">y_max</span><span class="p">,</span> <span class="n">h</span><span class="p">))</span>
+    
+    <span class="c1"># Predict the function value for the whole grid
+</span>    <span class="n">Z</span> <span class="o">=</span> <span class="nf">model</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">c_</span><span class="p">[</span><span class="n">xx</span><span class="p">.</span><span class="nf">ravel</span><span class="p">(),</span> <span class="n">yy</span><span class="p">.</span><span class="nf">ravel</span><span class="p">()].</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">Z</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">xx</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+    
+    <span class="c1"># Plot the contour and training examples
+</span>    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">contourf</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="p">.</span><span class="n">cm</span><span class="p">.</span><span class="n">Spectral</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">x2</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">x1</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">scatter</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:],</span> <span class="n">c</span><span class="o">=</span><span class="n">y</span><span class="p">.</span><span class="nf">ravel</span><span class="p">().</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="p">.</span><span class="n">cm</span><span class="p">.</span><span class="n">Spectral</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h3 id="51-dataset-0">5.1: Dataset 0</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># extract data-points
+</span><span class="n">X</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">].</span><span class="n">T</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">].</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># print shapes
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">X shape:{}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">y shape:{}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>X shape:(2, 255)
+y shape:(1, 255)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># set number of hidden units
+</span><span class="n">n_h</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="c1"># build and train model
+</span><span class="n">parameters</span><span class="p">,</span> <span class="n">iteration_steps</span><span class="p">,</span> <span class="n">cost_steps</span> <span class="o">=</span> <span class="nf">nn_model</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n_h</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">print_cost</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Training: DONE....
+Train Accuracy: 56.08%
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># plot both the decision boundary and the cost function
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+<span class="nf">plot_decision_boundary</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nf">predict</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">iteration_steps</span><span class="p">,</span><span class="n">cost_steps</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Iteration Number</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Cost function</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Decision Boundary</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Cost Function during training</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_38_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_38_0.png" /></a>
+</figure>
+
+<p><strong>NOTE</strong>: The accuracy on the training set is 56.08%. Such a low value was expected based on the data distribution. The two data clusters appear to be fused into a single cluster. Therefore, the model performs slightly better than a random guess (50% accuracy). In is interesting to note the shape of the decision boundary. The greater complexity of the model leads to more complex decision boundary.</p>
+
+<h3 id="52-dataset-1">5.2: Dataset 1</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># extract data-points
+</span><span class="n">X</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">].</span><span class="n">T</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">].</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># print shapes
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">X shape:{}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">y shape:{}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>X shape:(2, 400)
+y shape:(1, 400)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># set number of hidden units
+</span><span class="n">n_h</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="c1"># build and train model
+</span><span class="n">parameters</span><span class="p">,</span> <span class="n">iteration_steps</span><span class="p">,</span> <span class="n">cost_steps</span> <span class="o">=</span> <span class="nf">nn_model</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n_h</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">print_cost</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Training: DONE....
+Train Accuracy: 100.00%
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># plot both the decision boundary and the cost function
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+<span class="nf">plot_decision_boundary</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nf">predict</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">iteration_steps</span><span class="p">,</span><span class="n">cost_steps</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Iteration Number</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Cost function</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Decision Boundary</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Cost Function during training</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_43_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_43_0.png" /></a>
+</figure>
+
+<p><strong>NOTE</strong>: As expected, the model is able to perfectly classify each data-point.</p>
+
+<h3 id="53-dataset-2">5.3: Dataset 2</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># extract data-points
+</span><span class="n">X</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">].</span><span class="n">T</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">].</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># print shapes
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">X shape:{}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">y shape:{}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>X shape:(2, 255)
+y shape:(1, 255)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># set number of hidden units
+</span><span class="n">n_h</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="c1"># build and train model
+</span><span class="n">parameters</span><span class="p">,</span> <span class="n">iteration_steps</span><span class="p">,</span> <span class="n">cost_steps</span> <span class="o">=</span> <span class="nf">nn_model</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n_h</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">print_cost</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Training: DONE....
+Train Accuracy: 87.06%
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># plot both the decision boundary and the cost function
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+<span class="nf">plot_decision_boundary</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nf">predict</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">iteration_steps</span><span class="p">,</span><span class="n">cost_steps</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Iteration Number</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Cost function</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Decision Boundary</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Cost Function during training</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_48_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_48_0.png" /></a>
+</figure>
+
+<p><strong>NOTE</strong>: This example is the most interesting of the four datasets. Indeed, the data clusters are not perfectly separated. However, by looking at the data, one can define a perimeter which envelopes the red cluster. After running the model, the training accuracy is 87.06%, this is a good improvement over the predictions of the logistic regression.</p>
+
+<h3 id="54-dataset-3">5.4: Dataset 3</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># extract data-points
+</span><span class="n">X</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">].</span><span class="n">T</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">1</span><span class="p">].</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># print shapes
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">X shape:{}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">y shape:{}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>X shape:(2, 300)
+y shape:(1, 300)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># set number of hidden units
+</span><span class="n">n_h</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="c1"># build and train model
+</span><span class="n">parameters</span><span class="p">,</span> <span class="n">iteration_steps</span><span class="p">,</span> <span class="n">cost_steps</span> <span class="o">=</span> <span class="nf">nn_model</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n_h</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">print_cost</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Training: DONE....
+Train Accuracy: 100.00%
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># plot both the decision boundary and the cost function
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+<span class="nf">plot_decision_boundary</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nf">predict</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">iteration_steps</span><span class="p">,</span><span class="n">cost_steps</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Iteration Number</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Cost function</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Decision Boundary</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Cost Function during training</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_53_0.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_53_0.png" /></a>
+</figure>
+
+<p><strong>NOTE</strong>: As expected, the model is able to perfectly classify each data-point.</p>
+
+<hr />
+<p><a id="Section_5"></a></p>
+<h2 id="6-effect-of-the-hidden-layer-size">6. Effect of the Hidden Layer Size</h2>
+
+<p>The model used to make predictions using four examples treated in Section 5 had a hidden layer equipped with four hidden units. In order to understand how this hyper-parameter can be chosen, we compute the accuracy of the predictions on dataset 2.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># extract data-points
+</span><span class="n">X</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">].</span><span class="n">T</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">].</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">n_h_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mi">20</span><span class="p">]</span> 
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">n_h</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">n_h_list</span><span class="p">):</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">i</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">col</span> <span class="o">=</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span>
+    
+    <span class="c1"># build and train model
+</span>    <span class="n">parameters</span><span class="p">,</span> <span class="n">iteration_steps</span><span class="p">,</span> <span class="n">cost_steps</span> <span class="o">=</span> <span class="nf">nn_model</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">n_h</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">print_cost</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    
+    <span class="c1"># plot the cost function
+</span>    <span class="nf">plot_decision_boundary</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nf">predict</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">])</span>
+    <span class="n">axs</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">{} hidden units</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">n_h</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Training: DONE....
+Train Accuracy: 79.22%
+Training: DONE....
+Train Accuracy: 85.49%
+Training: DONE....
+Train Accuracy: 85.49%
+Training: DONE....
+Train Accuracy: 87.06%
+Training: DONE....
+Train Accuracy: 87.84%
+Training: DONE....
+Train Accuracy: 90.59%
+Training: DONE....
+Train Accuracy: 90.59%
+Training: DONE....
+Train Accuracy: 90.59%
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_58_3.png"><img src="https://tdody.github.io/assets/img/2019-06-28-Neural-Network/output_58_3.png" /></a>
+</figure>
+
+<p>As shown above, the decision boundary becomes more and more complex as the number of hidden units increases. The results obtained with 10, 15, and 20 hidden units are considered as over-fitted. Indeed, the models try to much to envelope each data points (even the isolated ones). In order to obtain a good generalized model, over-fitted needs to be avoided. For this reason, the model obtained with 5 hidden units is the preferred one. Note that to fully evaluate the models, it is necessary to test the prediction power on unseen data (the test set).</p>
+
+<hr />
+<p><a id="Section_6"></a></p>
+<h2 id="7-conclusion">7. Conclusion</h2>
+
+<p>In conclusion, the addition of the hidden layer to our simple logistic regression model lead to great improvements. This second step toward a complete Deep Neural Network laid the basis for a layered model.</p>
+
+<h3 id="pros">Pros</h3>
+<ol>
+  <li>Better than simple logistic regression.</li>
+  <li>Relatively fast to train.</li>
+  <li>Easy to interpret and visualize (up to three dimensions).</li>
+  <li>Works for both binary and multi-class classification.</li>
+  <li>Can be upgraded with regularization (Ridge or Lasso) and/or mini-batch gradient descent.</li>
+</ol>
+
+<h3 id="cons">Cons</h3>
+<ol>
+  <li>Requires tuning of the new hyper-parameters (number of hidden units and activation functions)</li>
+  <li>Prone to over fitting without proper tuning.</li>
+</ol>

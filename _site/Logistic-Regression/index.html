@@ -1,0 +1,639 @@
+<footer id="attribution" style="float:right; color:#999; background:#fff;">
+Created by Thibault Dody, 06/24/2019.
+</footer>
+
+<h1 id="logistic-regression">Logistic Regression</h1>
+
+<p>This post is part of a three-post series on the topic of Deep Learning. The first part will cover the fundamentals of optimization and more precisely, the logistic regression and its implementation in Python. The second post will cover the basis of layered model. The final post will cover the implementation of a deep neural network.</p>
+
+<h2 id="table-of-content">Table of Content</h2>
+
+<p><a href="#Section_1">1. Theory  </a><br />
+<a href="#Section_2">2. Implementation in Python  </a><br />
+<a href="#Section_3">3. Data  </a><br />
+<a href="#Section_4">4. Simple Logistic Regression  </a><br />
+<a href="#Section_5">5. Conclusion</a></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load libraries
+</span><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="n">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+
+<span class="c1"># personal tools
+</span><span class="kn">import</span> <span class="n">TAD_tools</span>
+
+<span class="c1"># data generator and data manipulation
+</span><span class="kn">from</span> <span class="n">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_classification</span><span class="p">,</span> <span class="n">make_blobs</span><span class="p">,</span> <span class="n">make_moons</span><span class="p">,</span><span class="n">make_circles</span>
+<span class="kn">from</span> <span class="n">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="n">sklearn.metrics</span> <span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">confusion_matrix</span>
+
+<span class="c1"># plotting tools
+</span><span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="n">seaborn</span> <span class="k">as</span> <span class="n">sns</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">style</span><span class="p">.</span><span class="nf">use</span><span class="p">(</span><span class="sh">'</span><span class="s">ggplot</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_1"></a></p>
+<h2 id="1-theory">1. Theory</h2>
+
+<p>The idea behind the logistic regression is to build a linear model (similar to a simple linear regression) in order to predict a binary outcome (0 or 1).</p>
+
+<p>In order to implement a logistic regression, two functions are needed. The first one is a simple linear function (\(L\)) coupled with the sigmoid function (\(\sigma\)). They are defined as:</p>
+
+\[L(x) = b + \sum_{n=1}^{N} w_{n} * x_{n}\]
+
+<p>and</p>
+
+\[\sigma(x) = \frac{1}{1+e^{-x}}\]
+
+<p>Before we dive deeper into these notions, let’s define a few notations:</p>
+
+<ol>
+  <li>The \(w\)’s are called the <strong>weights</strong> of the model. The \(b\) is commonly called the bias.</li>
+  <li>The input example \(x\) is a n-dimension vector.</li>
+</ol>
+
+<p>The input for our model are defined as:</p>
+
+<ol>
+  <li>A set of \(m\) examples \(\{x_{1},...,x_{m}\}\)</li>
+  <li>A set of \(m\) targets \(\{y_{1},...,y_{m}\}\) where \(y_{i}=0\ or\ 1\)</li>
+</ol>
+
+<p>The goal is to find the \(\beta\) of the linear function is order to make the best predictions. A prediction is defined as:</p>
+
+\[a = \sigma(z)\ where\ z=b + \sum_{n=1}^{N} w_{n} * x_{n}\]
+
+<p>Indeed the output of the sigmoid function can be interpreted as the probability of the prediction to be either 0 or 1. In order to visualize it, let’s plot the sigmoid function.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create sigmoid function 
+</span><span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">z</span><span class="p">))</span>
+
+<span class="c1"># plot sigmoid
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+
+<span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">z</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">z</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">y</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Sigmoid function: $\sigma(x)=1/(1+e^{-z})$</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_5_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_5_0.png" /></a>
+</figure>
+
+<p>The sigmoid function is defined on the entire range of real numbers and takes values in [0,1]. Therefore, if the output of the linear function is a large value, then the sigmoid will be close to 1 and close to 0 if z is very small. There is one missing aspect to our model. The goal is to predict whether y is equal to 0 or 1, to do so, we will define a threshold.</p>
+
+\[y_{pred}=1\ if\ a\geq0.5\ else\ y_{pred}=0\]
+
+<p>Finally, we need to define a performance metric in order to assess how well our model behaves. We call this metric the <strong>Loss Function</strong>. It represents how close are out predictions to the actual values. The loss function is defined as:</p>
+
+\[\mathcal{L(x)}=-log(a)*y-log(1-a)*(1-y)\]
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create sigmoid function 
+</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="mf">0.00001</span><span class="p">,</span><span class="mf">0.999999</span><span class="p">,</span><span class="mf">0.00001</span><span class="p">)</span>
+<span class="n">y_1</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">y_2</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="p">)</span>
+
+<span class="c1"># plot sigmoid
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+
+<span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y_1</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">y=1</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y_2</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">y=0</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">a</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">y</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Loss function: $\mathcal{L(x)}=-log(a)*y-log(1-a)*(1-y)$</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">legend</span><span class="p">();</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_8_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_8_0.png" /></a>
+</figure>
+
+<p>From the above plot, we see that the penalty becomes extremely large is the prediction is incorrect. For instance, if \(y=0\) and \(y_{prob}=0.95\), then the loss is equal to:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">-</span><span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mf">0.95</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>2.99573227355399
+</code></pre></div></div>
+
+<p>Whereas if \(y=0\) and \(y_{prob}=0.05\), then the loss is equal to:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">-</span><span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mf">0.05</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.05129329438755058
+</code></pre></div></div>
+
+<p>Finally, we define the <strong>Cost Function</strong> as the average of the <strong>Loss Function</strong> over the entire set of examples.</p>
+
+\[J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)})\]
+
+<p>The last step of this section consists of the optimization step. Now that the model and the performance metric have been defined, the weights of the model need to be optimized in order to best fit the data. This is where the <strong>gradient descent</strong> comes into play. The idea behind the optimization is to look at how the performance varies as a function of the weights. To do so, the partial derivatives (slops) of the <strong>Cost Function</strong> are computed.</p>
+
+\[\frac{\partial J}{\partial w_{i}}\ and\ \frac{\partial J}{\partial b}\]
+
+<p>Each parameter is then updated using:</p>
+
+\[\theta_{i} = w_{i} - \alpha*\frac{\partial J}{\partial \theta{i}}\]
+
+<p>Where \(\alpha\) is a constant called <strong>learning</strong> rate.</p>
+
+<p>Based on our definition of the loss, we have:</p>
+
+\[\frac{\partial J}{\partial w} = \frac{1}{m}X(A-Y)^T\]
+
+\[\frac{\partial J}{\partial b} = \frac{1}{m} \sum_{i=1}^m (a^{(i)}-y^{(i)})\]
+
+<p>Based on the formulas presented above, it is necessary to obtain A (vector of predicted probabilities) in order to obtain the gradients. Therefore, the optimization is before as a two step process:</p>
+
+<ol>
+  <li>Forward propagation: Make predictions using current parameters and compute cost</li>
+  <li>Backward propagation: Use predictions to compute gradients and update parameters</li>
+</ol>
+
+<hr />
+<p><a id="Section_2"></a></p>
+<h2 id="2-implementation-in-python">2. Implementation in Python</h2>
+
+<p>The functions below are used to define the logistic regression model. They are defined as follows:</p>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">sigmoid</code>: Simple mathematical function used to apply the sigmoid function to a number or an array.</li>
+  <li><code class="language-plaintext highlighter-rouge">initialize_with_zeros</code>: Creates a vector of zeros of shape (dim, 1) for w and initializes b to 0</li>
+  <li><code class="language-plaintext highlighter-rouge">propagate</code>: Computes the cost function and its gradient for the forward propagation</li>
+  <li><code class="language-plaintext highlighter-rouge">optimize</code>: Optimizes w and b by running a gradient descent algorithm</li>
+  <li><code class="language-plaintext highlighter-rouge">predict</code>: Makes a prediction based on a given input</li>
+  <li><code class="language-plaintext highlighter-rouge">model</code>: Builds the logistic regression model</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">z</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Compute the sigmoid of z
+
+    Arguments:
+    z -- A scalar or numpy array of any size.
+
+    Return:
+    s -- sigmoid(z)
+    </span><span class="sh">"""</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">z</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="n">s</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">initialize_with_zeros</span><span class="p">(</span><span class="n">dim</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    This function creates a vector of zeros of shape (dim, 1) for w and initializes b to 0.
+    
+    Argument:
+    dim -- size of the w vector we want (or number of parameters in this case)
+    
+    Returns:
+    w -- initialized vector of shape (dim, 1)
+    b -- initialized scalar (corresponds to the bias)
+    </span><span class="sh">"""</span>
+    
+    <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="nf">assert</span><span class="p">(</span><span class="n">w</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="nf">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">or</span> <span class="nf">isinstance</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="n">w</span><span class="p">,</span> <span class="n">b</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">propagate</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Computes the cost function and its gradient for the forward propagation
+
+    Arguments:
+    w -- weights, a numpy array of size (num_px * num_px * 3, 1)
+    b -- bias, a scalar
+    X -- data of size (num_px * num_px * 3, number of examples)
+    Y -- true </span><span class="sh">"</span><span class="s">label</span><span class="sh">"</span><span class="s"> vector (containing 0 if non-cat, 1 if cat) of size (1, number of examples)
+
+    Return:
+    cost -- negative log-likelihood cost for logistic regression
+    dw -- gradient of the loss with respect to w, thus same shape as w
+    db -- gradient of the loss with respect to b, thus same shape as b
+    </span><span class="sh">"""</span>
+    
+    <span class="n">m</span> <span class="o">=</span> <span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>                              <span class="c1"># number of features
+</span>    
+    <span class="c1"># FORWARD PROPAGATION (FROM X TO COST)
+</span>    <span class="n">A</span> <span class="o">=</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">w</span><span class="p">.</span><span class="n">T</span><span class="p">,</span><span class="n">X</span><span class="p">)</span><span class="o">+</span><span class="n">b</span><span class="p">)</span>                                    <span class="c1"># compute activation SHAPE (1, number of examples)
+</span>    <span class="n">cost</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span> <span class="n">Y</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="n">A</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">Y</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">A</span><span class="p">)</span> <span class="p">)</span>   <span class="c1"># compute cost
+</span>    
+    <span class="c1"># BACKWARD PROPAGATION (TO FIND GRAD)
+</span>    <span class="n">dw</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="p">(</span><span class="n">A</span><span class="o">-</span><span class="n">Y</span><span class="p">).</span><span class="n">T</span><span class="p">)</span>                                 <span class="c1"># (m,num) * (1,num).T = (m,1)
+</span>    <span class="n">db</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">A</span><span class="o">-</span><span class="n">Y</span><span class="p">))</span>                                      <span class="c1"># (1)
+</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">dw</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">w</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">db</span><span class="p">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">squeeze</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
+    <span class="nf">assert</span><span class="p">(</span><span class="n">cost</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">())</span>
+    
+    <span class="n">grads</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">dw</span><span class="sh">"</span><span class="p">:</span> <span class="n">dw</span><span class="p">,</span>
+             <span class="sh">"</span><span class="s">db</span><span class="sh">"</span><span class="p">:</span> <span class="n">db</span><span class="p">}</span>
+    
+    <span class="k">return</span> <span class="n">grads</span><span class="p">,</span> <span class="n">cost</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">optimize</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">num_iterations</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">print_cost</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    This function optimizes w and b by running a gradient descent algorithm
+    
+    Arguments:
+    w -- weights, a numpy array of size (num_px * num_px * 3, 1)
+    b -- bias, a scalar
+    X -- data of shape (num_px * num_px * 3, number of examples)
+    Y -- true </span><span class="sh">"</span><span class="s">label</span><span class="sh">"</span><span class="s"> vector (containing 0 if non-cat, 1 if cat), of shape (1, number of examples)
+    num_iterations -- number of iterations of the optimization loop
+    learning_rate -- learning rate of the gradient descent update rule
+    print_cost -- True to print the loss every 100 steps
+    
+    Returns:
+    params -- dictionary containing the weights w and bias b
+    grads -- dictionary containing the gradients of the weights and bias with respect to the cost function
+    costs -- list of all the costs computed during the optimization, this will be used to plot the learning curve.
+    </span><span class="sh">"""</span>
+    
+    <span class="n">costs</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">num_iterations</span><span class="p">):</span>
+        
+        <span class="c1"># Cost and gradient calculation (≈ 1-4 lines of code)
+</span>        <span class="n">grads</span><span class="p">,</span> <span class="n">cost</span> <span class="o">=</span> <span class="nf">propagate</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+        
+        <span class="c1"># Retrieve derivatives from grads
+</span>        <span class="n">dw</span> <span class="o">=</span> <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dw</span><span class="sh">"</span><span class="p">]</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">db</span><span class="sh">"</span><span class="p">]</span>
+        
+        <span class="c1"># update rule (≈ 2 lines of code)
+</span>        <span class="n">w</span> <span class="o">=</span> <span class="n">w</span> <span class="o">-</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">dw</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">b</span> <span class="o">-</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">db</span>
+        
+        <span class="c1"># Record the costs
+</span>        <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">costs</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
+        
+        <span class="c1"># Print the cost every 100 training iterations
+</span>        <span class="k">if</span> <span class="n">print_cost</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nf">print </span><span class="p">(</span><span class="sh">"</span><span class="s">Cost after iteration %i: %f</span><span class="sh">"</span> <span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">cost</span><span class="p">))</span>
+    
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">w</span><span class="sh">"</span><span class="p">:</span> <span class="n">w</span><span class="p">,</span>
+              <span class="sh">"</span><span class="s">b</span><span class="sh">"</span><span class="p">:</span> <span class="n">b</span><span class="p">}</span>
+    
+    <span class="n">grads</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">dw</span><span class="sh">"</span><span class="p">:</span> <span class="n">dw</span><span class="p">,</span>
+             <span class="sh">"</span><span class="s">db</span><span class="sh">"</span><span class="p">:</span> <span class="n">db</span><span class="p">}</span>
+    
+    <span class="k">return</span> <span class="n">params</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">costs</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+    <span class="sh">'''</span><span class="s">
+    Predict whether the label is 0 or 1 using learned logistic regression parameters (w, b)
+    
+    Arguments:
+    w -- weights, a numpy array of size (num_px * num_px * 3, 1)
+    b -- bias, a scalar
+    X -- data of size (num_px * num_px * 3, number of examples)
+    
+    Returns:
+    Y_prediction -- a numpy array (vector) containing all predictions (0/1) for the examples in X
+    </span><span class="sh">'''</span>
+    
+    <span class="n">m</span> <span class="o">=</span> <span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">Y_prediction</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">m</span><span class="p">))</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">w</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+    
+    <span class="c1"># Compute vector "A" predicting the probabilities of a cat being present in the picture
+</span>    <span class="n">A</span> <span class="o">=</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">w</span><span class="p">.</span><span class="n">T</span><span class="p">,</span><span class="n">X</span><span class="p">)</span><span class="o">+</span><span class="n">b</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">A</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        
+        <span class="c1"># Convert probabilities A[0,i] to actual predictions p[0,i]
+</span>        <span class="k">if</span> <span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span><span class="o">&gt;</span><span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">Y_prediction</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Y_prediction</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="nf">assert</span><span class="p">(</span><span class="n">Y_prediction</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+    
+    <span class="k">return</span> <span class="n">Y_prediction</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span> <span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">print_cost</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Builds the logistic regression model
+    
+    Arguments:
+    X_train -- training set represented by a numpy array of shape (num_px * num_px * 3, m_train)
+    Y_train -- training labels represented by a numpy array (vector) of shape (1, m_train)
+    X_test -- test set represented by a numpy array of shape (num_px * num_px * 3, m_test)
+    Y_test -- test labels represented by a numpy array (vector) of shape (1, m_test)
+    num_iterations -- hyperparameter representing the number of iterations to optimize the parameters
+    learning_rate -- hyperparameter representing the learning rate used in the update rule of optimize()
+    print_cost -- Set to true to print the cost every 100 iterations
+    
+    Returns:
+    d -- dictionary containing information about the model.
+    </span><span class="sh">"""</span>
+    
+    <span class="c1"># initialize parameters with zeros (≈ 1 line of code)
+</span>    <span class="n">w</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="nf">initialize_with_zeros</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># Gradient descent (≈ 1 line of code)
+</span>    <span class="n">parameters</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">costs</span> <span class="o">=</span> <span class="nf">optimize</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">num_iterations</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">,</span> <span class="n">print_cost</span> <span class="o">=</span> <span class="n">print_cost</span><span class="p">)</span>
+    
+    <span class="c1"># Retrieve parameters w and b from dictionary "parameters"
+</span>    <span class="n">w</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">"</span><span class="s">w</span><span class="sh">"</span><span class="p">]</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">"</span><span class="s">b</span><span class="sh">"</span><span class="p">]</span>
+    
+    <span class="c1"># Predict test/train set examples (≈ 2 lines of code)
+</span>    <span class="n">Y_prediction_test</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">X_test</span><span class="p">)</span>
+    <span class="n">Y_prediction_train</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">X_train</span><span class="p">)</span>
+
+    <span class="c1"># Print train/test Errors
+</span>    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">train accuracy: {:.2f} %</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="mi">100</span> <span class="o">-</span> <span class="n">np</span><span class="p">.</span><span class="nf">mean</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="n">Y_prediction_train</span> <span class="o">-</span> <span class="n">Y_train</span><span class="p">))</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">test accuracy: {:.2f} %</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="mi">100</span> <span class="o">-</span> <span class="n">np</span><span class="p">.</span><span class="nf">mean</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="n">Y_prediction_test</span> <span class="o">-</span> <span class="n">Y_test</span><span class="p">))</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+
+    <span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="sh">"</span><span class="s">costs</span><span class="sh">"</span><span class="p">:</span> <span class="n">costs</span><span class="p">,</span>
+         <span class="sh">"</span><span class="s">Y_prediction_test</span><span class="sh">"</span><span class="p">:</span> <span class="n">Y_prediction_test</span><span class="p">,</span> 
+         <span class="sh">"</span><span class="s">Y_prediction_train</span><span class="sh">"</span> <span class="p">:</span> <span class="n">Y_prediction_train</span><span class="p">,</span> 
+         <span class="sh">"</span><span class="s">w</span><span class="sh">"</span> <span class="p">:</span> <span class="n">w</span><span class="p">,</span> 
+         <span class="sh">"</span><span class="s">b</span><span class="sh">"</span> <span class="p">:</span> <span class="n">b</span><span class="p">,</span>
+         <span class="sh">"</span><span class="s">learning_rate</span><span class="sh">"</span> <span class="p">:</span> <span class="n">learning_rate</span><span class="p">,</span>
+         <span class="sh">"</span><span class="s">num_iterations</span><span class="sh">"</span><span class="p">:</span> <span class="n">num_iterations</span><span class="p">}</span>
+    
+    <span class="k">return</span> <span class="n">d</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_3"></a></p>
+<h2 id="3-data">3. Data</h2>
+
+<p>We use sklearn data generator to create a set of inputs (X) with two input features.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Create data
+</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="nf">make_classification</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                                            <span class="n">n_informative</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_redundant</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                            <span class="n">n_repeated</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_classes</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                                            <span class="n">n_clusters_per_class</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                            <span class="n">weights</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">flip_y</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+                                            <span class="n">class_sep</span><span class="o">=</span><span class="mf">0.98</span><span class="p">,</span> <span class="n">hypercube</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                            <span class="n">shift</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                                            <span class="n">shuffle</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+
+<span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="nf">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.10</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+<span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">.</span><span class="n">T</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">.</span><span class="n">T</span>
+<span class="n">X_train</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">.</span><span class="n">T</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">.</span><span class="n">T</span>
+<span class="n">y_train</span> <span class="o">=</span> <span class="n">y_train</span><span class="p">.</span><span class="n">T</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">y_test</span> <span class="o">=</span> <span class="n">y_test</span><span class="p">.</span><span class="n">T</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Visualize the data:
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">scatter</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:],</span> <span class="n">c</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="p">.</span><span class="n">cm</span><span class="p">.</span><span class="n">Spectral</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_25_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_25_0.png" /></a>
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># data shapes
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">X_train: {}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">X_test: {}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X_test</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">y_train: {}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">y_train</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">y_test: {}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">y_test</span><span class="p">.</span><span class="n">shape</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>X_train: (2, 180)
+X_test: (2, 20)
+y_train: (1, 180)
+y_test: (1, 20)
+</code></pre></div></div>
+
+<p>The dataset consists of 200 records (180 are used in the training set). Each record belongs to a class (0 or 1). A logistic regression model is training on the data.</p>
+
+<p>An important step of the analysis consists of understanding the distribution of the data across the various classes. The distribution establish a benchmark accuracy for our model. For instance, if our data is evenly distributed between two classes then our benchmark value (accuracy from a dummy classifier) will be 50%. But if our data was unevenly distributed 90%/10% then the benchmark would be defined as 90%.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># data distribution
+</span><span class="n">unique_elements</span><span class="p">,</span> <span class="n">counts_elements</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">unique</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Frequency of unique values of y:</span><span class="sh">"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">asarray</span><span class="p">((</span><span class="n">unique_elements</span><span class="p">,</span> <span class="n">counts_elements</span><span class="p">)))</span>
+
+<span class="n">unique_elements</span><span class="p">,</span> <span class="n">counts_elements</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">unique</span><span class="p">(</span><span class="n">y_train</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="s">Frequency of unique values of y_train:</span><span class="sh">"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">asarray</span><span class="p">((</span><span class="n">unique_elements</span><span class="p">,</span> <span class="n">counts_elements</span><span class="p">)))</span>
+
+<span class="n">unique_elements</span><span class="p">,</span> <span class="n">counts_elements</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">unique</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="s">Frequency of unique values of y_test:</span><span class="sh">"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">asarray</span><span class="p">((</span><span class="n">unique_elements</span><span class="p">,</span> <span class="n">counts_elements</span><span class="p">)))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Frequency of unique values of y:
+[[  0   1]
+ [ 99 101]]
+
+Frequency of unique values of y_train:
+[[ 0  1]
+ [89 91]]
+
+Frequency of unique values of y_test:
+[[ 0  1]
+ [10 10]]
+</code></pre></div></div>
+
+<p>From the matrices above, the data appears evenly distributed for all sets (full, train, and test).</p>
+
+<hr />
+<p><a id="Section_4"></a></p>
+<h2 id="4-simple-logistic-regression">4. Simple Logistic Regression</h2>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">d</span> <span class="o">=</span> <span class="nf">model</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span> <span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">print_cost</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Cost after iteration 0: 0.693147
+Cost after iteration 100: 0.287603
+Cost after iteration 200: 0.281655
+Cost after iteration 300: 0.279128
+Cost after iteration 400: 0.277851
+Cost after iteration 500: 0.277187
+Cost after iteration 600: 0.276836
+Cost after iteration 700: 0.276647
+Cost after iteration 800: 0.276546
+Cost after iteration 900: 0.276490
+Cost after iteration 1000: 0.276460
+Cost after iteration 1100: 0.276443
+Cost after iteration 1200: 0.276434
+Cost after iteration 1300: 0.276428
+Cost after iteration 1400: 0.276426
+Cost after iteration 1500: 0.276424
+Cost after iteration 1600: 0.276423
+Cost after iteration 1700: 0.276423
+Cost after iteration 1800: 0.276422
+Cost after iteration 1900: 0.276422
+train accuracy: 90.56 %
+test accuracy: 95.00 %
+</code></pre></div></div>
+
+<p>The cost seems to plateau after 1100 iterations. The accuracy on the test set is <strong>95%</strong> while the accuracy on the train set is <strong>91%</strong>. Overall, the logistic regression performed well on this simple test case.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Visualize the data:
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="nf">list</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span><span class="mi">100</span><span class="p">)),</span> <span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">costs</span><span class="sh">'</span><span class="p">])</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Variation of Cost Function during training</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Training step number</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Cost</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_34_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_34_0.png" /></a>
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">y_train</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="nf">predict</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">w</span><span class="sh">'</span><span class="p">],</span> <span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">],</span> <span class="n">X_train</span><span class="p">).</span><span class="n">T</span><span class="p">,</span>
+                                <span class="n">classes</span><span class="o">=</span><span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="nf">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)]),</span>
+                                <span class="n">normalize</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="p">.</span><span class="n">cm</span><span class="p">.</span><span class="n">Blues</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Accuracy Training = {:.2f}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">accuracy_score</span><span class="p">(</span><span class="n">y_train</span><span class="p">.</span><span class="n">T</span><span class="p">,</span>  <span class="nf">predict</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">w</span><span class="sh">'</span><span class="p">],</span> <span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">],</span> <span class="n">X_train</span><span class="p">).</span><span class="n">T</span><span class="p">)));</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Accuracy Training = 0.91
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_35_1.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_35_1.png" /></a>
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="nf">predict</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">w</span><span class="sh">'</span><span class="p">],</span> <span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">],</span> <span class="n">X_test</span><span class="p">).</span><span class="n">T</span><span class="p">,</span>
+                                <span class="n">classes</span><span class="o">=</span><span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="nf">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)]),</span>
+                                <span class="n">normalize</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span><span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="p">.</span><span class="n">cm</span><span class="p">.</span><span class="n">Blues</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Accuracy Testing = {:.2f}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">accuracy_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">.</span><span class="n">T</span><span class="p">,</span>  <span class="nf">predict</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">w</span><span class="sh">'</span><span class="p">],</span> <span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">],</span> <span class="n">X_test</span><span class="p">).</span><span class="n">T</span><span class="p">)));</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Accuracy Testing = 0.95
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_36_1.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_36_1.png" /></a>
+</figure>
+
+<p>Confusion matrices can be used to identify recurring misclassification. For instance, the logistic regression makes more errors when the true label is 1 than when it is 4. In our example, it does not really matter since the data was randomly generated. However, when working on a real dataset, this pattern can indicate a need for improvement of the model (more data,…).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_decision_boundary_train_test</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nf">predict</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">w</span><span class="sh">'</span><span class="p">],</span> <span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">],</span> <span class="n">x</span><span class="p">.</span><span class="n">T</span><span class="p">),</span>
+                                            <span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">.</span><span class="n">T</span><span class="p">.</span><span class="nf">ravel</span><span class="p">(),</span>
+                                            <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">.</span><span class="n">T</span><span class="p">.</span><span class="nf">ravel</span><span class="p">())</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_37_0.png" /></a>
+</figure>
+
+<p>Finally, we now generate a few datasets with complex decision boundaries. The idea is to test the ability of the logistic regression to adapt to more complex situations.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">n_samples</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="n">outliers_fraction</span> <span class="o">=</span> <span class="mf">0.15</span>
+<span class="n">n_outliers</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">outliers_fraction</span> <span class="o">*</span> <span class="n">n_samples</span><span class="p">)</span>
+<span class="n">n_inliers</span> <span class="o">=</span> <span class="n">n_samples</span> <span class="o">-</span> <span class="n">n_outliers</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">blobs_params</span> <span class="o">=</span> <span class="nf">dict</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="n">n_inliers</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">datasets</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="nf">make_blobs</span><span class="p">(</span><span class="n">centers</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">cluster_std</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+               <span class="o">**</span><span class="n">blobs_params</span><span class="p">),</span>
+    <span class="nf">make_circles</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="p">.</span><span class="mi">3</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="p">.</span><span class="mi">05</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+    <span class="nf">make_blobs</span><span class="p">(</span><span class="n">centers</span><span class="o">=</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">cluster_std</span><span class="o">=</span><span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">],</span>
+               <span class="o">**</span><span class="n">blobs_params</span><span class="p">),</span>
+    <span class="nf">make_moons</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="p">.</span><span class="mi">05</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)]</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Visualize the data:
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+        <span class="n">axs</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">scatter</span><span class="p">(</span><span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="n">col</span><span class="p">][</span><span class="mi">0</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">],</span>
+                             <span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="n">col</span><span class="p">][</span><span class="mi">0</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">],</span>
+                             <span class="n">c</span><span class="o">=</span><span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="n">col</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                             <span class="n">s</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+                             <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="p">.</span><span class="n">cm</span><span class="p">.</span><span class="n">Spectral</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Dataset {}:</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">row</span><span class="o">+</span><span class="n">col</span><span class="p">));</span>
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_41_0.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_41_0.png" /></a>
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">datasets</span><span class="p">):</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">i</span><span class="o">//</span><span class="mi">2</span>
+    <span class="n">col</span> <span class="o">=</span> <span class="n">i</span><span class="o">%</span><span class="mi">2</span>
+    
+    <span class="n">X</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="nf">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.10</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">X</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="n">y</span><span class="p">.</span><span class="n">T</span>
+    <span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="n">X_test</span><span class="p">.</span><span class="n">T</span>
+    <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">y_train</span><span class="p">.</span><span class="n">T</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">y_test</span><span class="p">.</span><span class="n">T</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="s">Dataset {}:</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="nf">model</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span> <span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">print_cost</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+    
+    <span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_decision_boundary</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nf">predict</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">w</span><span class="sh">'</span><span class="p">],</span> <span class="n">d</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">],</span> <span class="n">x</span><span class="p">.</span><span class="n">T</span><span class="p">),</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sh">"</span><span class="s">Dataset {}:</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">])</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Dataset 0:
+train accuracy: 55.90 %
+test accuracy: 30.77 %
+
+Dataset 1:
+train accuracy: 31.11 %
+test accuracy: 37.50 %
+
+Dataset 2:
+train accuracy: 79.04 %
+test accuracy: 57.69 %
+
+Dataset 3:
+train accuracy: 88.52 %
+test accuracy: 86.67 %
+</code></pre></div></div>
+
+<figure>
+    <a href="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_42_1.png"><img src="https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/output_42_1.png" /></a>
+</figure>
+
+<p>As shown above, when boundaries between classes are not linear, the logistic regression does not perform well (as expected). However, the principle behind linear classification can be used and combined in order to make more complex model. A new type of model combining the efficiency of the logistic regression and a non-linear aspect is the natural next step towards deep learning.</p>
+
+<hr />
+<p><a id="Section_5"></a></p>
+<h2 id="5-conclusion">5. Conclusion</h2>
+
+<h3 id="pros">Pros</h3>
+<ol>
+  <li>Simple to implement.</li>
+  <li>Few hyperparameters.</li>
+  <li>Easy to interpret and visualize (up to three dimensions).</li>
+  <li>Works for both binary and multi-class classification.</li>
+  <li>Can be upgraded with regularization (Ridge or Lasso)</li>
+</ol>
+
+<h3 id="cons">Cons</h3>
+<ol>
+  <li>Works well if data relationships are linear.</li>
+  <li>Too simple to capture complex relationships.</li>
+</ol>
+
+<p>In conclusion, a logistic regression can be seen as the first step of the path to a more complex model. It is often use as a mean to assess the complexity of a problem and obtain quick and rough results.</p>
+
+<p>In part of this series, we will cover the basic of deep learning and how we can leverage the basics of the logistic regression to implement more complex models.</p>

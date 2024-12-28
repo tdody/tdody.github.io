@@ -1,0 +1,1784 @@
+<footer id="attribution" style="float:right; color:#999; background:#fff;">
+Created by Thibault Dody, 08/23/2019.
+</footer>
+
+<h1 id="deep-neural-network">Deep Neural Network</h1>
+
+<p>This notebook covers the basics of deep neural networks and their implementation in Python. In <a href="https://tdody.github.io//Logistic-Regression/">Part 1</a> of this series, we went over the logistic regression. In <a href="https://tdody.github.io//Neural-Network/">Part 2</a>, we covered the basis of Neural Networks and their implementation.</p>
+
+<p>Neural Networks were created in an intent to mimic the human vision and the brain structure. Instead of having the entire information process by a neuron, it is process by an network of neurons. Each neuron serves a basic function (detect curves, detect straight lines…) then the information is conveyed to another layer in charge of detecting more complex patter.</p>
+
+<h2 id="table-of-content">Table of Content</h2>
+
+<p><a href="#Section_0">1. Notation  </a><br />
+<a href="#Section_1">2. Theory  </a><br />
+<a href="#Section_2">3. Implementation in Python  </a><br />
+<a href="#Section_3">4. Application on MNIST  </a><br />
+<a href="#Section_4">5. Implementation using Keras  </a><br />
+<a href="#Section_5">6. Softmax Regression  </a><br />
+<a href="#Section_6">7. Application of Multiclass on MNIST</a><br />
+<a href="#Section_7">8. Conclusion</a></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load libraries
+</span><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="n">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+
+<span class="c1"># personal tools
+</span><span class="kn">import</span> <span class="n">TAD_tools_v00</span>
+
+<span class="c1"># data generator and data manipulation
+</span><span class="kn">from</span> <span class="n">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_classification</span><span class="p">,</span> <span class="n">make_blobs</span><span class="p">,</span> <span class="n">make_moons</span><span class="p">,</span> <span class="n">make_circles</span><span class="p">,</span> <span class="n">make_classification</span>
+<span class="kn">from</span> <span class="n">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="n">sklearn.metrics</span> <span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">confusion_matrix</span>
+
+<span class="c1"># plotting tools
+</span><span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="n">seaborn</span> <span class="k">as</span> <span class="n">sns</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">style</span><span class="p">.</span><span class="nf">use</span><span class="p">(</span><span class="sh">'</span><span class="s">ggplot</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_0"></a></p>
+<h2 id="1-notations">1. Notations</h2>
+
+<p>The following notations are used in this notebook:</p>
+<ul>
+  <li>\(m\) is the number of feature of the input
+    <ul>
+      <li>Type: integer</li>
+    </ul>
+  </li>
+  <li>\(n\) is the number of input examples
+    <ul>
+      <li>Type: integer</li>
+    </ul>
+  </li>
+  <li>\(x\) is the set of input data
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((m*n)\)</li>
+      <li>Components: \(x^{(i)}\) of size \((m*1)\)</li>
+    </ul>
+  </li>
+  <li>\(n^{[l]}\) is the number of neurons in the hidden layer (l)
+    <ul>
+      <li>Type: integer</li>
+    </ul>
+  </li>
+  <li>\(W^{[l]}\) are the weights of the layer l (hidden)
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((n^{[l]}*n^{[l-1]})\)</li>
+    </ul>
+  </li>
+  <li>\(W^{[L]}\) are the weights of the layer L (output)
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((1*n^{[L-1]})\)</li>
+    </ul>
+  </li>
+  <li>\(b^{[l]}\) are the bias of the layer l (hidden)
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((n^{[1]}*1)\)</li>
+    </ul>
+  </li>
+  <li>\(b^{[L]}\) are the bias of the layer L (output)
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((1*1)\)</li>
+    </ul>
+  </li>
+  <li>\(a^{[l]}\) is the output of the l-th layer
+    <ul>
+      <li>Type: Array</li>
+      <li>Size: \((n^{[l]}*n)\)</li>
+      <li>Components: \(a^{[l] (i)}\)</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+<p><a id="Section_1"></a></p>
+<h2 id="2-theory">2. Theory</h2>
+
+<h3 id="21-components">2.1. Components</h3>
+
+<p>The deep neural network model is made of the following components:</p>
+<ol>
+  <li>The input layer (i.e. the input data)</li>
+  <li>Several hidden layers (main difference with simple neural networks)</li>
+  <li>One output layer</li>
+</ol>
+
+<p>Each hidden layer (\(l\)) is made of an ensemble of neurons each equipped with the following two tools:</p>
+<ol>
+  <li>A set of weights \(\{w_{1}^{[l]},..,w_{m}^{[l]}\}\) and a bias term \(b^{[l]}\).</li>
+  <li>An activation function which adds a non-linear behavior to its neuron.</li>
+</ol>
+
+<h3 id="22-architecture">2.2. Architecture</h3>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/deep_nn.png" style="width:800px;height:350px;" />
+</figure>
+
+<p>As shown above, the input vector \(X=\{x_{1},x_{2}\}\) passes through the first hidden layer. The output of the hidden layer are then used as an input for the output layer. Finally, the output of the last layer is used to make a prediction.</p>
+
+<p>Let’s take an example where the hidden layer is made of 3 hidden units. The equations of the model are:</p>
+
+<p>\(a_{1}^{[1]}=g(w_{1,1}^{[1]}*x_{1}+w_{1,2}^{[1]}*x_{2}+b_{1}^{[1]})\)
+\(a_{2}^{[1]}=g(w_{2,1}^{[1]}*x_{1}+w_{2,2}^{[1]}*x_{2}+b_{2}^{[1]})\)</p>
+
+<p>Then:</p>
+
+\[y_{prob}=\sigma(w_{1}^{[2]}*a_{1}^{[1]}+w_{2}^{[2]}*a_{2}^{[1]}+b^{[2]})\]
+
+<h3 id="23-activation-functions">2.3. Activation Functions</h3>
+
+<p>The activation of the output layer is the sigmoid. This choice is based on the nature of the output, the output layer gives a probability (between 0 and 1). However, the activation layer of the hidden units can be chosen amongst a larger set of functions:</p>
+
+<ul>
+  <li>tanh</li>
+  <li>ReLU (Rectified Linear Unit)</li>
+  <li>Leaky RelU</li>
+  <li>Step</li>
+  <li>Linear</li>
+</ul>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Define the range for plot
+</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="c1"># Define activation functions over range
+</span><span class="n">f_tanh</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">tanh</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">f_relu</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">f_leaky_relu</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">maximum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mf">0.01</span><span class="o">*</span><span class="n">x</span><span class="p">)</span>
+<span class="n">f_step</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="mi">2</span>
+<span class="n">f_linear</span> <span class="o">=</span> <span class="n">x</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Plot activation functions
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_tanh</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">tanh</span><span class="sh">'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="sh">'</span><span class="s">-.</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_step</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">step</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_linear</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">linear</span><span class="sh">'</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">orchid</span><span class="sh">'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="sh">'</span><span class="s">--</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_relu</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">ReLU: max(x, 0)</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">f_leaky_relu</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">Leaky ReLU: max(x, 0.01*x)</span><span class="sh">'</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="sh">'</span><span class="s">--</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">legend</span><span class="p">()</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">legend</span><span class="p">()</span>
+<span class="n">fig</span><span class="p">.</span><span class="nf">suptitle</span><span class="p">(</span><span class="sh">'</span><span class="s">Activation Functions</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/output_11_0.png" />
+</figure>
+
+<p><strong>NOTE</strong>:
+For the rest of this post, the tanh function is used. It performs relatively well as it creates the non-linearity needed while spanning between -1 and 1. Small values helps with the optimization.</p>
+
+<h3 id="24-cost-function">2.4. Cost Function</h3>
+
+<p>Finally, we define the <strong>Cost Function</strong> as the average of the <strong>Loss Function</strong> over the entire set of examples.</p>
+
+\[J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)})\]
+
+<p>The <strong>Loss Function</strong> for a single example is defined as:</p>
+
+\[\mathcal{L}(a^{(i)}, y^{(i)})=- (y^{(i)}\log\left(a^{(i)}\right) - (1-y^{(i)})\log\left(1- a^{(i)}\right))\]
+
+<h3 id="25-optimization">2.5. Optimization</h3>
+
+<p>Similarly to the simple neural network and the logistic regression, a gradient descent is performed to optimize the various weights of the network. The optimization is performed as a three-step process:</p>
+<ol>
+  <li>Forward propagation: Compute the predictions and the various outputs of each layer.</li>
+  <li>Backward propagation: Use the results from the previous step to compute the partial derivative of the cost function with respect to each weight.</li>
+  <li>Update the weights</li>
+</ol>
+
+<p>Below are the formulas used to compute the gradients.</p>
+
+<p>\(dZ^{[l]} = dA^{[l]} * g'(Z^{[l]})\)
+\(dW^{[l]} = \frac{\partial \mathcal{L} }{\partial W^{[l]}} = \frac{1}{m} dZ^{[l]} A^{[l-1] T}\)
+\(db^{[l]} = \frac{\partial \mathcal{L} }{\partial b^{[l]}} = \frac{1}{m} \sum_{i = 1}^{m} dZ^{[l](i)}\)
+\(dA^{[l-1]} = \frac{\partial \mathcal{L} }{\partial A^{[l-1]}} = W^{[l] T} dZ^{[l]}\)</p>
+
+<p>\(g(.)\) is the activation function</p>
+
+<ul>
+  <li>Note that \(*\) denotes element-wise multiplication.</li>
+  <li>The notation you will use is common in deep learning coding:
+    <ul>
+      <li>dW1 = \(\frac{\partial \mathcal{J} }{ \partial W_1 }\)</li>
+      <li>db1 = \(\frac{\partial \mathcal{J} }{ \partial b_1 }\)</li>
+      <li>dW2 = \(\frac{\partial \mathcal{J} }{ \partial W_2 }\)</li>
+      <li>db2 = \(\frac{\partial \mathcal{J} }{ \partial b_2 }\)</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+<p><a id="Section_2"></a></p>
+<h2 id="3-implementation-in-python">3. Implementation in Python</h2>
+
+<p>The functions below are used to define the neural network model. They are defined as follows:</p>
+<ol>
+  <li>Initialization<br />
+  a. <code class="language-plaintext highlighter-rouge">initialize_parameters_deep</code>: Establish the architecture of the model</li>
+  <li>Forward Propagation<br />
+  a. <code class="language-plaintext highlighter-rouge">linear_forward</code>: Compute linear activation of the current layer<br />
+   i. <code class="language-plaintext highlighter-rouge">sigmoid</code>: Compute sigmoid of layer output<br />
+   ii. <code class="language-plaintext highlighter-rouge">relu</code>: Compute relu of layer output<br />
+  b. <code class="language-plaintext highlighter-rouge">linear_activation_forward</code>: Compute linear forward and activation function for the current layer<br />
+  c. <code class="language-plaintext highlighter-rouge">L_model_forward</code>: Compute full-forward propagation<br />
+  d. <code class="language-plaintext highlighter-rouge">compute_cost</code>: Compute cost</li>
+  <li>Backward Propagation<br />
+  a. <code class="language-plaintext highlighter-rouge">linear_backward</code>: Compute partial derivative associated to the linear activation of the current layer<br />
+   i. <code class="language-plaintext highlighter-rouge">relu_backward</code>: Compute partial derivative associated to the relu activation<br />
+   ii. <code class="language-plaintext highlighter-rouge">sigmoid_backward</code>: Compute partial derivative associated to the sigmoid activation<br />
+  b. <code class="language-plaintext highlighter-rouge">linear_activation_backward</code>: Compute partial derivative associated to the current layer<br />
+  c. <code class="language-plaintext highlighter-rouge">L_model_backward</code>: Compute partial derivative associated to the entire model<br />
+  d. <code class="language-plaintext highlighter-rouge">update_parameters</code>: Update all the parameters of the network</li>
+  <li>Build Model<br />
+  a. <code class="language-plaintext highlighter-rouge">L_layer_model</code>: Build a L-layer deep-neural network</li>
+</ol>
+
+<p>The initialization is kept simple. The weights associated to each neurons are initialized randomly and the bias terms set to 0.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">initialize_parameters_deep</span><span class="p">(</span><span class="n">layer_dims</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Arguments:
+    layer_dims -- python array (list) containing the dimensions of each layer in our network
+    
+    Returns:
+    parameters -- python dictionary containing your parameters </span><span class="sh">"</span><span class="s">W1</span><span class="sh">"</span><span class="s">, </span><span class="sh">"</span><span class="s">b1</span><span class="sh">"</span><span class="s">, ..., </span><span class="sh">"</span><span class="s">WL</span><span class="sh">"</span><span class="s">, </span><span class="sh">"</span><span class="s">bL</span><span class="sh">"</span><span class="s">:
+                    Wl -- weight matrix of shape (layer_dims[l], layer_dims[l-1])
+                    bl -- bias vector of shape (layer_dims[l], 1)
+    </span><span class="sh">"""</span>
+    
+    <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">seed</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">parameters</span> <span class="o">=</span> <span class="p">{}</span>                <span class="c1"># used to store Wl and bl
+</span>    <span class="n">L</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">layer_dims</span><span class="p">)</span>            <span class="c1"># number of layers in the network
+</span>
+    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">L</span><span class="p">):</span>
+        
+        <span class="c1"># Initialize weights and bias
+</span>        <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">randn</span><span class="p">(</span><span class="n">layer_dims</span><span class="p">[</span><span class="n">l</span><span class="p">],</span><span class="n">layer_dims</span><span class="p">[</span><span class="n">l</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="mf">0.01</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">zeros</span><span class="p">((</span><span class="n">layer_dims</span><span class="p">[</span><span class="n">l</span><span class="p">],</span><span class="mi">1</span><span class="p">))</span>
+        
+        <span class="nf">assert</span><span class="p">(</span><span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="p">)].</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">layer_dims</span><span class="p">[</span><span class="n">l</span><span class="p">],</span> <span class="n">layer_dims</span><span class="p">[</span><span class="n">l</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="nf">assert</span><span class="p">(</span><span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="p">)].</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">layer_dims</span><span class="p">[</span><span class="n">l</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">parameters</span>
+</code></pre></div></div>
+
+<p>Two activation functions will be used for this case:</p>
+<ol>
+  <li>Relu: used as the activation function of each hidden layer.</li>
+  <li>Sigmoid: used as the activation of the output layer.</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">Z</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implements the sigmoid activation in numpy
+    
+    Arguments:
+    Z -- numpy array of any shape
+    
+    Returns:
+    A -- output of sigmoid(z), same shape as Z
+    cache -- returns Z as well, useful during back-propagation
+    </span><span class="sh">"""</span>
+    
+    <span class="n">A</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">Z</span><span class="p">))</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">Z</span>
+    
+    <span class="k">return</span> <span class="n">A</span><span class="p">,</span> <span class="n">cache</span>
+
+<span class="k">def</span> <span class="nf">relu</span><span class="p">(</span><span class="n">Z</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the RELU function.
+
+    Arguments:
+    Z -- Output of the linear layer, of any shape
+
+    Returns:
+    A -- Post-activation parameter, of the same shape as Z
+    cache -- a python dictionary containing </span><span class="sh">"</span><span class="s">A</span><span class="sh">"</span><span class="s"> ; stored for computing the backward pass efficiently
+    </span><span class="sh">"""</span>
+    
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">maximum</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">Z</span><span class="p">)</span>
+    
+    <span class="nf">assert</span><span class="p">(</span><span class="n">A</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">Z</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+    
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">Z</span> 
+    <span class="k">return</span> <span class="n">A</span><span class="p">,</span> <span class="n">cache</span>
+</code></pre></div></div>
+
+<p>Once the model has been initialized, it is necessary to compute the results of the forward pass. To do so, two functions will be used:</p>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">linear_forward</code>: computation of \(Z^{[l]}=W^{[l]}*A^{[l-1]}+b^{[l]}\)</li>
+  <li><code class="language-plaintext highlighter-rouge">linear_activation_forward</code>: computation of \(A^{[l]}=g(Z^{[l]})\)</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">linear_forward</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the linear part of a layer</span><span class="sh">'</span><span class="s">s forward propagation.
+
+    Arguments:
+    A -- activations from previous layer (or input data): (size of previous layer, number of examples)
+    W -- weights matrix: numpy array of shape (size of current layer, size of previous layer)
+    b -- bias vector, numpy array of shape (size of the current layer, 1)
+
+    Returns:
+    Z -- the input of the activation function, also called pre-activation parameter 
+    cache -- a python dictionary containing </span><span class="sh">"</span><span class="s">A</span><span class="sh">"</span><span class="s">, </span><span class="sh">"</span><span class="s">W</span><span class="sh">"</span><span class="s"> and </span><span class="sh">"</span><span class="s">b</span><span class="sh">"</span><span class="s"> ; stored for computing the backward pass efficiently
+    </span><span class="sh">"""</span>
+    
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">A</span><span class="p">)</span> <span class="o">+</span> <span class="n">b</span>
+    
+    <span class="nf">assert</span><span class="p">(</span><span class="n">Z</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">W</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">A</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">Z</span><span class="p">,</span> <span class="n">cache</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">linear_activation_forward</span><span class="p">(</span><span class="n">A_prev</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">activation</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the forward propagation for the LINEAR-&gt;ACTIVATION layer
+
+    Arguments:
+    A_prev -- activations from previous layer (or input data): (size of previous layer, number of examples)
+    W -- weights matrix: numpy array of shape (size of current layer, size of previous layer)
+    b -- bias vector, numpy array of shape (size of the current layer, 1)
+    activation -- the activation to be used in this layer, stored as a text string: </span><span class="sh">"</span><span class="s">sigmoid</span><span class="sh">"</span><span class="s"> or </span><span class="sh">"</span><span class="s">relu</span><span class="sh">"</span><span class="s">
+
+    Returns:
+    A -- the output of the activation function, also called the post-activation value 
+    cache -- a python dictionary containing </span><span class="sh">"</span><span class="s">linear_cache</span><span class="sh">"</span><span class="s"> and </span><span class="sh">"</span><span class="s">activation_cache</span><span class="sh">"</span><span class="s">;
+             stored for computing the backward pass efficiently
+    </span><span class="sh">"""</span>
+    
+    <span class="k">if</span> <span class="n">activation</span> <span class="o">==</span> <span class="sh">"</span><span class="s">sigmoid</span><span class="sh">"</span><span class="p">:</span>
+        <span class="c1"># Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
+</span>        <span class="n">Z</span><span class="p">,</span> <span class="n">linear_cache</span> <span class="o">=</span> <span class="nf">linear_forward</span><span class="p">(</span><span class="n">A_prev</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+        <span class="n">A</span><span class="p">,</span> <span class="n">activation_cache</span> <span class="o">=</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">activation</span> <span class="o">==</span> <span class="sh">"</span><span class="s">relu</span><span class="sh">"</span><span class="p">:</span>
+        <span class="c1"># Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
+</span>        <span class="n">Z</span><span class="p">,</span> <span class="n">linear_cache</span> <span class="o">=</span> <span class="nf">linear_forward</span><span class="p">(</span><span class="n">A_prev</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+        <span class="n">A</span><span class="p">,</span> <span class="n">activation_cache</span> <span class="o">=</span> <span class="nf">relu</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    
+    <span class="nf">assert </span><span class="p">(</span><span class="n">A</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">W</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">A_prev</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="p">(</span><span class="n">linear_cache</span><span class="p">,</span> <span class="n">activation_cache</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">A</span><span class="p">,</span> <span class="n">cache</span>
+</code></pre></div></div>
+
+<p>Using the two tool functions defined above to perform the forward propagation through an individual layer, a new function is created to perform the full forward propagation from the input layer to the output layer.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">L_model_forward</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement forward propagation for the [LINEAR-&gt;RELU]*(L-1)-&gt;LINEAR-&gt;SIGMOID computation
+    
+    Arguments:
+    X -- data, numpy array of shape (input size, number of examples)
+    parameters -- output of initialize_parameters_deep()
+    
+    Returns:
+    AL -- last post-activation value
+    caches -- list of caches containing:
+                every cache of linear_activation_forward() (there are L-1 of them, indexed from 0 to L-1)
+    </span><span class="sh">"""</span>
+
+    <span class="n">caches</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">X</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>                  <span class="c1"># number of layers in the neural network
+</span>    
+    <span class="c1"># Implement [LINEAR -&gt; RELU]*(L-1). Add "cache" to the "caches" list.
+</span>    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">L</span><span class="p">):</span>
+        <span class="n">A_prev</span> <span class="o">=</span> <span class="n">A</span> 
+        
+        <span class="c1"># retrieve parameters
+</span>        <span class="n">W</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="p">)]</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="p">)]</span>
+        <span class="n">activation</span> <span class="o">=</span> <span class="sh">'</span><span class="s">relu</span><span class="sh">'</span>
+        
+        <span class="n">A</span><span class="p">,</span> <span class="n">cache</span> <span class="o">=</span> <span class="nf">linear_activation_forward</span><span class="p">(</span><span class="n">A_prev</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">activation</span><span class="p">)</span>
+        <span class="n">caches</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+    
+    <span class="c1"># Implement LINEAR -&gt; SIGMOID. Add "cache" to the "caches" list.
+</span>    
+    <span class="c1"># retrieve parameters
+</span>    <span class="n">W</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">L</span><span class="p">)]</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">L</span><span class="p">)]</span>
+    <span class="n">activation</span> <span class="o">=</span> <span class="sh">'</span><span class="s">sigmoid</span><span class="sh">'</span>
+    
+    <span class="n">AL</span><span class="p">,</span> <span class="n">cache</span> <span class="o">=</span> <span class="nf">linear_activation_forward</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">activation</span><span class="p">)</span>
+    <span class="n">caches</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+    
+    <span class="nf">assert</span><span class="p">(</span><span class="n">AL</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            
+    <span class="k">return</span> <span class="n">AL</span><span class="p">,</span> <span class="n">caches</span>
+</code></pre></div></div>
+
+<p>The final step before performing the backward propagation consists of computing the cost associated to the forward propagation.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">compute_cost</span><span class="p">(</span><span class="n">AL</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the cost function.
+
+    Arguments:
+    AL -- probability vector corresponding to your label predictions, shape (1, number of examples)
+    Y -- true </span><span class="sh">"</span><span class="s">label</span><span class="sh">"</span><span class="s"> vector (for example: containing 0 or 1), shape (1, number of examples)
+
+    Returns:
+    cost -- cross-entropy cost
+    </span><span class="sh">"""</span>
+    
+    <span class="n">m</span> <span class="o">=</span> <span class="n">Y</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Compute loss from aL and y.
+</span>    <span class="n">cost</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span> <span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="n">AL</span><span class="p">)</span> <span class="o">*</span> <span class="n">Y</span> <span class="o">+</span> <span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">AL</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">Y</span><span class="p">)</span> <span class="p">)</span>
+    
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">squeeze</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>      <span class="c1"># To make sure your cost's shape is what we expect (e.g. this turns [[17]] into 17).
+</span>    <span class="nf">assert</span><span class="p">(</span><span class="n">cost</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">())</span>
+    
+    <span class="k">return</span> <span class="n">cost</span>
+</code></pre></div></div>
+
+<p>Now, all the components needed to compute the different partial derivatives associated to the gradient descent are ready. Similarly to the forward propagation, we use a set of tool functions to compute the intermediate calculations associated to the backward propagation:</p>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">linear_backward</code>: compute \(dA^{[l]}\) using \(dZ^{[l+1]}\)</li>
+  <li><code class="language-plaintext highlighter-rouge">relu_backward</code>: compute \(dZ^{[l]}\) using \(dA^{[l]}\) for the hidden layers</li>
+  <li><code class="language-plaintext highlighter-rouge">sigmoid_backward</code>: compute \(dZ^{[l]}\) using \(dA^{[l]}\) for the output layer</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">linear_backward</span><span class="p">(</span><span class="n">dZ</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the linear portion of backward propagation for a single layer (layer l)
+
+    Arguments:
+    dZ -- Gradient of the cost with respect to the linear output (of current layer l)
+    cache -- tuple of values (A_prev, W, b) coming from the forward propagation in the current layer
+
+    Returns:
+    dA_prev -- Gradient of the cost with respect to the activation (of the previous layer l-1), same shape as A_prev
+    dW -- Gradient of the cost with respect to W (current layer l), same shape as W
+    db -- Gradient of the cost with respect to b (current layer l), same shape as b
+    </span><span class="sh">"""</span>
+    <span class="n">A_prev</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">cache</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">A_prev</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="n">dW</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">dZ</span><span class="p">,</span> <span class="n">A_prev</span><span class="p">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">dZ</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">dA_prev</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">W</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dZ</span><span class="p">)</span>
+    
+    <span class="nf">assert </span><span class="p">(</span><span class="n">dA_prev</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">A_prev</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="nf">assert </span><span class="p">(</span><span class="n">dW</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">W</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="nf">assert </span><span class="p">(</span><span class="n">db</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">b</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">dA_prev</span><span class="p">,</span> <span class="n">dW</span><span class="p">,</span> <span class="n">db</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">relu_backward</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the backward propagation for a single RELU unit.
+
+    Arguments:
+    dA -- post-activation gradient, of any shape
+    cache -- </span><span class="sh">'</span><span class="s">Z</span><span class="sh">'</span><span class="s"> where we store for computing backward propagation efficiently
+
+    Returns:
+    dZ -- Gradient of the cost with respect to Z
+    </span><span class="sh">"""</span>
+    
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">cache</span>
+    <span class="n">dZ</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="c1"># just converting dz to a correct object.
+</span>    
+    <span class="c1"># When z &lt;= 0, you should set dz to 0 as well. 
+</span>    <span class="n">dZ</span><span class="p">[</span><span class="n">Z</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="nf">assert </span><span class="p">(</span><span class="n">dZ</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">Z</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">dZ</span>
+
+<span class="k">def</span> <span class="nf">sigmoid_backward</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the backward propagation for a single SIGMOID unit.
+
+    Arguments:
+    dA -- post-activation gradient, of any shape
+    cache -- </span><span class="sh">'</span><span class="s">Z</span><span class="sh">'</span><span class="s"> where we store for computing backward propagation efficiently
+
+    Returns:
+    dZ -- Gradient of the cost with respect to Z
+    </span><span class="sh">"""</span>
+    
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">cache</span>
+    
+    <span class="n">s</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">Z</span><span class="p">))</span>
+    <span class="n">dZ</span> <span class="o">=</span> <span class="n">dA</span> <span class="o">*</span> <span class="n">s</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">s</span><span class="p">)</span>
+    
+    <span class="nf">assert </span><span class="p">(</span><span class="n">dZ</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">Z</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">dZ</span>
+</code></pre></div></div>
+
+<p>The above functions are combined into a single one. This new functions takes \(dA^{[l+1]}\) as an input and returns \(dA^{[l]}\).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">linear_activation_backward</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">activation</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the backward propagation for the LINEAR-&gt;ACTIVATION layer.
+    
+    Arguments:
+    dA -- post-activation gradient for current layer l 
+    cache -- tuple of values (linear_cache, activation_cache) we store for computing backward propagation efficiently
+    activation -- the activation to be used in this layer, stored as a text string: </span><span class="sh">"</span><span class="s">sigmoid</span><span class="sh">"</span><span class="s"> or </span><span class="sh">"</span><span class="s">relu</span><span class="sh">"</span><span class="s">
+    
+    Returns:
+    dA_prev -- Gradient of the cost with respect to the activation (of the previous layer l-1), same shape as A_prev
+    dW -- Gradient of the cost with respect to W (current layer l), same shape as W
+    db -- Gradient of the cost with respect to b (current layer l), same shape as b
+    </span><span class="sh">"""</span>
+    <span class="c1"># retrieve caches
+</span>    <span class="c1"># linear_cache = (A, W, b)
+</span>    <span class="c1"># activation_cache = Z
+</span>    
+    <span class="n">linear_cache</span><span class="p">,</span> <span class="n">activation_cache</span> <span class="o">=</span> <span class="n">cache</span>
+    
+    <span class="k">if</span> <span class="n">activation</span> <span class="o">==</span> <span class="sh">"</span><span class="s">relu</span><span class="sh">"</span><span class="p">:</span>
+        
+        <span class="c1"># parameters
+</span>        <span class="n">Z</span> <span class="o">=</span> <span class="n">activation_cache</span>
+        
+        <span class="n">dZ</span> <span class="o">=</span> <span class="nf">relu_backward</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">activation_cache</span><span class="p">)</span>
+        <span class="n">dA_prev</span><span class="p">,</span> <span class="n">dW</span><span class="p">,</span> <span class="n">db</span> <span class="o">=</span> <span class="nf">linear_backward</span><span class="p">(</span><span class="n">dZ</span><span class="p">,</span> <span class="n">linear_cache</span><span class="p">)</span>
+        
+    <span class="k">elif</span> <span class="n">activation</span> <span class="o">==</span> <span class="sh">"</span><span class="s">sigmoid</span><span class="sh">"</span><span class="p">:</span>
+        
+        <span class="c1"># parameters
+</span>        <span class="n">Z</span> <span class="o">=</span> <span class="n">activation_cache</span>
+        
+        <span class="n">dZ</span> <span class="o">=</span> <span class="nf">sigmoid_backward</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">activation_cache</span><span class="p">)</span>
+        <span class="n">dA_prev</span><span class="p">,</span> <span class="n">dW</span><span class="p">,</span> <span class="n">db</span> <span class="o">=</span> <span class="nf">linear_backward</span><span class="p">(</span><span class="n">dZ</span><span class="p">,</span> <span class="n">linear_cache</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">dA_prev</span><span class="p">,</span> <span class="n">dW</span><span class="p">,</span> <span class="n">db</span>
+</code></pre></div></div>
+
+<p>Using the tool functions defined above to perform the backward propagation through an individual layer, a new function is created to perform the full backward propagation from the output layer to the input layer.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">L_model_backward</span><span class="p">(</span><span class="n">AL</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">caches</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the backward propagation for the [LINEAR-&gt;RELU] * (L-1) -&gt; LINEAR -&gt; SIGMOID group
+    
+    Arguments:
+    AL -- probability vector, output of the forward propagation (L_model_forward())
+    Y -- true </span><span class="sh">"</span><span class="s">label</span><span class="sh">"</span><span class="s"> vector (containing 0 or 1)
+    caches -- list of caches containing:
+                every cache of linear_activation_forward() with </span><span class="sh">"</span><span class="s">relu</span><span class="sh">"</span><span class="s"> (it</span><span class="sh">'</span><span class="s">s caches[l], for l in range(L-1) i.e l = 0...L-2)
+                the cache of linear_activation_forward() with </span><span class="sh">"</span><span class="s">sigmoid</span><span class="sh">"</span><span class="s"> (it</span><span class="sh">'</span><span class="s">s caches[L-1])
+                
+                for every cache, a tuple is used to store: (linear_cache, activation_cache)
+                    linear_cache = (A, W, b)
+                    activation_cache = Z
+    
+    Returns:
+    grads -- A dictionary with the gradients
+             grads[</span><span class="sh">"</span><span class="s">dA</span><span class="sh">"</span><span class="s"> + str(l)] = ... 
+             grads[</span><span class="sh">"</span><span class="s">dW</span><span class="sh">"</span><span class="s"> + str(l)] = ...
+             grads[</span><span class="sh">"</span><span class="s">db</span><span class="sh">"</span><span class="s"> + str(l)] = ... 
+    </span><span class="sh">"""</span>
+    <span class="n">grads</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">caches</span><span class="p">)</span> <span class="c1"># the number of layers
+</span>    <span class="n">m</span> <span class="o">=</span> <span class="n">AL</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">AL</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span> <span class="c1"># after this line, Y is the same shape as AL
+</span>    
+    <span class="c1"># Initializing the backpropagation
+</span>    <span class="n">dAL</span> <span class="o">=</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">divide</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">AL</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="p">.</span><span class="nf">divide</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">Y</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">AL</span><span class="p">))</span>
+    
+    <span class="c1"># Lth layer (SIGMOID -&gt; LINEAR) gradients. Inputs: "dAL, current_cache". Outputs: "grads["dAL-1"], grads["dWL"], grads["dbL"]
+</span>    <span class="n">current_cache</span> <span class="o">=</span> <span class="n">caches</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dA</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="mi">1</span><span class="p">)],</span> <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dW</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">L</span><span class="p">)],</span> <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">db</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">L</span><span class="p">)]</span> <span class="o">=</span> <span class="nf">linear_activation_backward</span><span class="p">(</span><span class="n">dAL</span><span class="p">,</span> <span class="n">current_cache</span><span class="p">,</span> <span class="sh">'</span><span class="s">sigmoid</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="c1"># Loop from l=L-2 to l=0
+</span>    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nf">reversed</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="mi">1</span><span class="p">)):</span>
+        <span class="c1"># lth layer: (RELU -&gt; LINEAR) gradients.
+</span>        <span class="c1"># Inputs: "grads["dA" + str(l + 1)], current_cache". Outputs: "grads["dA" + str(l)] , grads["dW" + str(l + 1)] , grads["db" + str(l + 1)] 
+</span>        <span class="n">current_cache</span> <span class="o">=</span> <span class="n">caches</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
+        <span class="n">dA_prev_temp</span><span class="p">,</span> <span class="n">dW_temp</span><span class="p">,</span> <span class="n">db_temp</span> <span class="o">=</span> <span class="nf">linear_activation_backward</span><span class="p">(</span><span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dA</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">)],</span> <span class="n">current_cache</span><span class="p">,</span> <span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">)</span>
+        <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dA</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="p">)]</span> <span class="o">=</span> <span class="n">dA_prev_temp</span>
+        <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dW</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">dW_temp</span>
+        <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">db</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">db_temp</span>
+
+    <span class="k">return</span> <span class="n">grads</span>
+</code></pre></div></div>
+
+<p>Using the various partial derivative terms computed during the backward propagation, the weights and bias are updated.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">update_parameters</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Update parameters using gradient descent
+    
+    Arguments:
+    parameters -- python dictionary containing your parameters 
+    grads -- python dictionary containing your gradients, output of L_model_backward
+    
+    Returns:
+    parameters -- python dictionary containing your updated parameters 
+                  parameters[</span><span class="sh">"</span><span class="s">W</span><span class="sh">"</span><span class="s"> + str(l)] = ... 
+                  parameters[</span><span class="sh">"</span><span class="s">b</span><span class="sh">"</span><span class="s"> + str(l)] = ...
+    </span><span class="sh">"""</span>
+    
+    <span class="n">L</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span> <span class="c1"># number of layers in the neural network
+</span>
+    <span class="c1"># Update rule for each parameter. Use a for loop.
+</span>    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">L</span><span class="p">):</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="sh">"</span><span class="s">W</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">"</span><span class="s">W</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">-</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dW</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="sh">"</span><span class="s">b</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">"</span><span class="s">b</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">-</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">db</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="n">parameters</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">L_layer_model</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">layers_dims</span><span class="p">,</span> <span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.075</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span> <span class="n">print_cost</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implements a L-layer neural network: [LINEAR-&gt;RELU]*(L-1)-&gt;LINEAR-&gt;SIGMOID.
+    
+    Arguments:
+    X -- data, numpy array of shape (number of examples, num_px * num_px * 3)
+    Y -- true </span><span class="sh">"</span><span class="s">label</span><span class="sh">"</span><span class="s"> vector (containing 0 or 1), of shape (1, number of examples)
+    layers_dims -- list containing the input size and each layer size, of length (number of layers + 1).
+    learning_rate -- learning rate of the gradient descent update rule
+    num_iterations -- number of iterations of the optimization loop
+    print_cost -- if True, it prints the cost every 100 steps
+    
+    Returns:
+    parameters -- parameters learned by the model. They can then be used to predict.
+    </span><span class="sh">"""</span>
+
+    <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">costs</span> <span class="o">=</span> <span class="p">[]</span>                         <span class="c1"># keep track of cost
+</span>    
+    <span class="c1"># Parameters initialization. (≈ 1 line of code)
+</span>    <span class="n">parameters</span> <span class="o">=</span> <span class="nf">initialize_parameters_deep</span><span class="p">(</span><span class="n">layers_dims</span><span class="p">)</span>
+    
+    <span class="c1"># Loop (gradient descent)
+</span>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_iterations</span><span class="p">):</span>
+
+        <span class="c1"># Forward propagation: [LINEAR -&gt; RELU]*(L-1) -&gt; LINEAR -&gt; SIGMOID.
+</span>        <span class="n">AL</span><span class="p">,</span> <span class="n">caches</span> <span class="o">=</span> <span class="nc">L_model_forward</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+        
+        <span class="c1"># Compute cost.
+</span>        <span class="n">cost</span> <span class="o">=</span> <span class="nf">compute_cost</span><span class="p">(</span><span class="n">AL</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+    
+        <span class="c1"># Backward propagation.
+</span>        <span class="n">grads</span> <span class="o">=</span> <span class="nc">L_model_backward</span><span class="p">(</span><span class="n">AL</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">caches</span><span class="p">)</span>
+ 
+        <span class="c1"># Update parameters.
+</span>        <span class="n">parameters</span> <span class="o">=</span> <span class="nf">update_parameters</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">)</span>
+                
+        <span class="c1"># Print the cost every 100 training example
+</span>        <span class="k">if</span> <span class="n">print_cost</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nf">print </span><span class="p">(</span><span class="sh">"</span><span class="s">Cost after iteration %i: %f</span><span class="sh">"</span> <span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">cost</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">print_cost</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">costs</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
+            
+    <span class="c1"># plot the cost
+</span>    <span class="k">if</span> <span class="n">print_cost</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">squeeze</span><span class="p">(</span><span class="n">costs</span><span class="p">))</span>
+        <span class="n">plt</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">squeeze</span><span class="p">(</span><span class="n">costs</span><span class="p">))</span>
+        <span class="n">plt</span><span class="p">.</span><span class="nf">ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">cost</span><span class="sh">'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="p">.</span><span class="nf">xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">iterations (per tens)</span><span class="sh">'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="p">.</span><span class="nf">title</span><span class="p">(</span><span class="sh">"</span><span class="s">Learning rate =</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">))</span>
+        <span class="n">plt</span><span class="p">.</span><span class="nf">show</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">parameters</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    This function is used to predict the results of a  L-layer neural network.
+    
+    Arguments:
+    X -- data set of examples you would like to label
+    parameters -- parameters of the trained model
+    
+    Returns:
+    p -- predictions for the given dataset X
+    </span><span class="sh">"""</span>
+    
+    <span class="n">m</span> <span class="o">=</span> <span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span> <span class="c1"># number of layers in the neural network
+</span>    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">m</span><span class="p">))</span>
+    
+    <span class="c1"># Forward propagation
+</span>    <span class="n">probas</span><span class="p">,</span> <span class="n">caches</span> <span class="o">=</span> <span class="nc">L_model_forward</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+
+    <span class="c1"># convert probas to 0/1 predictions
+</span>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">probas</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">probas</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="c1">#print results
+</span>    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">   Accuracy: {:.2f}%%</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">((</span><span class="n">p</span> <span class="o">==</span> <span class="n">y</span><span class="p">)</span><span class="o">/</span><span class="n">m</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+        
+    <span class="k">return</span> <span class="n">p</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_3"></a></p>
+<h2 id="4-application-on-mnist">4. Application on MNIST</h2>
+
+<h3 id="41-data-import">4.1. Data Import</h3>
+
+<p>We have defined the necessary tools to build a Deep Neural Network. We will now test our implementation using the famous MNIST dataset. This dataset consists of a set of hand-written digits (0 to 9). Since our model was kept simple and is used to perform binary classification, we will adjust the problem of the digit recognition to detect the digit 5.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">tensorflow</span> <span class="k">as</span> <span class="n">tf</span>
+<span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load data
+</span><span class="n">mnist</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="n">mnist</span>
+
+<span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">),</span> <span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span> <span class="o">=</span> <span class="n">mnist</span><span class="p">.</span><span class="nf">load_data</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The shape of the training set is:</span><span class="sh">'</span><span class="p">,</span> <span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The shape of the training target is:</span><span class="sh">'</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The shape of the test set is:</span><span class="sh">'</span><span class="p">,</span> <span class="n">X_test</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The shape of the test target is:</span><span class="sh">'</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>The shape of the training set is: (60000, 28, 28)
+The shape of the training target is: (60000,)
+The shape of the test set is: (10000, 28, 28)
+The shape of the test target is: (10000,)
+</code></pre></div></div>
+
+<p>Before generating our model, we inspect the dataset by potting a few examples for each class.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># unique classes
+</span><span class="n">unique_classes</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">unique</span><span class="p">(</span><span class="n">Y_train</span><span class="p">)</span>
+
+<span class="c1"># create plot figure
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="mi">9</span><span class="p">))</span>
+
+<span class="c1"># loop over the classes and plots a few randomly selected images
+</span><span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">digit</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">unique_classes</span><span class="p">):</span>
+    <span class="n">selected_images</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="n">Y_train</span><span class="o">==</span><span class="n">digit</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>
+    
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">10</span><span class="p">):</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">digit</span><span class="p">,</span><span class="n">k</span><span class="p">].</span><span class="nf">imshow</span><span class="p">(</span><span class="n">selected_images</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">cmap</span><span class="o">=</span><span class="sh">'</span><span class="s">gray</span><span class="sh">'</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">digit</span><span class="p">,</span><span class="n">k</span><span class="p">].</span><span class="nf">axis</span><span class="p">(</span><span class="sh">'</span><span class="s">off</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/output_48_0.png" />
+</figure>
+
+<p>We now extract all the 5 and a random subset of non-five. We want to keep the dataset balance between the two classes (5 and non-5).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="n">X_train_five</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="n">Y_train</span><span class="o">==</span><span class="mi">5</span><span class="p">]</span>
+<span class="n">X_train_non_five</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="n">Y_train</span><span class="o">!=</span><span class="mi">5</span><span class="p">]</span>
+<span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">shuffle</span><span class="p">(</span><span class="n">X_train_non_five</span><span class="p">)</span>
+<span class="n">X_train_non_five</span> <span class="o">=</span> <span class="n">X_train_non_five</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">X_train_five</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],:]</span>
+
+<span class="n">Y_train</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">zeros</span><span class="p">((</span><span class="n">X_train_five</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">X_train_non_five</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">Y_train</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">X_train_five</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">X_test_five</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">[</span><span class="n">Y_test</span><span class="o">==</span><span class="mi">5</span><span class="p">]</span>
+<span class="n">X_test_non_five</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">[</span><span class="n">Y_test</span><span class="o">!=</span><span class="mi">5</span><span class="p">]</span>
+<span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">shuffle</span><span class="p">(</span><span class="n">X_test_non_five</span><span class="p">)</span>
+<span class="n">X_test_non_five</span> <span class="o">=</span> <span class="n">X_test_non_five</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">X_test_five</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],:]</span>
+
+<span class="n">Y_test</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">zeros</span><span class="p">((</span><span class="n">X_test_five</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">X_test_non_five</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">Y_test</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">X_test_five</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">There are {} instances of 5 in the train set.</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X_train_five</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">There are {} instances of 5 in the test set.</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X_test_five</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>There are 5421 instances of 5 in the train set.
+There are 892 instances of 5 in the test set.
+</code></pre></div></div>
+
+<p>Finally, we reshape the datasets and scale the pixel values.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># stack classes
+</span><span class="n">X_train</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">vstack</span><span class="p">([</span><span class="n">X_train_five</span><span class="p">,</span> <span class="n">X_train_non_five</span><span class="p">])</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">vstack</span><span class="p">([</span><span class="n">X_test_five</span><span class="p">,</span> <span class="n">X_test_non_five</span><span class="p">])</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># reshape
+</span><span class="n">X_train</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">).</span><span class="n">T</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">).</span><span class="n">T</span>
+
+<span class="n">Y_train</span> <span class="o">=</span> <span class="n">Y_train</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">Y_test</span> <span class="o">=</span> <span class="n">Y_test</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># normalize
+</span><span class="n">X_train</span> <span class="o">=</span> <span class="n">X_train</span> <span class="o">/</span> <span class="mf">255.0</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span> <span class="o">/</span> <span class="mf">255.0</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The shape of the training set is:</span><span class="sh">'</span><span class="p">,</span> <span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The shape of the training target is:</span><span class="sh">'</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The shape of the test set is:</span><span class="sh">'</span><span class="p">,</span> <span class="n">X_test</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The shape of the test target is:</span><span class="sh">'</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>The shape of the training set is: (784, 10842)
+The shape of the training target is: (1, 10842)
+The shape of the test set is: (784, 1784)
+The shape of the test target is: (1, 1784)
+</code></pre></div></div>
+
+<h3 id="42-model-testing">4.2. Model Testing</h3>
+
+<p>One of the first steps of building a DNN is to define its architecture. That is, the number of hidden layers and the number of hidden units per hidden layers. Various candidates are generated and trained. The best one is kept.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">models</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">'</span><span class="s">28x28-&gt;1</span><span class="sh">'</span><span class="p">:[</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="sh">'</span><span class="s">28x28-&gt;5-&gt;1</span><span class="sh">'</span><span class="p">:[</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="sh">'</span><span class="s">28x28-&gt;7-&gt;5-&gt;1</span><span class="sh">'</span><span class="p">:[</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">layers_dims</span> <span class="ow">in</span> <span class="n">models</span><span class="p">.</span><span class="nf">items</span><span class="p">():</span>
+    
+    <span class="c1"># generate model
+</span>    <span class="n">parameters</span> <span class="o">=</span> <span class="nc">L_layer_model</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">layers_dims</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">2500</span><span class="p">,</span> <span class="n">print_cost</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+    
+    <span class="c1"># print name
+</span>    <span class="nf">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    
+    <span class="c1"># make predictions on train set
+</span>    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Train set:</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">pred_train</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+    
+    <span class="c1"># make predictions on test set
+</span>    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Test set:</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">pred_test</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>28x28-&gt;1
+Train set:
+   Accuracy: 92.58%%
+Test set:
+   Accuracy: 92.60%%
+28x28-&gt;5-&gt;1
+Train set:
+   Accuracy: 97.35%%
+Test set:
+   Accuracy: 96.92%%
+28x28-&gt;7-&gt;5-&gt;1
+Train set:
+   Accuracy: 93.17%%
+Test set:
+   Accuracy: 93.11%%
+</code></pre></div></div>
+
+<p>The 5-&gt;1 network gives the best results on the test set. The next phase would consists of tuning the learning rate for this selected architecture.</p>
+
+<hr />
+<p><a id="Section_4"></a></p>
+<h2 id="5-implementation-using-keras">5. Implementation using Keras</h2>
+
+<p>This full implementation of a deep neural network required took time. Luckily, there are now pre-built libraries to help speed up the process. In this next section, we will use Keras.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">tensorflow</span> <span class="k">as</span> <span class="n">tf</span>
+<span class="kn">from</span> <span class="n">tensorflow.keras.models</span> <span class="kn">import</span> <span class="n">Sequential</span>
+<span class="kn">from</span> <span class="n">tensorflow.keras.layers</span> <span class="kn">import</span> <span class="n">Dense</span>
+<span class="kn">from</span> <span class="n">tensorflow.keras.optimizers</span> <span class="kn">import</span> <span class="n">Adam</span>
+</code></pre></div></div>
+
+<p>We re-use the architecture 28x28-&gt;5-&gt;1.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">model</span> <span class="o">=</span> <span class="nc">Sequential</span><span class="p">()</span>
+<span class="n">model</span><span class="p">.</span><span class="nf">add</span><span class="p">(</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">input_dim</span><span class="o">=</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">))</span>
+<span class="n">model</span><span class="p">.</span><span class="nf">add</span><span class="p">(</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">))</span>
+<span class="n">model</span><span class="p">.</span><span class="nf">add</span><span class="p">(</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">sigmoid</span><span class="sh">'</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>The optimization performed during the gradient descent will be performed using the efficient <strong>adam</strong> optimizer. The Adam Optimizer uses a exponential average and some scaling to improve the parameter updates and converge quickly toward the best set of parameters.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">adam</span> <span class="o">=</span> <span class="nc">Adam</span><span class="p">(</span><span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span>
+<span class="n">model</span><span class="p">.</span><span class="nf">compile</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="sh">'</span><span class="s">binary_crossentropy</span><span class="sh">'</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="n">adam</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="sh">'</span><span class="s">accuracy</span><span class="sh">'</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>In our implementation of the DNN, we implemented the gradient descent using the <strong>Batch</strong> approach (i.e. the entire training set is processed then the parameters are updated). For this example, we will use a <strong>Mini Batch</strong> approach were a fraction of the training set is process before the parameters are updated. This choice help improve the results. In this case, 128 training examples are used before each update.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">model</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Train on 10842 samples
+Epoch 1/10
+10842/10842 [==============================] - 0s 29us/sample - loss: 0.1973 - accuracy: 0.9257
+Epoch 2/10
+10842/10842 [==============================] - 0s 13us/sample - loss: 0.0763 - accuracy: 0.9747
+Epoch 3/10
+10842/10842 [==============================] - 0s 13us/sample - loss: 0.0479 - accuracy: 0.9852
+Epoch 4/10
+10842/10842 [==============================] - 0s 13us/sample - loss: 0.0321 - accuracy: 0.9910
+Epoch 5/10
+10842/10842 [==============================] - 0s 13us/sample - loss: 0.0227 - accuracy: 0.9935
+Epoch 6/10
+10842/10842 [==============================] - 0s 13us/sample - loss: 0.0152 - accuracy: 0.9970
+Epoch 7/10
+10842/10842 [==============================] - 0s 13us/sample - loss: 0.0111 - accuracy: 0.9983
+Epoch 8/10
+10842/10842 [==============================] - 0s 13us/sample - loss: 0.0082 - accuracy: 0.9990
+Epoch 9/10
+10842/10842 [==============================] - 0s 13us/sample - loss: 0.0055 - accuracy: 0.9994
+Epoch 10/10
+10842/10842 [==============================] - 0s 13us/sample - loss: 0.0040 - accuracy: 0.9999
+
+
+
+
+
+&lt;tensorflow.python.keras.callbacks.History at 0x1a1f081a58&gt;
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># evaluate the keras model
+</span><span class="n">_</span><span class="p">,</span> <span class="n">accuracy</span> <span class="o">=</span> <span class="n">model</span><span class="p">.</span><span class="nf">evaluate</span><span class="p">(</span><span class="n">X_test</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">.</span><span class="n">T</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Accuracy: %.2f</span><span class="sh">'</span> <span class="o">%</span> <span class="p">(</span><span class="n">accuracy</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1784/1784 [==============================] - 0s 39us/sample - loss: 0.0412 - accuracy: 0.9871
+Accuracy: 98.71
+</code></pre></div></div>
+
+<p>The final accuracy obtained on the test set is 98.37%. Let’s plot the worst predictions. This can help identify recurring mistakes made by the model.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># display incorrect predictions
+</span><span class="k">def</span> <span class="nf">plot_worst_predictions</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">X_set</span><span class="p">,</span><span class="n">y_true</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Plot predictions with largest errors.
+    
+    Input:
+        model: sklearn model or keras model (needs to contain a .predict function)
+        X_set as np.array, shape N x M x M
+        y_true as np.array, shape N x 10
+
+    Output:
+        3x3 plots of images leading to the worst predictions.
+    </span><span class="sh">"""</span>
+
+    <span class="c1"># predict the values from the validation dataset
+</span>    <span class="c1"># size: N x 10
+</span>    <span class="n">y_pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">X_set</span><span class="p">)</span>
+
+    <span class="c1"># convert predictions classes to one hot vectors
+</span>    <span class="c1"># size: N x 1
+</span>    <span class="n">y_pred_classes</span> <span class="o">=</span> <span class="n">y_pred</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
+
+    <span class="c1"># extract errors
+</span>    <span class="c1"># size: K x 1
+</span>    <span class="n">errors</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_pred_classes</span> <span class="o">-</span> <span class="n">y_true</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># filter predicted classes with errors
+</span>    <span class="c1"># size: K x 1
+</span>    <span class="n">y_pred_classes_errors</span> <span class="o">=</span> <span class="n">y_pred_classes</span><span class="p">[</span><span class="n">errors</span><span class="p">]</span>
+
+    <span class="c1"># filter predictions with errors
+</span>    <span class="c1"># size: K x 10
+</span>    <span class="n">y_pred_errors</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[</span><span class="n">errors</span><span class="p">]</span>
+
+    <span class="c1"># filter true label with errors
+</span>    <span class="c1"># size: K x 1
+</span>    <span class="n">y_true_errors</span> <span class="o">=</span> <span class="n">y_true</span><span class="p">[</span><span class="n">errors</span><span class="p">]</span>
+
+    <span class="c1"># filter records leading to errors
+</span>    <span class="c1"># size: K x M x M
+</span>    <span class="n">X_set_errors</span> <span class="o">=</span> <span class="n">X_set</span><span class="p">[</span><span class="n">errors</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="c1"># probabilities of the wrong predicted numbers
+</span>    <span class="c1"># size: K x 1
+</span>    <span class="n">y_pred_errors_prob</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">abs</span><span class="p">(</span><span class="n">y_true_errors</span> <span class="o">-</span> <span class="n">y_pred_errors</span><span class="p">)</span>
+
+    <span class="c1"># difference between the probability of the predicted label and the true label
+</span>    <span class="c1"># size: K x 1
+</span>    <span class="n">delta_pred_true_errors</span> <span class="o">=</span> <span class="n">y_pred_errors_prob</span>
+
+    <span class="c1"># sorted list of the delta prob errors
+</span>    <span class="c1"># size: K x 1
+</span>    <span class="n">sorted_detla_errors</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">argsort</span><span class="p">(</span><span class="n">delta_pred_true_errors</span><span class="p">)</span>
+
+    <span class="c1"># Top 9 errors
+</span>    <span class="c1"># size: 9 x 1
+</span>    <span class="n">most_important_errors</span> <span class="o">=</span> <span class="n">sorted_detla_errors</span><span class="p">[</span><span class="o">-</span><span class="mi">9</span><span class="p">:]</span>
+
+    <span class="c1"># plot parameters
+</span>    <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">nrows</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">ncols</span> <span class="o">=</span> <span class="mi">3</span>
+
+    <span class="c1"># figure
+</span>    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="p">,</span><span class="n">ncols</span><span class="p">,</span><span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">sharey</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+
+    <span class="c1"># plot worst predictions
+</span>    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">nrows</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">ncols</span><span class="p">):</span>
+
+            <span class="c1"># isolate example
+</span>            <span class="n">error</span> <span class="o">=</span> <span class="n">most_important_errors</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+
+            <span class="c1"># plot image
+</span>            <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">imshow</span><span class="p">((</span><span class="n">X_set_errors</span><span class="p">[</span><span class="n">error</span><span class="p">]).</span><span class="nf">reshape</span><span class="p">((</span><span class="mi">28</span><span class="p">,</span><span class="mi">28</span><span class="p">)),</span><span class="n">cmap</span><span class="o">=</span><span class="sh">'</span><span class="s">Greys</span><span class="sh">'</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># set title
+</span>            <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Predicted label: {} @ {:.4f}%</span><span class="se">\n</span><span class="s">True label: {}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">int</span><span class="p">(</span><span class="n">y_pred_classes_errors</span><span class="p">[</span><span class="n">error</span><span class="p">]),</span>
+                                                                                    <span class="n">y_pred_errors_prob</span><span class="p">[</span><span class="n">error</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span>
+                                                                                    <span class="nf">int</span><span class="p">(</span><span class="n">y_true_errors</span><span class="p">[</span><span class="n">error</span><span class="p">])))</span>
+            <span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+            <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">axis</span><span class="p">(</span><span class="sh">'</span><span class="s">off</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">plot_worst_predictions</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">X_test</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">.</span><span class="n">T</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/output_73_0.png" />
+</figure>
+
+<hr />
+<p><a id="Section_5"></a></p>
+<h2 id="6-softmax-regression">6. Softmax Regression</h2>
+<p>In the first half of this presentation, we only cover the structure of a Deep Neural Network for binary classification. In this last portion, we will adjust our code to be able to train a multi-class classifier (i.e. softmax classifier). To do so, the following notions need to be introduced:</p>
+
+<ol>
+  <li>One-hot encoding</li>
+  <li>Softmax</li>
+  <li>New cost function</li>
+</ol>
+
+<p>Previously, the prediction for the \(i^{th}\) example \(\bar{y_{(i)}}\) was a float comprise between 0 and 1. In the softmax regression, the estimated quantity is now a vector of length \(n_{c}\) where \(n_{c}\) is the number of possible classes. Therefore, it is necessary to encode the input vector y based on the assigned class. For instance, if \(n_{c}=4\), with classes being defined as (0, 1, 2, 3) and \(y_{(i)}=2\) then the encoded vector is: \(\begin{pmatrix} 0 &amp; 0 &amp; 1 &amp; 0 \end{pmatrix}\)</p>
+
+<p>In addition, the activation function of the output layer needs to be modified. Instead of using the sigmoid function, we now use the softmax function defined as:
+\(g(x_{i}) = \frac{e^{x_{i}}}{\sum_{k=1}^{N} e^{x_{k}}}\)</p>
+
+<p>Finally, the <strong>Loss Function</strong> function needs to be revised:</p>
+
+\[\mathcal{L}(a^{(i)}, y^{(i)})=-y^{(i)}\log\left(a^{(i)}\right)\]
+
+<p>Finally, the backward propagation needs to be adjusted as follows:
+\(dZ^{[l]} = \hat{Y} - Y\)</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">softmax</span><span class="p">(</span><span class="n">Z</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implements the softmax activation in numpy
+    
+    Arguments:
+    Z -- numpy array of any shape (x, y)
+    
+    Returns:
+    A -- output of softmax(z), shape (1, y)
+    cache -- returns Z as well, useful during back-propagation
+    </span><span class="sh">"""</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">Z</span>
+    <span class="n">Z</span> <span class="o">-=</span> <span class="n">np</span><span class="p">.</span><span class="nf">max</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    
+    <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="n">Z</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">Z</span>
+    
+    <span class="k">return</span> <span class="n">A</span><span class="p">,</span> <span class="n">cache</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">linear_activation_forward</span><span class="p">(</span><span class="n">A_prev</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">activation</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the forward propagation for the LINEAR-&gt;ACTIVATION layer
+
+    Arguments:
+    A_prev -- activations from previous layer (or input data): (size of previous layer, number of examples)
+    W -- weights matrix: numpy array of shape (size of current layer, size of previous layer)
+    b -- bias vector, numpy array of shape (size of the current layer, 1)
+    activation -- the activation to be used in this layer, stored as a text string: </span><span class="sh">"</span><span class="s">sigmoid</span><span class="sh">"</span><span class="s"> or </span><span class="sh">"</span><span class="s">relu</span><span class="sh">"</span><span class="s"> or </span><span class="sh">"</span><span class="s">softmax</span><span class="sh">"</span><span class="s">
+
+    Returns:
+    A -- the output of the activation function, also called the post-activation value 
+    cache -- a python dictionary containing </span><span class="sh">"</span><span class="s">linear_cache</span><span class="sh">"</span><span class="s"> and </span><span class="sh">"</span><span class="s">activation_cache</span><span class="sh">"</span><span class="s">;
+             stored for computing the backward pass efficiently
+    </span><span class="sh">"""</span>
+    
+    <span class="k">if</span> <span class="n">activation</span> <span class="o">==</span> <span class="sh">"</span><span class="s">sigmoid</span><span class="sh">"</span><span class="p">:</span>
+        <span class="c1"># Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
+</span>        <span class="n">Z</span><span class="p">,</span> <span class="n">linear_cache</span> <span class="o">=</span> <span class="nf">linear_forward</span><span class="p">(</span><span class="n">A_prev</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+        <span class="n">A</span><span class="p">,</span> <span class="n">activation_cache</span> <span class="o">=</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    
+    <span class="k">elif</span> <span class="n">activation</span> <span class="o">==</span> <span class="sh">"</span><span class="s">relu</span><span class="sh">"</span><span class="p">:</span>
+        <span class="c1"># Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
+</span>        <span class="n">Z</span><span class="p">,</span> <span class="n">linear_cache</span> <span class="o">=</span> <span class="nf">linear_forward</span><span class="p">(</span><span class="n">A_prev</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+        <span class="n">A</span><span class="p">,</span> <span class="n">activation_cache</span> <span class="o">=</span> <span class="nf">relu</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+        
+    <span class="k">elif</span> <span class="n">activation</span> <span class="o">==</span> <span class="sh">"</span><span class="s">softmax</span><span class="sh">"</span><span class="p">:</span>
+        <span class="c1"># Inputs: "A_prev, W, b". Outputs: "A, activation_cache".
+</span>        <span class="n">Z</span><span class="p">,</span> <span class="n">linear_cache</span> <span class="o">=</span> <span class="nf">linear_forward</span><span class="p">(</span><span class="n">A_prev</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+        <span class="n">A</span><span class="p">,</span> <span class="n">activation_cache</span> <span class="o">=</span> <span class="nf">softmax</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    
+    <span class="nf">assert </span><span class="p">(</span><span class="n">A</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">W</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">A_prev</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="p">(</span><span class="n">linear_cache</span><span class="p">,</span> <span class="n">activation_cache</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">A</span><span class="p">,</span> <span class="n">cache</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">L_model_forward</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement forward propagation for the [LINEAR-&gt;RELU]*(L-1)-&gt;LINEAR-&gt;SOFTMAX computation
+    
+    Arguments:
+    X -- data, numpy array of shape (input size, number of examples)
+    parameters -- output of initialize_parameters_deep()
+    
+    Returns:
+    AL -- last post-activation value
+    caches -- list of caches containing:
+                every cache of linear_activation_forward() (there are L-1 of them, indexed from 0 to L-1)
+    </span><span class="sh">"""</span>
+
+    <span class="n">caches</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">X</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>                  <span class="c1"># number of layers in the neural network
+</span>    
+    <span class="c1"># Implement [LINEAR -&gt; RELU]*(L-1). Add "cache" to the "caches" list.
+</span>    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">L</span><span class="p">):</span>
+        <span class="n">A_prev</span> <span class="o">=</span> <span class="n">A</span> 
+        
+        <span class="c1"># retrieve parameters
+</span>        <span class="n">W</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="p">)]</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="p">)]</span>
+        <span class="n">activation</span> <span class="o">=</span> <span class="sh">'</span><span class="s">relu</span><span class="sh">'</span>
+        
+        <span class="n">A</span><span class="p">,</span> <span class="n">cache</span> <span class="o">=</span> <span class="nf">linear_activation_forward</span><span class="p">(</span><span class="n">A_prev</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">activation</span><span class="p">)</span>
+        <span class="n">caches</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+    
+    <span class="c1"># Implement LINEAR -&gt; SIGMOID. Add "cache" to the "caches" list.
+</span>    
+    <span class="c1"># retrieve parameters
+</span>    <span class="n">W</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">W</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">L</span><span class="p">)]</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">L</span><span class="p">)]</span>
+    <span class="n">activation</span> <span class="o">=</span> <span class="sh">'</span><span class="s">softmax</span><span class="sh">'</span>
+    
+    <span class="n">AL</span><span class="p">,</span> <span class="n">cache</span> <span class="o">=</span> <span class="nf">linear_activation_forward</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">activation</span><span class="p">)</span>
+    <span class="n">caches</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+    
+    <span class="nf">assert</span><span class="p">(</span><span class="n">AL</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            
+    <span class="k">return</span> <span class="n">AL</span><span class="p">,</span> <span class="n">caches</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">compute_cost</span><span class="p">(</span><span class="n">AL</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the cost function.
+
+    Arguments:
+    AL -- probability vector corresponding to your label predictions, shape (1, number of examples)
+    Y -- true </span><span class="sh">"</span><span class="s">label</span><span class="sh">"</span><span class="s"> matrix using one-hot encoding (n_c, m)
+
+    Returns:
+    cost -- cross-entropy cost
+    </span><span class="sh">"""</span>
+    
+    <span class="n">m</span> <span class="o">=</span> <span class="n">Y</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Compute loss from aL and y.
+</span>    <span class="n">cost</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span> <span class="n">Y</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nf">log</span><span class="p">(</span><span class="n">AL</span><span class="p">)</span> <span class="p">)</span>
+    
+    <span class="n">cost</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">squeeze</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>      <span class="c1"># To make sure your cost's shape is what we expect (e.g. this turns [[17]] into 17).
+</span>    <span class="nf">assert</span><span class="p">(</span><span class="n">cost</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">())</span>
+    
+    <span class="k">return</span> <span class="n">cost</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">softmax_backward</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">cache</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the backward propagation for a single SOFTMAX unit.
+
+    Arguments:
+    dA -- post-activation gradient, of any shape
+    cache -- </span><span class="sh">'</span><span class="s">Z</span><span class="sh">'</span><span class="s"> where we store for computing backward propagation efficiently
+
+    Returns:
+    dZ -- Gradient of the cost with respect to Z
+    </span><span class="sh">"""</span>
+      
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">cache</span>
+    <span class="n">Z</span> <span class="o">-=</span> <span class="n">np</span><span class="p">.</span><span class="nf">max</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="n">Z</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    
+    <span class="n">dZ</span> <span class="o">=</span> <span class="n">dA</span> <span class="o">*</span> <span class="n">s</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">s</span><span class="p">)</span>
+    
+    <span class="nf">assert </span><span class="p">(</span><span class="n">dZ</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">Z</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">dZ</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">linear_activation_backward</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">activation</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the backward propagation for the LINEAR-&gt;ACTIVATION layer.
+    
+    Arguments:
+    dA -- post-activation gradient for current layer l 
+    cache -- tuple of values (linear_cache, activation_cache) we store for computing backward propagation efficiently
+    activation -- the activation to be used in this layer, stored as a text string: </span><span class="sh">"</span><span class="s">sigmoid</span><span class="sh">"</span><span class="s"> or </span><span class="sh">"</span><span class="s">relu</span><span class="sh">"</span><span class="s"> or </span><span class="sh">"</span><span class="s">softmax</span><span class="sh">"</span><span class="s">
+    
+    Returns:
+    dA_prev -- Gradient of the cost with respect to the activation (of the previous layer l-1), same shape as A_prev
+    dW -- Gradient of the cost with respect to W (current layer l), same shape as W
+    db -- Gradient of the cost with respect to b (current layer l), same shape as b
+    </span><span class="sh">"""</span>
+    <span class="c1"># retrieve caches
+</span>    <span class="c1"># linear_cache = (A, W, b)
+</span>    <span class="c1"># activation_cache = Z
+</span>    
+    <span class="n">linear_cache</span><span class="p">,</span> <span class="n">activation_cache</span> <span class="o">=</span> <span class="n">cache</span>
+    
+    <span class="k">if</span> <span class="n">activation</span> <span class="o">==</span> <span class="sh">"</span><span class="s">relu</span><span class="sh">"</span><span class="p">:</span>
+        
+        <span class="c1"># parameters
+</span>        <span class="n">Z</span> <span class="o">=</span> <span class="n">activation_cache</span>
+        
+        <span class="n">dZ</span> <span class="o">=</span> <span class="nf">relu_backward</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+        <span class="n">dA_prev</span><span class="p">,</span> <span class="n">dW</span><span class="p">,</span> <span class="n">db</span> <span class="o">=</span> <span class="nf">linear_backward</span><span class="p">(</span><span class="n">dZ</span><span class="p">,</span> <span class="n">linear_cache</span><span class="p">)</span>
+        
+    <span class="k">elif</span> <span class="n">activation</span> <span class="o">==</span> <span class="sh">"</span><span class="s">sigmoid</span><span class="sh">"</span><span class="p">:</span>
+        
+        <span class="c1"># parameters
+</span>        <span class="n">Z</span> <span class="o">=</span> <span class="n">activation_cache</span>
+        
+        <span class="n">dZ</span> <span class="o">=</span> <span class="nf">sigmoid_backward</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+        <span class="n">dA_prev</span><span class="p">,</span> <span class="n">dW</span><span class="p">,</span> <span class="n">db</span> <span class="o">=</span> <span class="nf">linear_backward</span><span class="p">(</span><span class="n">dZ</span><span class="p">,</span> <span class="n">linear_cache</span><span class="p">)</span>
+        
+    <span class="k">elif</span> <span class="n">activation</span> <span class="o">==</span> <span class="sh">"</span><span class="s">softmax</span><span class="sh">"</span><span class="p">:</span>
+        
+        <span class="c1"># parameters
+</span>        <span class="n">Z</span> <span class="o">=</span> <span class="n">activation_cache</span>
+        
+        <span class="n">dZ</span> <span class="o">=</span> <span class="nf">softmax_backward</span><span class="p">(</span><span class="n">dA</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+        <span class="n">dA_prev</span><span class="p">,</span> <span class="n">dW</span><span class="p">,</span> <span class="n">db</span> <span class="o">=</span> <span class="nf">linear_backward</span><span class="p">(</span><span class="n">dZ</span><span class="p">,</span> <span class="n">linear_cache</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">dA_prev</span><span class="p">,</span> <span class="n">dW</span><span class="p">,</span> <span class="n">db</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">L_model_backward</span><span class="p">(</span><span class="n">AL</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">caches</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implement the backward propagation for the [LINEAR-&gt;RELU] * (L-1) -&gt; LINEAR -&gt; SOFTMAX group
+    
+    Arguments:
+    AL -- probability vector, output of the forward propagation (L_model_forward())
+    Y -- true </span><span class="sh">"</span><span class="s">label</span><span class="sh">"</span><span class="s"> vector with one-hot encoding
+    caches -- list of caches containing:
+                every cache of linear_activation_forward() with </span><span class="sh">"</span><span class="s">relu</span><span class="sh">"</span><span class="s"> (it</span><span class="sh">'</span><span class="s">s caches[l], for l in range(L-1) i.e l = 0...L-2)
+                the cache of linear_activation_forward() with </span><span class="sh">"</span><span class="s">sigmoid</span><span class="sh">"</span><span class="s"> (it</span><span class="sh">'</span><span class="s">s caches[L-1])
+                
+                for every cache, a tuple is used to store: (linear_cache, activation_cache)
+                    linear_cache = (A, W, b)
+                    activation_cache = Z
+    
+    Returns:
+    grads -- A dictionary with the gradients
+             grads[</span><span class="sh">"</span><span class="s">dA</span><span class="sh">"</span><span class="s"> + str(l)] = ... 
+             grads[</span><span class="sh">"</span><span class="s">dW</span><span class="sh">"</span><span class="s"> + str(l)] = ...
+             grads[</span><span class="sh">"</span><span class="s">db</span><span class="sh">"</span><span class="s"> + str(l)] = ... 
+    </span><span class="sh">"""</span>
+    <span class="n">grads</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">L</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">caches</span><span class="p">)</span> <span class="c1"># the number of layers
+</span>    <span class="n">m</span> <span class="o">=</span> <span class="n">AL</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">AL</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span> <span class="c1"># after this line, Y is the same shape as AL
+</span>    
+    <span class="c1"># Initializing the back propagation
+</span>    <span class="n">dAL</span> <span class="o">=</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">divide</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">AL</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="p">.</span><span class="nf">divide</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">Y</span><span class="p">,</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">AL</span><span class="p">))</span>
+    
+    <span class="c1"># Lth layer (SIGMOID -&gt; LINEAR) gradients. Inputs: "dAL, current_cache". Outputs: "grads["dAL-1"], grads["dWL"], grads["dbL"]
+</span>    <span class="n">current_cache</span> <span class="o">=</span> <span class="n">caches</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dA</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="mi">1</span><span class="p">)],</span> <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dW</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">L</span><span class="p">)],</span> <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">db</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">L</span><span class="p">)]</span> <span class="o">=</span> <span class="nf">linear_activation_backward</span><span class="p">(</span><span class="n">dAL</span><span class="p">,</span> <span class="n">current_cache</span><span class="p">,</span> <span class="sh">'</span><span class="s">softmax</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="c1"># Loop from l=L-2 to l=0
+</span>    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nf">reversed</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="n">L</span><span class="o">-</span><span class="mi">1</span><span class="p">)):</span>
+        <span class="c1"># lth layer: (RELU -&gt; LINEAR) gradients.
+</span>        <span class="c1"># Inputs: "grads["dA" + str(l + 1)], current_cache". Outputs: "grads["dA" + str(l)] , grads["dW" + str(l + 1)] , grads["db" + str(l + 1)] 
+</span>        <span class="n">current_cache</span> <span class="o">=</span> <span class="n">caches</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
+        <span class="n">dA_prev_temp</span><span class="p">,</span> <span class="n">dW_temp</span><span class="p">,</span> <span class="n">db_temp</span> <span class="o">=</span> <span class="nf">linear_activation_backward</span><span class="p">(</span><span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dA</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="o">+</span><span class="mi">1</span><span class="p">)],</span> <span class="n">current_cache</span><span class="p">,</span> <span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">)</span>
+        <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dA</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span><span class="p">)]</span> <span class="o">=</span> <span class="n">dA_prev_temp</span>
+        <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">dW</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">dW_temp</span>
+        <span class="n">grads</span><span class="p">[</span><span class="sh">"</span><span class="s">db</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">db_temp</span>
+
+    <span class="k">return</span> <span class="n">grads</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">L_layer_model_multi_class</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">layers_dims</span><span class="p">,</span> <span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.075</span><span class="p">,</span> <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span> <span class="n">print_cost</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Implements a L-layer neural network: [LINEAR-&gt;RELU]*(L-1)-&gt;LINEAR-&gt;SIGMOID.
+    
+    Arguments:
+    X -- data, numpy array of shape (number of examples, num_px * num_px * 3)
+    Y -- true </span><span class="sh">"</span><span class="s">label</span><span class="sh">"</span><span class="s"> vector (containing 0 or 1 if), of shape (1, number of examples)
+    layers_dims -- list containing the input size and each layer size, of length (number of layers + 1).
+    learning_rate -- learning rate of the gradient descent update rule
+    num_iterations -- number of iterations of the optimization loop
+    print_cost -- if True, it prints the cost every 100 steps
+    
+    Returns:
+    parameters -- parameters learned by the model. They can then be used to predict.
+    </span><span class="sh">"""</span>
+
+    <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">costs</span> <span class="o">=</span> <span class="p">[]</span>                         <span class="c1"># keep track of cost
+</span>    
+    <span class="c1"># Parameters initialization. (≈ 1 line of code)
+</span>    <span class="n">parameters</span> <span class="o">=</span> <span class="nf">initialize_parameters_deep</span><span class="p">(</span><span class="n">layers_dims</span><span class="p">)</span>
+    
+    <span class="c1"># Loop (gradient descent)
+</span>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_iterations</span><span class="p">):</span>
+
+        <span class="c1"># Forward propagation: [LINEAR -&gt; RELU]*(L-1) -&gt; LINEAR -&gt; SOFTMAX.
+</span>        <span class="n">AL</span><span class="p">,</span> <span class="n">caches</span> <span class="o">=</span> <span class="nc">L_model_forward</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+        
+        <span class="c1"># Compute cost.
+</span>        <span class="n">cost</span> <span class="o">=</span> <span class="nf">compute_cost</span><span class="p">(</span><span class="n">AL</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+    
+        <span class="c1"># Backward propagation.
+</span>        <span class="n">grads</span> <span class="o">=</span> <span class="nc">L_model_backward</span><span class="p">(</span><span class="n">AL</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">caches</span><span class="p">)</span>
+ 
+        <span class="c1"># Update parameters.
+</span>        <span class="n">parameters</span> <span class="o">=</span> <span class="nf">update_parameters</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">learning_rate</span><span class="p">)</span>
+                
+        <span class="c1"># Print the cost every 100 training example
+</span>        <span class="k">if</span> <span class="n">print_cost</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nf">print </span><span class="p">(</span><span class="sh">"</span><span class="s">Cost after iteration %i: %f</span><span class="sh">"</span> <span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">cost</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">print_cost</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">costs</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span>
+            
+    <span class="c1"># plot the cost
+</span>    <span class="k">if</span> <span class="n">print_cost</span><span class="p">:</span>
+        <span class="nf">print</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">squeeze</span><span class="p">(</span><span class="n">costs</span><span class="p">))</span>
+        <span class="n">plt</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">squeeze</span><span class="p">(</span><span class="n">costs</span><span class="p">))</span>
+        <span class="n">plt</span><span class="p">.</span><span class="nf">ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">cost</span><span class="sh">'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="p">.</span><span class="nf">xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">iterations (per tens)</span><span class="sh">'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="p">.</span><span class="nf">title</span><span class="p">(</span><span class="sh">"</span><span class="s">Learning rate =</span><span class="sh">"</span> <span class="o">+</span> <span class="nf">str</span><span class="p">(</span><span class="n">learning_rate</span><span class="p">))</span>
+        <span class="n">plt</span><span class="p">.</span><span class="nf">show</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">parameters</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">predict_multi</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_hot</span><span class="p">,</span> <span class="n">y_true</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    This function is used to predict the results of a  L-layer neural network.
+    
+    Arguments:
+    X -- data set of examples you would like to label
+    parameters -- parameters of the trained model
+    
+    Returns:
+    p -- predictions for the given dataset X
+    </span><span class="sh">"""</span>
+    
+    <span class="n">m</span> <span class="o">=</span> <span class="n">X</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span> <span class="c1"># number of layers in the neural network
+</span>    
+    <span class="c1"># Forward propagation
+</span>    <span class="n">probas</span><span class="p">,</span> <span class="n">caches</span> <span class="o">=</span> <span class="nc">L_model_forward</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+
+    <span class="c1"># convert probas to 0/1 predictions
+</span>    <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">probas</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    
+    <span class="c1"># print results
+</span>    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="se">\t</span><span class="s">Accuracy: {:.2f}%%</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">((</span><span class="n">predictions</span> <span class="o">==</span> <span class="n">y_true</span><span class="p">))</span><span class="o">/</span><span class="n">m</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+        
+    <span class="k">return</span> <span class="n">predictions</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_6"></a></p>
+<h2 id="7-application-of-multi-class-on-mnist">7. Application of Multi-class on MNIST</h2>
+
+<p>Now that our model is capable of handling multi-class model, let’s test it against the MNIST dataset but this time, we keep all the classes instead of only predicting “5” or “not 5”.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">onehot</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">n_class</span><span class="p">):</span>
+    <span class="sh">'''</span><span class="s">
+    Return one-hot encoding of the Y array
+    </span><span class="sh">'''</span>
+    <span class="n">Y_hot</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">eye</span><span class="p">(</span><span class="n">n_class</span><span class="p">)[</span><span class="n">Y</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+    
+    <span class="k">return</span> <span class="n">Y_hot</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load data and create train and test sets
+</span><span class="n">mnist</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="n">mnist</span>
+<span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">),</span> <span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span> <span class="o">=</span> <span class="n">mnist</span><span class="p">.</span><span class="nf">load_data</span><span class="p">()</span>
+
+<span class="c1"># reshape
+</span><span class="n">X_train</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">).</span><span class="n">T</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">).</span><span class="n">T</span>
+
+<span class="n">Y_train</span> <span class="o">=</span> <span class="n">Y_train</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">Y_test</span> <span class="o">=</span> <span class="n">Y_test</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># normalize
+</span><span class="n">X_train</span> <span class="o">=</span> <span class="n">X_train</span> <span class="o">/</span> <span class="mf">255.0</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span> <span class="o">/</span> <span class="mf">255.0</span>
+
+<span class="c1"># count unique class
+</span><span class="n">n_class</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">unique</span><span class="p">(</span><span class="n">Y_train</span><span class="p">))</span>
+
+<span class="c1"># one-hot-encoding
+</span><span class="n">Y_train_hot</span> <span class="o">=</span> <span class="nf">onehot</span><span class="p">(</span><span class="n">Y_train</span><span class="p">,</span> <span class="n">n_class</span><span class="p">).</span><span class="n">T</span>
+<span class="n">Y_test_hot</span> <span class="o">=</span> <span class="nf">onehot</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span> <span class="n">n_class</span><span class="p">).</span><span class="n">T</span>
+</code></pre></div></div>
+
+<p>When creating our model geometry, the output layer now has to be defined with 10 output units. Each unit corresponds to one possible output class (0 to 9).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># three candidates are defined
+</span><span class="n">models</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sh">'</span><span class="s">28x28-&gt;10</span><span class="sh">'</span><span class="p">:[</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
+    <span class="sh">'</span><span class="s">28x28-&gt;28-&gt;10</span><span class="sh">'</span><span class="p">:[</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
+    <span class="sh">'</span><span class="s">28x28-&gt;28-&gt;10-&gt;10</span><span class="sh">'</span><span class="p">:[</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">scores</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="c1"># test all three models against the train and test sets
+</span><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">layers_dims</span> <span class="ow">in</span> <span class="n">models</span><span class="p">.</span><span class="nf">items</span><span class="p">():</span>
+    
+    <span class="c1"># generate model
+</span>    <span class="n">parameters</span> <span class="o">=</span> <span class="nc">L_layer_model_multi_class</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span>
+                                           <span class="n">Y_train_hot</span><span class="p">,</span>
+                                           <span class="n">layers_dims</span><span class="p">,</span>
+                                           <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
+                                           <span class="n">print_cost</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+    
+    <span class="c1"># print name
+</span>    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="se">\n</span><span class="sh">'</span><span class="o">+</span><span class="n">name</span><span class="p">)</span>
+    
+    <span class="c1"># make predictions on train set
+</span>    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Accuracy on train set:</span><span class="se">\t</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">pred_train</span> <span class="o">=</span> <span class="nf">predict_multi</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train_hot</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+    
+    <span class="c1"># make predictions on test set
+</span>    <span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Accuracy on test set:</span><span class="se">\t</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">pred_test</span> <span class="o">=</span> <span class="nf">predict_multi</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test_hot</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>28x28-&gt;10
+Accuracy on train set:	
+	Accuracy: 91.42%%
+Accuracy on test set:	
+	Accuracy: 91.72%%
+
+28x28-&gt;28-&gt;10
+Accuracy on train set:	
+	Accuracy: 93.96%%
+Accuracy on test set:	
+	Accuracy: 93.89%%
+
+28x28-&gt;28-&gt;10-&gt;10
+Accuracy on train set:	
+	Accuracy: 91.71%%
+Accuracy on test set:	
+	Accuracy: 91.47%%
+</code></pre></div></div>
+
+<p>The second network (28-&gt;10) gives the best results with an accuracy on training equal to 93.96% and an accuracy on the test set equal to 93.89%. Let’s plot the worst predictions and the confusion matrix to assess the detailed performances of our model</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
+
+<span class="n">best_model</span> <span class="o">=</span> <span class="nc">L_layer_model_multi_class</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span>
+                                       <span class="n">Y_train_hot</span><span class="p">,</span>
+                                       <span class="p">[</span><span class="mi">28</span><span class="o">*</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
+                                       <span class="n">num_iterations</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">,</span>
+                                       <span class="n">print_cost</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Cost after iteration 0: 2.302698
+Cost after iteration 100: 1.797392
+Cost after iteration 200: 0.767258
+Cost after iteration 300: 0.532965
+Cost after iteration 400: 0.447355
+Cost after iteration 500: 0.403150
+Cost after iteration 600: 0.374832
+Cost after iteration 700: 0.354289
+Cost after iteration 800: 0.338238
+Cost after iteration 900: 0.325133
+Cost after iteration 1000: 0.314092
+Cost after iteration 1100: 0.304642
+Cost after iteration 1200: 0.296369
+Cost after iteration 1300: 0.288986
+Cost after iteration 1400: 0.282327
+Cost after iteration 1500: 0.276215
+Cost after iteration 1600: 0.270472
+Cost after iteration 1700: 0.265039
+Cost after iteration 1800: 0.259864
+Cost after iteration 1900: 0.254887
+Cost after iteration 2000: 0.250102
+Cost after iteration 2100: 0.245551
+Cost after iteration 2200: 0.241226
+Cost after iteration 2300: 0.237107
+Cost after iteration 2400: 0.233160
+Cost after iteration 2500: 0.229358
+Cost after iteration 2600: 0.225705
+Cost after iteration 2700: 0.222219
+Cost after iteration 2800: 0.218869
+Cost after iteration 2900: 0.215616
+[2.30269797 1.7973915  0.76725844 0.53296483 0.44735486 0.40315035
+ 0.37483193 0.35428899 0.33823834 0.32513306 0.31409214 0.30464182
+ 0.29636928 0.28898567 0.28232707 0.27621464 0.27047229 0.26503943
+ 0.25986411 0.25488744 0.25010213 0.24555082 0.24122609 0.23710707
+ 0.23316011 0.22935838 0.22570514 0.22221895 0.21886946 0.21561591]
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/output_93_1.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">plot_worst_predictions</span><span class="p">(</span><span class="n">X_set</span><span class="p">,</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">grid</span> <span class="o">=</span> <span class="mi">3</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    Plot predictions with largest errors.
+    
+    Input:
+        model: sklearn model or keras model (needs to contain a .predict function)
+        X_set as np.array, shape N x M x M
+        y_true as np.array, shape 10 x N
+
+    Output:
+        3x3 plots of images leading to the worst predictions.
+    </span><span class="sh">"""</span>
+    
+    <span class="c1"># convert predictions classes to one hot vectors
+</span>    <span class="c1"># size: 1 x N
+</span>    <span class="n">y_pred_classes</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">).</span><span class="nf">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">y_true</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">y_pred</span><span class="p">.</span><span class="n">shape</span>
+    <span class="c1">#print('y_pred_classes',y_pred_classes.shape)
+</span>    <span class="c1">#print('y_pred',y_pred.shape)
+</span>    
+    <span class="c1"># convert y_true one-hot to classes
+</span>    <span class="n">y_true_classes</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">).</span><span class="nf">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">y_true_classes</span><span class="p">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">y_pred_classes</span><span class="p">.</span><span class="n">shape</span>
+    <span class="c1">#print('y_true_classes',y_true_classes.shape)
+</span>
+    <span class="c1"># extract errors
+</span>    <span class="c1"># size: 1 x K
+</span>    <span class="n">errors</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_pred_classes</span> <span class="o">-</span> <span class="n">y_true_classes</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="c1">#print('errors',errors.shape)
+</span>   
+    <span class="c1"># filter predicted classes with errors
+</span>    <span class="c1"># size: 1 x K
+</span>    <span class="n">y_pred_classes_errors</span> <span class="o">=</span> <span class="n">y_pred_classes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]].</span><span class="nf">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="c1">#print('y_pred_classes_errors',y_pred_classes_errors.shape)
+</span>
+    <span class="c1"># filter predictions with errors
+</span>    <span class="c1"># size: 10 x K
+</span>    <span class="n">y_pred_errors</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[:,</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]]</span>
+    <span class="c1">#print('y_pred_errors',y_pred_errors.shape)
+</span>
+    <span class="c1"># filter true label with errors
+</span>    <span class="c1"># size: 10 x K
+</span>    <span class="n">y_true_errors</span> <span class="o">=</span> <span class="n">y_true_classes</span><span class="p">[:,</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]]</span>
+    <span class="c1">#print('y_true_errors',y_true_errors.shape)
+</span>
+    <span class="c1"># filter records leading to errors
+</span>    <span class="c1"># size: M x M x K
+</span>    <span class="n">X_set_errors</span> <span class="o">=</span> <span class="n">X_set</span><span class="p">.</span><span class="nf">reshape</span><span class="p">((</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">X_set_errors</span> <span class="o">=</span> <span class="n">X_set_errors</span><span class="p">[:,:,</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]]</span>
+    <span class="c1">#print('X_set_errors',X_set_errors.shape)    
+</span>
+    <span class="c1"># probabilities of the wrong predicted numbers
+</span>    <span class="c1"># size: 1 x K
+</span>    <span class="n">y_pred_errors_prob</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">max</span><span class="p">(</span><span class="n">y_pred_errors</span><span class="p">,</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">).</span><span class="nf">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="c1">#print('y_pred_errors_prob',y_pred_errors_prob.shape) 
+</span>
+    <span class="c1"># predicted probabilities of the true values in the error set
+</span>    <span class="c1"># np.take: Take elements from an array along an axis.
+</span>    <span class="c1"># &gt;&gt;&gt; a = [4, 3, 5, 7, 6, 8]
+</span>    <span class="c1"># &gt;&gt;&gt; indices = [0, 1, 4]
+</span>    <span class="c1"># &gt;&gt;&gt; np.take(a, indices)
+</span>    <span class="c1"># array([4, 3, 6])
+</span>    <span class="c1"># np.take re-organize the columns
+</span>    <span class="c1"># use np.diagonal to only extract the desired predictions
+</span>    <span class="c1"># size: 1 x K
+</span>    <span class="n">true_prob_errors</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">diagonal</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">take</span><span class="p">(</span><span class="n">y_pred_errors</span><span class="p">,</span> <span class="n">y_true_errors</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)).</span><span class="n">T</span>
+    <span class="c1">#print('true_prob_errors',true_prob_errors.shape) 
+</span>
+    <span class="c1"># difference between the probability of the predicted label and the true label
+</span>    <span class="c1"># size: K x 1
+</span>    <span class="n">delta_pred_true_errors</span> <span class="o">=</span> <span class="n">y_pred_errors_prob</span> <span class="o">-</span> <span class="n">true_prob_errors</span>
+    <span class="c1">#print('delta_pred_true_errors',delta_pred_true_errors.shape) 
+</span>
+    <span class="c1"># sorted list of the delta prob errors
+</span>    <span class="c1"># size: 1 x K
+</span>    <span class="n">sorted_detla_errors</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">argsort</span><span class="p">(</span><span class="n">delta_pred_true_errors</span><span class="p">)</span>
+    <span class="c1">#print('sorted_detla_errors',sorted_detla_errors.shape)
+</span>
+    <span class="c1"># Top 9 errors
+</span>    <span class="c1"># size: 9 x 1
+</span>    <span class="n">most_important_errors</span> <span class="o">=</span> <span class="n">sorted_detla_errors</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="n">grid</span><span class="o">*</span><span class="n">grid</span><span class="p">:]</span>
+    
+    <span class="c1"># plot parameters
+</span>    <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">nrows</span> <span class="o">=</span> <span class="n">grid</span>
+    <span class="n">ncols</span> <span class="o">=</span> <span class="n">grid</span>
+
+    <span class="c1"># figure
+</span>    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="p">,</span><span class="n">ncols</span><span class="p">,</span><span class="n">sharex</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">sharey</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="n">grid</span><span class="o">*</span><span class="mi">4</span><span class="p">,</span><span class="n">grid</span><span class="o">*</span><span class="mi">4</span><span class="p">))</span>
+
+    <span class="c1"># plot worst predictions
+</span>    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">nrows</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">ncols</span><span class="p">):</span>
+
+            <span class="c1"># isolate example
+</span>            <span class="n">error</span> <span class="o">=</span> <span class="n">most_important_errors</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+
+            <span class="c1"># plot image
+</span>            <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">imshow</span><span class="p">((</span><span class="n">X_set_errors</span><span class="p">[:,:,</span><span class="n">error</span><span class="p">]).</span><span class="nf">reshape</span><span class="p">((</span><span class="mi">28</span><span class="p">,</span><span class="mi">28</span><span class="p">)),</span><span class="n">cmap</span><span class="o">=</span><span class="sh">'</span><span class="s">Greys</span><span class="sh">'</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># set title
+</span>            <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">"</span><span class="s">Predicted label: {} @ {:.0f}%</span><span class="se">\n</span><span class="s">True label: {}</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">y_pred_classes_errors</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">error</span><span class="p">],</span>
+                                                                                    <span class="n">y_pred_errors_prob</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">error</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span>
+                                                                                    <span class="n">y_true_errors</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">error</span><span class="p">]))</span>
+            <span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+            <span class="n">ax</span><span class="p">[</span><span class="n">row</span><span class="p">,</span><span class="n">col</span><span class="p">].</span><span class="nf">axis</span><span class="p">(</span><span class="sh">'</span><span class="s">off</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Make Predictions on test set and train set
+</span><span class="n">probas_test</span><span class="p">,</span> <span class="n">caches</span> <span class="o">=</span> <span class="nc">L_model_forward</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+
+<span class="n">probas_train</span><span class="p">,</span> <span class="n">caches</span> <span class="o">=</span> <span class="nc">L_model_forward</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>As shown below, the model makes mistakes on relatively complicated examples. Some of the digits shown below can be easily mistaken even when categorized by humans.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Display the worst predictions
+</span><span class="nf">plot_worst_predictions</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test_hot</span><span class="p">,</span> <span class="n">probas_test</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/output_97_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Plot confusion matrix
+</span><span class="kn">from</span> <span class="n">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
+<span class="kn">from</span> <span class="n">sklearn.utils.multiclass</span> <span class="kn">import</span> <span class="n">unique_labels</span>
+
+<span class="k">def</span> <span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="p">.</span><span class="n">cm</span><span class="p">.</span><span class="n">Blues</span><span class="p">):</span>
+    <span class="sh">"""</span><span class="s">
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    </span><span class="sh">"""</span>
+    <span class="n">np</span><span class="p">.</span><span class="nf">set_printoptions</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">title</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
+            <span class="n">title</span> <span class="o">=</span> <span class="sh">'</span><span class="s">Normalized confusion matrix</span><span class="sh">'</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">title</span> <span class="o">=</span> <span class="sh">'</span><span class="s">Confusion matrix, without normalization</span><span class="sh">'</span>
+
+    <span class="c1"># Compute confusion matrix
+</span>    <span class="n">cm</span> <span class="o">=</span> <span class="nf">confusion_matrix</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+    
+    <span class="c1"># Only use the labels that appear in the data
+</span>    <span class="n">classes</span> <span class="o">=</span> <span class="n">classes</span><span class="p">[</span><span class="nf">unique_labels</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
+        <span class="n">cm</span> <span class="o">=</span> <span class="n">cm</span><span class="p">.</span><span class="nf">astype</span><span class="p">(</span><span class="sh">'</span><span class="s">float</span><span class="sh">'</span><span class="p">)</span> <span class="o">/</span> <span class="n">cm</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span> <span class="n">np</span><span class="p">.</span><span class="n">newaxis</span><span class="p">]</span>
+
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+    <span class="n">ax</span><span class="p">.</span><span class="nf">grid</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="p">.</span><span class="nf">imshow</span><span class="p">(</span><span class="n">cm</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="sh">'</span><span class="s">nearest</span><span class="sh">'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="n">figure</span><span class="p">.</span><span class="nf">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    
+    <span class="c1"># We want to show all ticks...
+</span>    <span class="n">ax</span><span class="p">.</span><span class="nf">set</span><span class="p">(</span><span class="n">xticks</span><span class="o">=</span><span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="n">cm</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+           <span class="n">yticks</span><span class="o">=</span><span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="n">cm</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+           <span class="c1"># ... and label them with the respective list entries
+</span>           <span class="n">xticklabels</span><span class="o">=</span><span class="n">classes</span><span class="p">,</span> <span class="n">yticklabels</span><span class="o">=</span><span class="n">classes</span><span class="p">,</span>
+           <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+           <span class="n">ylabel</span><span class="o">=</span><span class="sh">'</span><span class="s">True label</span><span class="sh">'</span><span class="p">,</span>
+           <span class="n">xlabel</span><span class="o">=</span><span class="sh">'</span><span class="s">Predicted label</span><span class="sh">'</span><span class="p">)</span>
+
+    <span class="c1"># Rotate the tick labels and set their alignment.
+</span>    <span class="n">plt</span><span class="p">.</span><span class="nf">setp</span><span class="p">(</span><span class="n">ax</span><span class="p">.</span><span class="nf">get_xticklabels</span><span class="p">(),</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="sh">"</span><span class="s">right</span><span class="sh">"</span><span class="p">,</span>
+             <span class="n">rotation_mode</span><span class="o">=</span><span class="sh">"</span><span class="s">anchor</span><span class="sh">"</span><span class="p">)</span>
+
+    <span class="c1"># Loop over data dimensions and create text annotations.
+</span>    <span class="n">fmt</span> <span class="o">=</span> <span class="sh">'</span><span class="s">.2f</span><span class="sh">'</span> <span class="k">if</span> <span class="n">normalize</span> <span class="k">else</span> <span class="sh">'</span><span class="s">d</span><span class="sh">'</span>
+    <span class="n">thresh</span> <span class="o">=</span> <span class="n">cm</span><span class="p">.</span><span class="nf">max</span><span class="p">()</span> <span class="o">/</span> <span class="mf">2.</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">cm</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">cm</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">ax</span><span class="p">.</span><span class="nf">text</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="nf">format</span><span class="p">(</span><span class="n">cm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">fmt</span><span class="p">),</span>
+                    <span class="n">ha</span><span class="o">=</span><span class="sh">"</span><span class="s">center</span><span class="sh">"</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="sh">"</span><span class="s">center</span><span class="sh">"</span><span class="p">,</span>
+                    <span class="n">color</span><span class="o">=</span><span class="sh">"</span><span class="s">white</span><span class="sh">"</span> <span class="k">if</span> <span class="n">cm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">thresh</span> <span class="k">else</span> <span class="sh">"</span><span class="s">black</span><span class="sh">"</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">.</span><span class="nf">tight_layout</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ax</span>
+</code></pre></div></div>
+
+<p>When working on classifier, confusion matrices are a great tool to identify potential for improvements. Predictions are made on the train and test set and confusion matrices are plotted.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Confusion matrix on training set
+</span><span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">Y_train</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">probas_train</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">).</span><span class="n">T</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)));</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/output_100_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Confusion matrix on training set
+</span><span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">Y_test</span><span class="p">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">probas_test</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">).</span><span class="n">T</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)));</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-Deep-Neural/output_101_0.png" />
+</figure>
+
+<p>From the above, we can see that the most common mistakes made on the test set are:</p>
+<ul>
+  <li>4 predicted as 9</li>
+  <li>9 predicted as 4</li>
+  <li>5 predicted as 3</li>
+</ul>
+
+<p>From the above, we can decide to add more focusing on reducing the errors made on the 4, 9, and 5 classes by adding more training images for these classes.</p>
+
+<hr />
+<p><a id="Section_7"></a></p>
+<h2 id="8-conclusion">8. Conclusion</h2>
+
+<p>The deep neural network proved to be an improvement on the single layer model. There are a few aspects to keep in mind  when using this architecture:</p>
+
+<ol>
+  <li>Complex models are prone to over-fitting. Indeed, with more parameters, a complex model can over-fit the training data.</li>
+  <li>Complex models require more processing power.</li>
+  <li>The architecture of the DNN needs can take many shapes. From deep model (large number of layers) to wide models (large number of hidden units), the architecture of a network needs to be tested and tuned.</li>
+</ol>
+
+<p><strong>Final words on regularization and optimization:</strong></p>
+
+<p>In order to reduce the over-fitting, there exists a set of techniques called regularization. Their role in to prevent the model from over-learning the training data by simplifying the model. The most common ones are:</p>
+
+<p><strong>L1 and L2 regularizations</strong><br />
+   The cost function is modified and a penalty term is added:</p>
+
+\[J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)}) + \frac{\lambda}{2*m}*\sum{}||w||^{2} \text{   for L2 Regularization}\]
+
+\[J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)}) + \frac{\lambda}{m}*\sum{}|w| \text{   for L1 Regularization}\]
+
+<p>The idea behind this strategy is to ensure that the model is not governed by a small subsets of weights with high values. The parameter lambda is tunable.</p>
+
+<p><strong>Dropout</strong><br />
+  Similar to L1 and L2 regularizations, Dropout prevents the model to rely on a subset of weights. During training, a small portion of the hidden units in each layer are randomly set to 0. The rest of the weights are scaled to account for the dropout. By randomly removing hidden units from the model, dropout forces the model to distribute its learning power across multiple paths instead of a few preferred ones.</p>
+
+<p><strong>Early stopping</strong><br />
+  The model is trained and after each epoch, a metric (accuracy) is computed on a validation set. The training is stopped when a condition on the metric is reached. This can be defined as “accuracy decreases” or “accuracy reaches a certain threshold”.</p>
+
+<p><strong>Data augmentation</strong><br />
+  Data augmentation consists of artificially generate more training data by using the original training dataset. When working with images, transformation such as zooming, shifting, color-change, rotation are applied randomly to generate more images. This will help the model to train on more cases and better perform when making predictions using unseen data.</p>

@@ -1,0 +1,1460 @@
+<footer id="attribution" style="float:right; color:#999; background:#fff;">
+Created by Thibault Dody, 08/26/2019.
+</footer>
+
+<h1 id="a-take-on-mnist">A Take on MNIST</h1>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/MnistExamples.png" />
+</figure>
+
+<hr />
+
+<p>In this Notebook, we will built a progressively more complex model to predict hand-written digits stored in the famous MNIST dataset. The goal is to understand the effects of our modeling choices and how the performances of our models can be optimized. We will start by building the simplest model (mutinomial logistic regression) and incrementally increase the complexity the approach in order to improve the accuracy of our predictions.</p>
+
+<p><a href="#Section_0"><strong>0. Load data</strong></a><br />
+<a href="#Section_1"><strong>1. Exploratory Analysis</strong></a><br />
+    <a href="#Section_1a"><strong>1.a. Classes to predict</strong></a><br />
+    <a href="#Section_1b"><strong>1.b. Input features</strong></a><br />
+    <a href="#Section_1c"><strong>1.c Dataset Size</strong></a><br />
+<a href="#Section_2"><strong>2. Logistic Regression</strong></a><br />
+    <a href="#Section_2a"><strong>2.a Theory</strong></a><br />
+    <a href="#Section_2b"><strong>2.b Simple example</strong></a><br />
+    <a href="#Section_2c"><strong>2.c Logistic Regression on MNIST (no normalization)</strong></a><br />
+    <a href="#Section_2d"><strong>2.d Logistic Regression on MNIST (Lasso and Ridge regularizations)</strong></a><br />
+<a href="#Section_3"><strong>3. Deep Neural Networks (DNN)</strong></a><br />
+<a href="#Section_4"><strong>4. Convolutional Networks (CNN)</strong></a><br />
+<a href="#Section_5"><strong>5. Convolutional Networks (CNN) with data augmentation</strong></a><br />
+<a href="#Section_6"><strong>6. Conclusion and Kaggle Submittal</strong></a></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load libraries
+</span><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="n">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+
+<span class="c1"># plotting tools
+</span><span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="n">seaborn</span> <span class="k">as</span> <span class="n">sns</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">style</span><span class="p">.</span><span class="nf">use</span><span class="p">(</span><span class="sh">'</span><span class="s">ggplot</span><span class="sh">'</span><span class="p">)</span>
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+
+<span class="kn">import</span> <span class="n">tensorflow</span> <span class="k">as</span> <span class="n">tf</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Tensforflow:</span><span class="sh">'</span><span class="p">,</span><span class="n">tf</span><span class="p">.</span><span class="n">__version__</span><span class="p">)</span>
+<span class="kn">from</span> <span class="n">tensorflow</span> <span class="kn">import</span> <span class="n">keras</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Keras:</span><span class="sh">'</span><span class="p">,</span> <span class="n">keras</span><span class="p">.</span><span class="n">__version__</span><span class="p">)</span>
+<span class="kn">from</span> <span class="n">keras.utils.np_utils</span> <span class="kn">import</span> <span class="n">to_categorical</span>
+<span class="kn">from</span> <span class="n">tensorflow.keras.optimizers</span> <span class="kn">import</span> <span class="n">RMSprop</span>
+<span class="kn">from</span> <span class="n">tensorflow.keras.callbacks</span> <span class="kn">import</span> <span class="n">ReduceLROnPlateau</span>
+
+<span class="c1"># models
+</span><span class="kn">import</span> <span class="n">sklearn</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">scikit-learn</span><span class="sh">'</span><span class="p">,</span><span class="n">sklearn</span><span class="p">.</span><span class="n">__version__</span><span class="p">)</span>
+<span class="kn">from</span> <span class="n">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">SGDClassifier</span><span class="p">,</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span> <span class="n">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">GridSearchCV</span>
+
+<span class="c1"># metrics
+</span><span class="kn">from</span> <span class="n">sklearn.metrics</span> <span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">confusion_matrix</span>
+<span class="kn">from</span> <span class="n">sklearn.utils.multiclass</span> <span class="kn">import</span> <span class="n">unique_labels</span>
+
+<span class="c1"># tools
+</span><span class="kn">import</span> <span class="n">TAD_tools</span> <span class="c1"># personal tools and functions
+</span></code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Tensforflow: 1.14.0
+Keras: 2.2.4-tf
+scikit-learn 0.21.2
+   
+Using TensorFlow backend. 
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># store results
+</span><span class="n">df_results</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="nc">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="sh">'</span><span class="s">Model</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">Training accuracy</span><span class="sh">'</span><span class="p">,</span><span class="sh">'</span><span class="s">Testing accuracy</span><span class="sh">'</span><span class="p">])</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_0"></a></p>
+<h2 id="0-load-data">0. Load data</h2>
+
+<p>The MNIST is a famous dataset. It can be retrieved directly from the keras library. The dataset will be divided into two sets. A training set will be used to train our model while the test set will be used to evaluate the performance of the model when subjected to unknown data.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load data
+</span><span class="n">mnist</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="n">mnist</span>
+
+<span class="c1"># create a train and a test set
+</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">),(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span> <span class="o">=</span> <span class="n">mnist</span><span class="p">.</span><span class="nf">load_data</span><span class="p">()</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_1"></a></p>
+<h2 id="1-exploratory-analysis">1. Exploratory Analysis</h2>
+
+<p>Before rushing to the modeling aspect of this problem, it is essential to explore the dataset. During this step, we are primarily focused on the followings:</p>
+
+<p>a. What are the classes to predict?<br />
+b. What does the input data look like?<br />
+c. How big is the dataset?<br />
+d. Are there any missing values or outliers?</p>
+
+<h3 id="1a-classes-to-predict">1.a. Classes to predict</h3>
+
+<p>As previously stated, the MNIST dataset consists of a collection of images of single hand-written digits (0 through 9).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># number of classes and unique classes
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">The model consists of {} classes. They are labeled as:</span><span class="se">\n</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">unique</span><span class="p">(</span><span class="n">Y_train</span><span class="p">))))</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nf">unique</span><span class="p">(</span><span class="n">Y_train</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>The model consists of 10 classes. They are labeled as:
+
+[0 1 2 3 4 5 6 7 8 9]
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_1b"></a></p>
+<h3 id="1b-input-features">1.b. Input features</h3>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Each of the input image is {} by {} pixels.</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X_train</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">X_train</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">The grayscale varies from {} to {}.</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="nf">min</span><span class="p">(),</span><span class="n">X_train</span><span class="p">.</span><span class="nf">max</span><span class="p">()))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Each of the input image is 28 by 28 pixels.
+The grayscale varies from 0 to 255.
+</code></pre></div></div>
+
+<p>Let’s now plot a few images of each classes to understand what we are dealing with.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># unique classes
+</span><span class="n">unique_classes</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">unique</span><span class="p">(</span><span class="n">Y_train</span><span class="p">)</span>
+
+<span class="c1"># create plot figure
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+
+
+<span class="c1"># loop over the classes and plots a few randomly selected images
+</span><span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">digit</span> <span class="ow">in</span> <span class="nf">enumerate</span><span class="p">(</span><span class="n">unique_classes</span><span class="p">):</span>
+    <span class="n">selected_images</span> <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="n">Y_train</span><span class="o">==</span><span class="n">digit</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>
+    
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">10</span><span class="p">):</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">digit</span><span class="p">,</span><span class="n">k</span><span class="p">].</span><span class="nf">imshow</span><span class="p">(</span><span class="n">selected_images</span><span class="p">[</span><span class="n">k</span><span class="p">],</span><span class="n">cmap</span><span class="o">=</span><span class="sh">'</span><span class="s">Greys</span><span class="sh">'</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">255</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="n">digit</span><span class="p">,</span><span class="n">k</span><span class="p">].</span><span class="nf">axis</span><span class="p">(</span><span class="sh">'</span><span class="s">off</span><span class="sh">'</span><span class="p">)</span>
+    
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_13_0.png" />
+</figure>
+
+<hr />
+<p><a id="Section_1c"></a></p>
+<h3 id="1c-dataset-size">1.c Dataset Size</h3>
+<p>When working on a classification problem, it is essential to know if our training data is well distributed amongst the different classes.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">There are {} training examples and {} test examples.</span><span class="sh">"</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">X_test</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>There are 60000 training examples and 10000 test examples.
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># plot histogram of digit class distribution
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">hist</span><span class="p">(</span><span class="n">Y_train</span><span class="p">,</span><span class="n">density</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">rwidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">align</span><span class="o">=</span><span class="sh">'</span><span class="s">left</span><span class="sh">'</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span><span class="nf">list</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="mi">11</span><span class="p">)))</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xticks</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="p">.</span><span class="nf">unique</span><span class="p">(</span><span class="n">Y_train</span><span class="p">)])</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xticklabels</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="p">.</span><span class="nf">unique</span><span class="p">(</span><span class="n">Y_train</span><span class="p">)])</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Class distribution</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Classes</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Count</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_16_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># list class distributions
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">Class distribution in dataset (%):</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">pd</span><span class="p">.</span><span class="nc">Series</span><span class="p">(</span><span class="n">Y_train</span><span class="p">).</span><span class="nf">value_counts</span><span class="p">().</span><span class="nf">sort_index</span><span class="p">()</span> <span class="o">/</span> <span class="n">Y_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mf">100.0</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Class distribution in dataset (%):
+
+0     9.871667
+1    11.236667
+2     9.930000
+3    10.218333
+4     9.736667
+5     9.035000
+6     9.863333
+7    10.441667
+8     9.751667
+9     9.915000
+dtype: float64
+</code></pre></div></div>
+
+<p>The class distribution is even enough to consider the dataset ready for use. It is essential to establish how classes are distributed in order to define our accuracy baseline. For instance, let’s consider a model used to predict if a coin will land on head or tail. If our dataset contains 10% heads and 90% tails then a dummy model predicting “tail” for any input will have an accuracy of 90%.</p>
+
+<p><strong>NORMALIZATION</strong>:</p>
+
+<p>In order to improve the performance of our models, we will normalized the pixel values so they fall between 0 and 1.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># normalize pixel value to range between 0 and 1 instead of ranging between 0 and 255
+</span><span class="n">X_train</span> <span class="o">=</span> <span class="n">X_train</span> <span class="o">/</span> <span class="mf">255.0</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span> <span class="o">/</span> <span class="mf">255.0</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_2"></a></p>
+<h2 id="2-logistic-regression">2. Logistic Regression</h2>
+
+<p><a id="Section_2a"></a></p>
+<h3 id="2a-theory">2.a Theory</h3>
+
+<p>The first model will consist of a simple logistic regression. The logistic regression takes its origins from the linear regression. The linear regression (\(L\)) is coupled with the sigmoid function (\(\sigma\)). They are defined as:</p>
+
+\[L(x) = \beta_{0} + \sum_{n=1}^{N} \beta_{n} * x_{n}\]
+
+<p>and</p>
+
+\[\sigma(x) = \frac{1}{1+e^{-x}}\]
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create sigmoid function 
+</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">))</span>
+
+<span class="c1"># plot sigmoid
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+
+<span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">x</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">y</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Sigmoid function: $$\sigma(x)=1/(1+e^{-x})$$</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_23_0.png" />
+</figure>
+
+<hr />
+<p><a id="Section_2b"></a></p>
+<h3 id="2b-simple-example">2.b Simple example</h3>
+
+<p>Let’s consider a simple example. In a class of 20 students, we asked how many hours were spent studying on a test. We collect the data along with the results of the test. For each of the 20 students, we have a record containing the number of hours spent studying and whether the student pass the test.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># data
+</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="mf">0.50</span><span class="p">,</span><span class="mf">0.75</span><span class="p">,</span><span class="mf">1.00</span><span class="p">,</span><span class="mf">1.25</span><span class="p">,</span><span class="mf">1.50</span><span class="p">,</span><span class="mf">1.75</span><span class="p">,</span><span class="mf">1.75</span><span class="p">,</span><span class="mf">2.00</span><span class="p">,</span><span class="mf">2.25</span><span class="p">,</span>
+              <span class="mf">2.50</span><span class="p">,</span><span class="mf">2.75</span><span class="p">,</span><span class="mf">3.00</span><span class="p">,</span><span class="mf">3.25</span><span class="p">,</span><span class="mf">3.50</span><span class="p">,</span><span class="mf">4.00</span><span class="p">,</span><span class="mf">4.25</span><span class="p">,</span><span class="mf">4.50</span><span class="p">,</span><span class="mf">4.75</span><span class="p">,</span><span class="mf">5.00</span><span class="p">,</span><span class="mf">5.50</span><span class="p">]).</span><span class="nf">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># create logistic regression
+</span><span class="n">lr</span> <span class="o">=</span> <span class="nc">LogisticRegression</span><span class="p">(</span><span class="n">penalty</span><span class="o">=</span><span class="sh">'</span><span class="s">l2</span><span class="sh">'</span><span class="p">,</span><span class="n">C</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="mi">6</span><span class="p">,</span><span class="n">solver</span><span class="o">=</span><span class="sh">'</span><span class="s">lbfgs</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="c1"># train model on original data
+</span><span class="n">lr</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+
+<span class="c1"># generate new test data
+</span><span class="n">x_test</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mf">0.1</span><span class="p">).</span><span class="nf">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># predict the probability of passing the test
+</span><span class="n">y_test_pred</span> <span class="o">=</span> <span class="n">lr</span><span class="p">.</span><span class="nf">predict_proba</span><span class="p">(</span><span class="n">x_test</span><span class="p">)[:,</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="c1"># plot data
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">data</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Hours of study</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Probability of passing the exam</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Probability of passing the exam versus hours of studying</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">plot</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span><span class="n">y_test_pred</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="sh">'</span><span class="s">blue</span><span class="sh">'</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">logistic regression</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">set_yticks</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.25</span><span class="p">,</span><span class="mf">0.50</span><span class="p">,</span><span class="mf">0.75</span><span class="p">,</span><span class="mf">1.0</span><span class="p">])</span>
+<span class="n">ax</span><span class="p">.</span><span class="nf">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">7</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_26_0.png" />
+</figure>
+
+<p><strong>Conclusion</strong>:</p>
+
+<p>From the above plot, the logistic regression will predict a student will pass the test if he/she studied for more than ~2.6h with a probability greater than 0.5.</p>
+
+<hr />
+<p><a id="Section_2c"></a></p>
+<h3 id="2c-logistic-regression-on-mnist--no-regularization">2.c Logistic Regression on MNIST  (no regularization)</h3>
+
+<p>The main difference between the example previously presented and the MNIST dataset is that the test studying example was a binary classification problem. Since the MNIST dataset contains 10 classes, the algorithm needs to be adjusted. The model used for such cases is called <strong>multinomial logistic regression</strong>. To put it simply, this problem can be solved by dividing it into K-1 regressions where K is the number of classes. Each regression will compute a score which defines the probability of one example to belong to class k. In order to make the predictions, the results obtained by the K-1 models are combined and the one giving the highest score is used to defined the predicted class.</p>
+
+<p>The <strong>\(softmax\)</strong> function is used to compute the probability of belonging to each class. It is defined as:</p>
+
+\[\sigma(z_{i}) = \frac{e^{z_{i}}}{\sum_{i=1}^{K}e^{z_{i}}}\]
+
+<p><strong>Note</strong>: The Logistic Regression model computes the analytical solution by inverting matrices. Due to the large size of our training matrix, the analytical solution requires a lot of computing power to be run quickly. Instead, we will use the Stochastic Gradient Descent (SGD) method to approach the analytical solution. The SGD computes the partial derivatives of the cost function with respect to the model parameters. For each iteration, the parameters are updated based on these partial derivatives.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create model
+</span><span class="n">sgd_clf</span> <span class="o">=</span> <span class="nc">SGDClassifier</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="sh">'</span><span class="s">log</span><span class="sh">'</span><span class="p">,</span> <span class="n">penalty</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="sh">'</span><span class="s">optimal</span><span class="sh">'</span><span class="p">,</span> <span class="n">eta0</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="c1"># train the model
+</span><span class="n">sgd_clf</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="n">Y_train</span><span class="p">)</span>
+
+<span class="c1"># make predictions and compute accuracies
+</span><span class="n">Y_train_pred</span> <span class="o">=</span> <span class="n">sgd_clf</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">sgd_clf</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">X_test</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="n">acc_train</span> <span class="o">=</span> <span class="nf">accuracy_score</span><span class="p">(</span><span class="n">Y_train</span><span class="p">,</span><span class="n">Y_train_pred</span><span class="p">)</span>
+<span class="n">acc_test</span> <span class="o">=</span> <span class="nf">accuracy_score</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span><span class="n">Y_test_pred</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The accuracy on the training set is: </span><span class="se">\t</span><span class="s">{:.3f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">acc_train</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The accuracy on the test set is: </span><span class="se">\t</span><span class="s">{:.3f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">acc_test</span> <span class="o">*</span> <span class="mi">100</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>The accuracy on the training set is: 	91.145%
+The accuracy on the test set is: 	89.870%
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># store results
+</span><span class="n">df_results</span> <span class="o">=</span> <span class="n">df_results</span><span class="p">.</span><span class="nf">append</span><span class="p">({</span><span class="sh">'</span><span class="s">Model</span><span class="sh">'</span><span class="p">:</span><span class="sh">"</span><span class="s">Log Reg</span><span class="sh">"</span><span class="p">,</span><span class="sh">'</span><span class="s">Training accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">acc_train</span><span class="p">,</span><span class="sh">'</span><span class="s">Testing accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">acc_test</span><span class="p">},</span><span class="n">ignore_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_2d"></a></p>
+<h3 id="2d-logistic-regression-on-mnist--lasso-and-ridge-regularizations">2.d Logistic Regression on MNIST  (Lasso and Ridge regularizations)</h3>
+
+<p>In order to avoid overfitting, we will now incorporate some regularization in our model. There are two types of regularizations:</p>
+
+<ol>
+  <li>\(l1\) type (Lasso)</li>
+  <li>\(l2\) type (Ridge)</li>
+</ol>
+
+<p>The idea behind these two methods is the same, avoid large coefficients in the regression and distribute the predictive power of the model over a larger subset of coefficients. The Lasso normalization for a simple linear regression can be defined as the following problem to minimize:</p>
+
+\[\min_{ \beta_0, \beta } \left\{ \frac{1}{N} \sum_{i=1}^N (y_i)*log(\beta_0 - x_i^T \beta) \right\} \text{ subject to } \sum_{j=1}^p |\beta_j| \leq t.\]
+
+<p>It because of the nature of the absolute value, the Lasso regularization tends to drop the coefficients of the model to 0.</p>
+
+<p>The Ridge normalization for a simple linear regression can be defined as the following problem to minimize:</p>
+
+\[\min_{ \beta_0, \beta } \left\{ \frac{1}{N} \sum_{i=1}^N (y_i)*log(\beta_0 - x_i^T \beta) \right\} \text{ subject to } \sum_{j=1}^p \beta_j^{2} \leq t.\]
+
+<p>Note that both of these methods are defined using a parameter \(t\) where \(t\) is the regularization parameter. Smaller values of \(t\) will leads to more regularization.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Lasso
+</span>
+<span class="c1"># create model
+</span><span class="n">lasso</span> <span class="o">=</span> <span class="nc">SGDClassifier</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="sh">'</span><span class="s">log</span><span class="sh">'</span><span class="p">,</span> <span class="n">penalty</span><span class="o">=</span><span class="sh">'</span><span class="s">l1</span><span class="sh">'</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="sh">'</span><span class="s">optimal</span><span class="sh">'</span><span class="p">,</span> <span class="n">eta0</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">)</span>
+
+<span class="c1"># train the model
+</span><span class="n">lasso</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="n">Y_train</span><span class="p">)</span>
+
+<span class="c1"># make predictions and compute accuracies
+</span><span class="n">Y_train_pred</span> <span class="o">=</span> <span class="n">lasso</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">lasso</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">X_test</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="n">acc_train</span> <span class="o">=</span> <span class="nf">accuracy_score</span><span class="p">(</span><span class="n">Y_train</span><span class="p">,</span><span class="n">Y_train_pred</span><span class="p">)</span>
+<span class="n">acc_test</span> <span class="o">=</span> <span class="nf">accuracy_score</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span><span class="n">Y_test_pred</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The accuracy on the training set is: </span><span class="se">\t</span><span class="s">{:.3f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">acc_train</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The accuracy on the test set is: </span><span class="se">\t</span><span class="s">{:.3f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">acc_test</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>The accuracy on the training set is: 	91.390%
+The accuracy on the test set is: 	90.700%
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># store results
+</span><span class="n">df_results</span> <span class="o">=</span> <span class="n">df_results</span><span class="p">.</span><span class="nf">append</span><span class="p">({</span><span class="sh">'</span><span class="s">Model</span><span class="sh">'</span><span class="p">:</span><span class="sh">"</span><span class="s">Lasso</span><span class="sh">"</span><span class="p">,</span><span class="sh">'</span><span class="s">Training accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">acc_train</span><span class="p">,</span><span class="sh">'</span><span class="s">Testing accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">acc_test</span><span class="p">},</span><span class="n">ignore_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Ridge
+</span>
+<span class="c1"># create model
+</span><span class="n">ridge</span> <span class="o">=</span> <span class="nc">SGDClassifier</span><span class="p">(</span><span class="n">loss</span><span class="o">=</span><span class="sh">'</span><span class="s">log</span><span class="sh">'</span><span class="p">,</span> <span class="n">penalty</span><span class="o">=</span><span class="sh">'</span><span class="s">l2</span><span class="sh">'</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">20000</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="sh">'</span><span class="s">optimal</span><span class="sh">'</span><span class="p">,</span> <span class="n">eta0</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">)</span>
+
+<span class="c1"># train the model
+</span><span class="n">ridge</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="n">Y_train</span><span class="p">)</span>
+
+<span class="c1"># make predictions and compute accuracies
+</span><span class="n">Y_train_pred</span> <span class="o">=</span> <span class="n">ridge</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">X_train</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">ridge</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">.</span><span class="nf">reshape</span><span class="p">(</span><span class="n">X_test</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="n">acc_train</span> <span class="o">=</span> <span class="nf">accuracy_score</span><span class="p">(</span><span class="n">Y_train</span><span class="p">,</span><span class="n">Y_train_pred</span><span class="p">)</span>
+<span class="n">acc_test</span> <span class="o">=</span> <span class="nf">accuracy_score</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span><span class="n">Y_test_pred</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The accuracy on the training set is: </span><span class="se">\t</span><span class="s">{:.3f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">acc_train</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+<span class="nf">print</span><span class="p">(</span><span class="sh">'</span><span class="s">The accuracy on the test set is: </span><span class="se">\t</span><span class="s">{:.3f}%</span><span class="sh">'</span><span class="p">.</span><span class="nf">format</span><span class="p">(</span><span class="n">acc_test</span><span class="o">*</span><span class="mi">100</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>The accuracy on the training set is: 	92.040%
+The accuracy on the test set is: 	91.520%
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># store results
+</span><span class="n">df_results</span> <span class="o">=</span> <span class="n">df_results</span><span class="p">.</span><span class="nf">append</span><span class="p">({</span><span class="sh">'</span><span class="s">Model</span><span class="sh">'</span><span class="p">:</span><span class="sh">"</span><span class="s">Ridge</span><span class="sh">"</span><span class="p">,</span><span class="sh">'</span><span class="s">Training accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">acc_train</span><span class="p">,</span><span class="sh">'</span><span class="s">Testing accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">acc_test</span><span class="p">},</span><span class="n">ignore_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df_results</span>
+</code></pre></div></div>
+
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Model</th>
+      <th>Training accuracy</th>
+      <th>Testing accuracy</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Log Reg</td>
+      <td>0.91145</td>
+      <td>0.8987</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Lasso</td>
+      <td>0.91390</td>
+      <td>0.9070</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Ridge</td>
+      <td>0.92040</td>
+      <td>0.9152</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<hr />
+<p><a id="Section_3"></a></p>
+<h2 id="3-deep-neural-networks-dnn">3. Deep Neural Networks (DNN)</h2>
+
+<p>Neural Networks combine the simplicity of simple regression and the power of model combination. A neural network is an ensemble of neurons. Each neuron can be seen as a linear functions. The network is made of neurons arranged in layers. The last layer of the neural network is used to predict the output classes. We begin by creating a neural network of three fully connected layers.</p>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/Deep-learning-ai-machine-matrix2.gif" />
+</figure>
+<p>Source: www.kookycoder.com</p>
+
+<p>The architecture of a neural networks is made of three different types of layers. The input layer consists of the properly formatted input data. In our case, we flatten the 28x28 images into a 784-component vector. The output layer consists of a set of neurons (1 neuron for each output class). Finally, the body of the network consists of hidden layers. Each neuron of each layer is connected to each neuron of the next layer.</p>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/Calculations_in_Neural_Networkgh5w.gif" />
+</figure>
+<p>Source: https://cloud.google.com</p>
+
+<p>Each neuro is definedd with a set of weights (\(w_ij\)) and an activation function. The role of the activation function is to increase the complexity of the model to capture non-linear behaviors. The most common activation function of the hidden layers is called “Rectified Linear Unit” (RELU) and is defined as \(f(x)=max(x,0)\).</p>
+
+<p><strong>Note</strong>: as part of the regularization effort, dropouts are included in the model. The idea behind the use of dropout is to prevent the model from relying too heavily on the same neurons. To do so, a random subset of neurons is deactivated (coefficients set to 0) at each iteration.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load data
+</span><span class="n">mnist</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="n">mnist</span>
+
+<span class="c1"># create a train and a test set
+</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">),(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span> <span class="o">=</span> <span class="n">mnist</span><span class="p">.</span><span class="nf">load_data</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_train</span> <span class="o">=</span> <span class="n">X_train</span> <span class="o">/</span> <span class="mf">255.0</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="n">X_test</span> <span class="o">/</span> <span class="mf">255.0</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create nn (128-&gt;64-&gt;32-&gt;10)
+</span><span class="n">model_dnn_no_drop</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="nc">Sequential</span><span class="p">([</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Flatten</span><span class="p">(),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">softmax</span><span class="sh">'</span><span class="p">)</span>
+        <span class="p">])</span>
+
+<span class="n">model_dnn_drop</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="nc">Sequential</span><span class="p">([</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Flatten</span><span class="p">(),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dropout</span><span class="p">(</span><span class="mf">0.20</span><span class="p">),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dropout</span><span class="p">(</span><span class="mf">0.20</span><span class="p">),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dropout</span><span class="p">(</span><span class="mf">0.20</span><span class="p">),</span>
+        <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">softmax</span><span class="sh">'</span><span class="p">)</span>
+        <span class="p">])</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># compile model
+</span><span class="n">model_dnn_no_drop</span><span class="p">.</span><span class="nf">compile</span><span class="p">(</span>
+        <span class="n">optimizer</span><span class="o">=</span><span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">optimizers</span><span class="p">.</span><span class="nc">Adam</span><span class="p">(),</span>
+        <span class="n">loss</span><span class="o">=</span><span class="sh">'</span><span class="s">sparse_categorical_crossentropy</span><span class="sh">'</span><span class="p">,</span>
+        <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="sh">'</span><span class="s">acc</span><span class="sh">'</span><span class="p">],</span>
+        <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span>
+        <span class="p">)</span>
+
+<span class="n">model_dnn_drop</span><span class="p">.</span><span class="nf">compile</span><span class="p">(</span>
+        <span class="n">optimizer</span><span class="o">=</span><span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">optimizers</span><span class="p">.</span><span class="nc">Adam</span><span class="p">(),</span>
+        <span class="n">loss</span><span class="o">=</span><span class="sh">'</span><span class="s">sparse_categorical_crossentropy</span><span class="sh">'</span><span class="p">,</span>
+        <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="sh">'</span><span class="s">acc</span><span class="sh">'</span><span class="p">],</span>
+        <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span>
+        <span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># train model
+</span><span class="n">history_dnn_no_drop</span> <span class="o">=</span> <span class="n">model_dnn_no_drop</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span>
+        <span class="n">X_train</span><span class="p">,</span>
+        <span class="n">Y_train</span><span class="p">,</span>
+        <span class="n">epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+        <span class="n">validation_data</span><span class="o">=</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
+        <span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Train on 60000 samples, validate on 10000 samples
+Epoch 1/50
+60000/60000 [==============================] - 3s 43us/sample - loss: 0.2561 - acc: 0.9246 - val_loss: 0.1324 - val_acc: 0.9583
+Epoch 2/50
+60000/60000 [==============================] - 2s 41us/sample - loss: 0.1047 - acc: 0.9678 - val_loss: 0.0972 - val_acc: 0.9714
+Epoch 3/50
+60000/60000 [==============================] - 2s 41us/sample - loss: 0.0724 - acc: 0.9777 - val_loss: 0.0959 - val_acc: 0.9709
+Epoch 4/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0570 - acc: 0.9820 - val_loss: 0.0846 - val_acc: 0.9732
+Epoch 5/50
+60000/60000 [==============================] - 2s 41us/sample - loss: 0.0473 - acc: 0.9848 - val_loss: 0.0918 - val_acc: 0.9739
+Epoch 6/50
+60000/60000 [==============================] - 2s 42us/sample - loss: 0.0370 - acc: 0.9878 - val_loss: 0.0894 - val_acc: 0.9738
+Epoch 7/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0316 - acc: 0.9891 - val_loss: 0.0942 - val_acc: 0.9733
+Epoch 8/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0282 - acc: 0.9904 - val_loss: 0.0915 - val_acc: 0.9756
+Epoch 9/50
+60000/60000 [==============================] - 2s 41us/sample - loss: 0.0252 - acc: 0.9918 - val_loss: 0.0899 - val_acc: 0.9776
+Epoch 10/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0234 - acc: 0.9922 - val_loss: 0.0812 - val_acc: 0.9801
+Epoch 11/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0201 - acc: 0.9933 - val_loss: 0.1076 - val_acc: 0.9744
+Epoch 12/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0192 - acc: 0.9934 - val_loss: 0.0968 - val_acc: 0.9789
+Epoch 13/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0162 - acc: 0.9948 - val_loss: 0.0971 - val_acc: 0.9771
+Epoch 14/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0160 - acc: 0.9947 - val_loss: 0.1052 - val_acc: 0.9769
+Epoch 15/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0144 - acc: 0.9952 - val_loss: 0.1085 - val_acc: 0.9768
+Epoch 16/50
+60000/60000 [==============================] - 2s 39us/sample - loss: 0.0148 - acc: 0.9952 - val_loss: 0.0906 - val_acc: 0.9811
+Epoch 17/50
+60000/60000 [==============================] - 2s 41us/sample - loss: 0.0142 - acc: 0.9956 - val_loss: 0.0995 - val_acc: 0.9782
+Epoch 18/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0103 - acc: 0.9966 - val_loss: 0.1406 - val_acc: 0.9736
+Epoch 19/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0145 - acc: 0.9955 - val_loss: 0.1084 - val_acc: 0.9788
+Epoch 20/50
+60000/60000 [==============================] - 3s 43us/sample - loss: 0.0098 - acc: 0.9964 - val_loss: 0.1224 - val_acc: 0.9760
+Epoch 21/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0131 - acc: 0.9958 - val_loss: 0.1064 - val_acc: 0.9793
+Epoch 22/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0094 - acc: 0.9972 - val_loss: 0.1337 - val_acc: 0.9769
+Epoch 23/50
+60000/60000 [==============================] - 2s 41us/sample - loss: 0.0129 - acc: 0.9959 - val_loss: 0.1373 - val_acc: 0.9759
+Epoch 24/50
+60000/60000 [==============================] - 3s 43us/sample - loss: 0.0079 - acc: 0.9975 - val_loss: 0.1371 - val_acc: 0.9773
+Epoch 25/50
+60000/60000 [==============================] - 3s 46us/sample - loss: 0.0114 - acc: 0.9964 - val_loss: 0.1081 - val_acc: 0.9793
+Epoch 26/50
+60000/60000 [==============================] - 3s 45us/sample - loss: 0.0090 - acc: 0.9970 - val_loss: 0.1165 - val_acc: 0.9808
+Epoch 27/50
+60000/60000 [==============================] - 3s 47us/sample - loss: 0.0095 - acc: 0.9971 - val_loss: 0.1255 - val_acc: 0.9790
+Epoch 28/50
+60000/60000 [==============================] - 2s 41us/sample - loss: 0.0100 - acc: 0.9970 - val_loss: 0.1080 - val_acc: 0.9800
+Epoch 29/50
+60000/60000 [==============================] - 3s 43us/sample - loss: 0.0075 - acc: 0.9976 - val_loss: 0.1395 - val_acc: 0.9756
+Epoch 30/50
+60000/60000 [==============================] - 3s 43us/sample - loss: 0.0079 - acc: 0.9974 - val_loss: 0.1352 - val_acc: 0.9775
+Epoch 31/50
+60000/60000 [==============================] - 3s 43us/sample - loss: 0.0057 - acc: 0.9981 - val_loss: 0.1216 - val_acc: 0.9792
+Epoch 32/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0098 - acc: 0.9974 - val_loss: 0.1379 - val_acc: 0.9774
+Epoch 33/50
+60000/60000 [==============================] - 3s 45us/sample - loss: 0.0089 - acc: 0.9974 - val_loss: 0.1203 - val_acc: 0.9799
+Epoch 34/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0073 - acc: 0.9976 - val_loss: 0.1350 - val_acc: 0.9792
+Epoch 35/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0068 - acc: 0.9980 - val_loss: 0.1311 - val_acc: 0.9797
+Epoch 36/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0079 - acc: 0.9979 - val_loss: 0.1257 - val_acc: 0.9803
+Epoch 37/50
+60000/60000 [==============================] - 3s 46us/sample - loss: 0.0066 - acc: 0.9981 - val_loss: 0.1276 - val_acc: 0.9798
+Epoch 38/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0063 - acc: 0.9983 - val_loss: 0.1328 - val_acc: 0.9798
+Epoch 39/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0073 - acc: 0.9982 - val_loss: 0.1420 - val_acc: 0.9780
+Epoch 40/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0062 - acc: 0.9981 - val_loss: 0.1264 - val_acc: 0.9793
+Epoch 41/50
+60000/60000 [==============================] - 2s 42us/sample - loss: 0.0077 - acc: 0.9978 - val_loss: 0.1293 - val_acc: 0.9812
+Epoch 42/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0067 - acc: 0.9984 - val_loss: 0.1491 - val_acc: 0.9768
+Epoch 43/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0052 - acc: 0.9984 - val_loss: 0.1205 - val_acc: 0.9824
+Epoch 44/50
+60000/60000 [==============================] - 3s 44us/sample - loss: 0.0080 - acc: 0.9980 - val_loss: 0.1248 - val_acc: 0.9810
+Epoch 45/50
+60000/60000 [==============================] - 2s 40us/sample - loss: 0.0055 - acc: 0.9984 - val_loss: 0.1478 - val_acc: 0.9791
+Epoch 46/50
+60000/60000 [==============================] - 3s 45us/sample - loss: 0.0090 - acc: 0.9977 - val_loss: 0.1304 - val_acc: 0.9784
+Epoch 47/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0037 - acc: 0.9987 - val_loss: 0.1472 - val_acc: 0.9800
+Epoch 48/50
+60000/60000 [==============================] - 3s 43us/sample - loss: 0.0071 - acc: 0.9979 - val_loss: 0.1191 - val_acc: 0.9814
+Epoch 49/50
+60000/60000 [==============================] - 2s 39us/sample - loss: 0.0044 - acc: 0.9987 - val_loss: 0.1547 - val_acc: 0.9773
+Epoch 50/50
+60000/60000 [==============================] - 3s 42us/sample - loss: 0.0071 - acc: 0.9979 - val_loss: 0.1536 - val_acc: 0.9786
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">history_dnn_drop</span> <span class="o">=</span> <span class="n">model_dnn_drop</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span>
+        <span class="n">X_train</span><span class="p">,</span>
+        <span class="n">Y_train</span><span class="p">,</span>
+        <span class="n">epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+        <span class="n">validation_data</span><span class="o">=</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
+        <span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Train on 60000 samples, validate on 10000 samples
+Epoch 1/50
+60000/60000 [==============================] - 4s 58us/sample - loss: 0.4191 - acc: 0.8747 - val_loss: 0.1423 - val_acc: 0.9564
+Epoch 2/50
+60000/60000 [==============================] - 3s 55us/sample - loss: 0.2001 - acc: 0.9453 - val_loss: 0.1186 - val_acc: 0.9643
+Epoch 3/50
+60000/60000 [==============================] - 3s 58us/sample - loss: 0.1560 - acc: 0.9569 - val_loss: 0.0952 - val_acc: 0.9728
+Epoch 4/50
+60000/60000 [==============================] - 3s 55us/sample - loss: 0.1311 - acc: 0.9626 - val_loss: 0.0917 - val_acc: 0.9742
+Epoch 5/50
+60000/60000 [==============================] - 3s 53us/sample - loss: 0.1143 - acc: 0.9681 - val_loss: 0.0838 - val_acc: 0.9742
+Epoch 6/50
+60000/60000 [==============================] - 3s 56us/sample - loss: 0.1029 - acc: 0.9708 - val_loss: 0.0851 - val_acc: 0.9780
+Epoch 7/50
+60000/60000 [==============================] - 3s 55us/sample - loss: 0.0967 - acc: 0.9724 - val_loss: 0.0788 - val_acc: 0.9802
+Epoch 8/50
+60000/60000 [==============================] - 3s 57us/sample - loss: 0.0914 - acc: 0.9745 - val_loss: 0.0798 - val_acc: 0.9798
+Epoch 9/50
+60000/60000 [==============================] - 3s 50us/sample - loss: 0.0854 - acc: 0.9750 - val_loss: 0.0759 - val_acc: 0.9790
+Epoch 10/50
+60000/60000 [==============================] - 3s 51us/sample - loss: 0.0756 - acc: 0.9783 - val_loss: 0.0793 - val_acc: 0.9781
+Epoch 11/50
+60000/60000 [==============================] - 3s 54us/sample - loss: 0.0759 - acc: 0.9777 - val_loss: 0.0763 - val_acc: 0.9801
+Epoch 12/50
+60000/60000 [==============================] - 3s 53us/sample - loss: 0.0689 - acc: 0.9796 - val_loss: 0.0795 - val_acc: 0.9787
+Epoch 13/50
+60000/60000 [==============================] - 3s 54us/sample - loss: 0.0687 - acc: 0.9796 - val_loss: 0.0854 - val_acc: 0.9801
+Epoch 14/50
+60000/60000 [==============================] - 3s 52us/sample - loss: 0.0623 - acc: 0.9814 - val_loss: 0.0737 - val_acc: 0.9821
+Epoch 15/50
+60000/60000 [==============================] - 3s 51us/sample - loss: 0.0629 - acc: 0.9818 - val_loss: 0.0789 - val_acc: 0.9814
+Epoch 16/50
+60000/60000 [==============================] - 3s 53us/sample - loss: 0.0595 - acc: 0.9825 - val_loss: 0.0899 - val_acc: 0.9799
+Epoch 17/50
+60000/60000 [==============================] - 3s 54us/sample - loss: 0.0572 - acc: 0.9829 - val_loss: 0.0767 - val_acc: 0.9815
+Epoch 18/50
+60000/60000 [==============================] - 3s 50us/sample - loss: 0.0563 - acc: 0.9828 - val_loss: 0.0820 - val_acc: 0.9818
+Epoch 19/50
+60000/60000 [==============================] - 3s 51us/sample - loss: 0.0544 - acc: 0.9837 - val_loss: 0.0834 - val_acc: 0.9813
+Epoch 20/50
+60000/60000 [==============================] - 3s 52us/sample - loss: 0.0517 - acc: 0.9846 - val_loss: 0.0878 - val_acc: 0.9817
+Epoch 21/50
+60000/60000 [==============================] - 3s 51us/sample - loss: 0.0488 - acc: 0.9848 - val_loss: 0.0806 - val_acc: 0.9821
+Epoch 22/50
+60000/60000 [==============================] - 3s 52us/sample - loss: 0.0471 - acc: 0.9860 - val_loss: 0.0836 - val_acc: 0.9820
+Epoch 23/50
+60000/60000 [==============================] - 3s 51us/sample - loss: 0.0511 - acc: 0.9847 - val_loss: 0.0907 - val_acc: 0.9810
+Epoch 24/50
+60000/60000 [==============================] - 3s 52us/sample - loss: 0.0472 - acc: 0.9863 - val_loss: 0.0844 - val_acc: 0.9812
+Epoch 25/50
+60000/60000 [==============================] - 3s 52us/sample - loss: 0.0438 - acc: 0.9867 - val_loss: 0.0926 - val_acc: 0.9797
+Epoch 26/50
+60000/60000 [==============================] - 3s 52us/sample - loss: 0.0462 - acc: 0.9865 - val_loss: 0.0956 - val_acc: 0.9801
+Epoch 27/50
+60000/60000 [==============================] - 3s 55us/sample - loss: 0.0464 - acc: 0.9865 - val_loss: 0.0882 - val_acc: 0.9811
+Epoch 28/50
+60000/60000 [==============================] - 3s 52us/sample - loss: 0.0419 - acc: 0.9876 - val_loss: 0.0905 - val_acc: 0.9814
+Epoch 29/50
+60000/60000 [==============================] - 3s 52us/sample - loss: 0.0434 - acc: 0.9861 - val_loss: 0.0871 - val_acc: 0.9819
+Epoch 30/50
+60000/60000 [==============================] - 3s 50us/sample - loss: 0.0407 - acc: 0.9876 - val_loss: 0.0967 - val_acc: 0.9819
+Epoch 31/50
+60000/60000 [==============================] - 3s 50us/sample - loss: 0.0391 - acc: 0.9885 - val_loss: 0.0879 - val_acc: 0.9815
+Epoch 32/50
+60000/60000 [==============================] - 3s 50us/sample - loss: 0.0412 - acc: 0.9874 - val_loss: 0.0829 - val_acc: 0.9816
+Epoch 33/50
+60000/60000 [==============================] - 3s 50us/sample - loss: 0.0419 - acc: 0.9877 - val_loss: 0.0850 - val_acc: 0.9823
+Epoch 34/50
+60000/60000 [==============================] - 3s 50us/sample - loss: 0.0399 - acc: 0.9880 - val_loss: 0.0894 - val_acc: 0.9830
+Epoch 35/50
+60000/60000 [==============================] - 3s 52us/sample - loss: 0.0391 - acc: 0.9882 - val_loss: 0.0937 - val_acc: 0.9818
+Epoch 36/50
+60000/60000 [==============================] - 3s 53us/sample - loss: 0.0359 - acc: 0.9891 - val_loss: 0.0942 - val_acc: 0.9820
+Epoch 37/50
+60000/60000 [==============================] - 3s 54us/sample - loss: 0.0373 - acc: 0.9888 - val_loss: 0.0989 - val_acc: 0.9815
+Epoch 38/50
+60000/60000 [==============================] - 3s 56us/sample - loss: 0.0368 - acc: 0.9893 - val_loss: 0.0880 - val_acc: 0.9829
+Epoch 39/50
+60000/60000 [==============================] - 3s 53us/sample - loss: 0.0335 - acc: 0.9899 - val_loss: 0.0923 - val_acc: 0.9806
+Epoch 40/50
+60000/60000 [==============================] - 3s 53us/sample - loss: 0.0349 - acc: 0.9896 - val_loss: 0.0900 - val_acc: 0.9827
+Epoch 41/50
+60000/60000 [==============================] - 3s 56us/sample - loss: 0.0356 - acc: 0.9897 - val_loss: 0.0900 - val_acc: 0.9828
+Epoch 42/50
+60000/60000 [==============================] - 3s 53us/sample - loss: 0.0353 - acc: 0.9900 - val_loss: 0.0995 - val_acc: 0.9814
+Epoch 43/50
+60000/60000 [==============================] - 4s 64us/sample - loss: 0.0360 - acc: 0.9899 - val_loss: 0.0911 - val_acc: 0.9822
+Epoch 44/50
+60000/60000 [==============================] - 4s 65us/sample - loss: 0.0316 - acc: 0.9906 - val_loss: 0.0916 - val_acc: 0.9817
+Epoch 45/50
+60000/60000 [==============================] - 3s 51us/sample - loss: 0.0333 - acc: 0.9900 - val_loss: 0.1072 - val_acc: 0.9812
+Epoch 46/50
+60000/60000 [==============================] - 4s 59us/sample - loss: 0.0330 - acc: 0.9903 - val_loss: 0.0960 - val_acc: 0.9824
+Epoch 47/50
+60000/60000 [==============================] - 3s 54us/sample - loss: 0.0334 - acc: 0.9900 - val_loss: 0.1060 - val_acc: 0.9808
+Epoch 48/50
+60000/60000 [==============================] - 3s 55us/sample - loss: 0.0337 - acc: 0.9901 - val_loss: 0.0992 - val_acc: 0.9818
+Epoch 49/50
+60000/60000 [==============================] - 3s 54us/sample - loss: 0.0298 - acc: 0.9910 - val_loss: 0.1046 - val_acc: 0.9831
+Epoch 50/50
+60000/60000 [==============================] - 3s 56us/sample - loss: 0.0311 - acc: 0.9909 - val_loss: 0.1033 - val_acc: 0.9829
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># evaluate performance
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Training without dropout = </span><span class="sh">"</span><span class="p">)</span>
+<span class="n">model_dnn_no_drop</span><span class="p">.</span><span class="nf">evaluate</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="s">Test without dropout = </span><span class="sh">"</span><span class="p">)</span>
+<span class="n">model_dnn_no_drop</span><span class="p">.</span><span class="nf">evaluate</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Training without dropout = 
+60000/60000 [==============================] - 1s 21us/sample - loss: 0.0091 - acc: 0.9975
+
+Test without dropout = 
+10000/10000 [==============================] - 0s 22us/sample - loss: 0.1536 - acc: 0.9786
+
+
+[0.15362604289185866, 0.9786]
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># evaluate performance
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Training with dropout = </span><span class="sh">"</span><span class="p">)</span>
+<span class="n">model_dnn_drop</span><span class="p">.</span><span class="nf">evaluate</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">Y_train</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="s">Test with dropout = </span><span class="sh">"</span><span class="p">)</span>
+<span class="n">model_dnn_drop</span><span class="p">.</span><span class="nf">evaluate</span><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Training with dropout = 
+60000/60000 [==============================] - 1s 22us/sample - loss: 0.0055 - acc: 0.9984
+
+Test with dropout = 
+10000/10000 [==============================] - 0s 21us/sample - loss: 0.1033 - acc: 0.9829
+
+[0.10325850226903108, 0.9829]
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># summary
+</span><span class="n">model_dnn_drop</span><span class="p">.</span><span class="nf">summary</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Model: "sequential_1"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+flatten_1 (Flatten)          multiple                  0         
+_________________________________________________________________
+dense_4 (Dense)              multiple                  100480    
+_________________________________________________________________
+dropout (Dropout)            multiple                  0         
+_________________________________________________________________
+dense_5 (Dense)              multiple                  8256      
+_________________________________________________________________
+dropout_1 (Dropout)          multiple                  0         
+_________________________________________________________________
+dense_6 (Dense)              multiple                  2080      
+_________________________________________________________________
+dropout_2 (Dropout)          multiple                  0         
+_________________________________________________________________
+dense_7 (Dense)              multiple                  330       
+=================================================================
+Total params: 111,146
+Trainable params: 111,146
+Non-trainable params: 0
+_________________________________________________________________
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Plot the loss and accuracy curves for training and validation 
+</span><span class="n">x_values</span> <span class="o">=</span> <span class="nf">list</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">history_dnn_drop</span><span class="p">.</span><span class="n">epoch</span><span class="p">)))</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span><span class="n">history_dnn_no_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">loss</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Training loss (no dropout)</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span><span class="n">history_dnn_no_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_loss</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Validation loss (no dropout)</span><span class="sh">"</span><span class="p">,</span><span class="n">axes</span> <span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span><span class="n">history_dnn_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">loss</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">g</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Training loss (dropout)</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span><span class="n">history_dnn_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_loss</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">y</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Validation loss (dropout)</span><span class="sh">"</span><span class="p">,</span><span class="n">axes</span> <span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">legend</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="sh">'</span><span class="s">best</span><span class="sh">'</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_xlim</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nf">max</span><span class="p">(</span><span class="n">x_values</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span><span class="n">history_dnn_no_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">acc</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Training accuracy (no dropout)</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span><span class="n">history_dnn_no_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_acc</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Validation accuracy (no dropout)</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span><span class="n">history_dnn_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">acc</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">g</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Training accuracy (dropout)</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span><span class="n">history_dnn_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_acc</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">y</span><span class="sh">'</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Validation accuracy (dropout)</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">legend</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="sh">'</span><span class="s">best</span><span class="sh">'</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_xlim</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nf">max</span><span class="p">(</span><span class="n">x_values</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_ylim</span><span class="p">(</span><span class="mf">0.9</span><span class="p">,);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_52_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Plot non-normalized confusion matrix
+</span><span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">model_dnn_drop</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+<span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">Y_test_pred</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">Y_test</span><span class="p">,</span> <span class="n">Y_test_pred</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="nf">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">11</span><span class="p">)]),</span>
+                     <span class="n">title</span><span class="o">=</span><span class="sh">'</span><span class="s">Confusion matrix, without normalization</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_53_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_worst_predictions</span><span class="p">(</span><span class="n">model_dnn_drop</span><span class="p">,</span><span class="n">X_test</span><span class="p">,</span><span class="n">Y_test</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_54_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df_results</span> <span class="o">=</span> <span class="n">df_results</span><span class="p">.</span><span class="nf">append</span><span class="p">({</span><span class="sh">'</span><span class="s">Model</span><span class="sh">'</span><span class="p">:</span><span class="sh">"</span><span class="s">DNN No dropout</span><span class="sh">"</span><span class="p">,</span>
+                                <span class="sh">'</span><span class="s">Training accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">history_dnn_no_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">acc</span><span class="sh">'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="sh">'</span><span class="s">Testing accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">history_dnn_no_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_acc</span><span class="sh">'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]},</span><span class="n">ignore_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">df_results</span> <span class="o">=</span> <span class="n">df_results</span><span class="p">.</span><span class="nf">append</span><span class="p">({</span><span class="sh">'</span><span class="s">Model</span><span class="sh">'</span><span class="p">:</span><span class="sh">"</span><span class="s">DNN Dropout</span><span class="sh">"</span><span class="p">,</span>
+                                <span class="sh">'</span><span class="s">Training accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">history_dnn_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">acc</span><span class="sh">'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="sh">'</span><span class="s">Testing accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">history_dnn_drop</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_acc</span><span class="sh">'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]},</span><span class="n">ignore_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>From the plot shown above, we can conclude that our model behaves as expected. Indeed, the prediction errors are made for ambiguous digits.</p>
+
+<hr />
+<p><a id="Section_4"></a></p>
+<h2 id="4-convolutional-networks-cnn">4. Convolutional Networks (CNN)</h2>
+
+<p>Convolutional Neural Networks were developed with the idea to mimic the human vision. In order to identify objects, our brain first focuses on the overall shape (edges, curves) then the details of the objects are considered. CNN are made of layers, each processes the image to detect pattern. The first layer of the network will detect simple patterns like vertical, horizontal lines, or diagonals. As the transformed images progresses through the network, more complex patterns are identified. The main difference between CNN and DNN is that DNN treats each pixel individually while CNN captures patterns.</p>
+
+<p>The two main types of hidden layers in a CNN are called <strong>Convolution</strong> and <strong>Pooling</strong>.<br />
+Convolution layers detects pattern while pooling shrink the information. The animation below shows the convolution. A filter (in this case 3x3) travels over the original image. An element wise operation is performed as each elements of the filter is multiplied by the corresponding pixel value and these values are summed together. Without any additional modification, the original 5x5 image is shrunk into a 3x3 image.</p>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/1_ZCjPUFrB6eHPRi4eyP6aaA.gif" />
+</figure>
+<p>Source: https://cdn-images-1.medium.com</p>
+
+<p>The second operation is performed using a pooling layer. The most common pooling layer is the max pooling. Similar to the convolution, the pooling is performed across the image. In the animation below, the pooling consists of a 2x2 pixel group converted into a single value using the maximum function.</p>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/maxpool_animation.gif" />
+</figure>
+<p>Source: https://developers.google.com</p>
+
+<p>The network architecture shown below depicts a complete network. First the image goes through two sequence of convolution+pooling. The resulting image is then flatten and injected into a neural network.</p>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/1_NQQiyYqJJj4PSYAeWvxutg.png" />
+</figure>
+<p>Source: https://cdn-images-1.medium.com</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load data
+</span><span class="n">mnist</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="n">mnist</span>
+<span class="p">(</span><span class="n">training_images</span><span class="p">,</span> <span class="n">training_labels</span><span class="p">),</span> <span class="p">(</span><span class="n">testing_images</span><span class="p">,</span> <span class="n">testing_labels</span><span class="p">)</span> <span class="o">=</span> <span class="n">mnist</span><span class="p">.</span><span class="nf">load_data</span><span class="p">()</span>
+
+<span class="n">training_images</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">expand_dims</span><span class="p">(</span><span class="n">training_images</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">testing_images</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">expand_dims</span><span class="p">(</span><span class="n">testing_images</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="c1"># Shapes
+</span><span class="nf">print</span><span class="p">(</span><span class="n">training_images</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">training_labels</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">testing_images</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">testing_labels</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(60000, 28, 28, 1)
+(60000,)
+(10000, 28, 28, 1)
+(10000,)
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Import Image Generator
+</span><span class="kn">from</span> <span class="n">tensorflow.keras.preprocessing.image</span> <span class="kn">import</span> <span class="n">ImageDataGenerator</span>
+
+<span class="c1"># Create an ImageDataGenerator and do Image Augmentation
+</span><span class="n">train_datagen</span> <span class="o">=</span> <span class="nc">ImageDataGenerator</span><span class="p">(</span>
+    <span class="n">rescale</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mf">255.0</span>
+    <span class="p">)</span>
+
+<span class="n">validation_datagen</span> <span class="o">=</span> <span class="nc">ImageDataGenerator</span><span class="p">(</span>
+    <span class="n">rescale</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mf">255.0</span>
+    <span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create CNN Conv2D_64 -&gt; MaxPooling_2 -&gt; Conv2D_64 -&gt; MaxPooling_2 -&gt; NN_128 -&gt; NN_10
+</span><span class="n">model_cnn</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">models</span><span class="p">.</span><span class="nc">Sequential</span><span class="p">([</span>
+    
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Conv2D</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="sh">'</span><span class="s">same</span><span class="sh">'</span><span class="p">),</span>
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">MaxPooling2D</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dropout</span><span class="p">(</span><span class="mf">0.25</span><span class="p">),</span>
+    
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Conv2D</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="sh">'</span><span class="s">same</span><span class="sh">'</span><span class="p">),</span>
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">MaxPooling2D</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dropout</span><span class="p">(</span><span class="mf">0.25</span><span class="p">),</span>
+    
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Flatten</span><span class="p">(),</span>
+    
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">),</span>
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dropout</span><span class="p">(</span><span class="mf">0.5</span><span class="p">),</span>
+    
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">softmax</span><span class="sh">'</span><span class="p">)</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>The role of the optimizer is to adjust internal parameters (weights, bias,…) in order to help minimizing the loss.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># compile model
+</span><span class="n">model_cnn</span><span class="p">.</span><span class="nf">compile</span><span class="p">(</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="sh">'</span><span class="s">adam</span><span class="sh">'</span><span class="p">,</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="sh">'</span><span class="s">sparse_categorical_crossentropy</span><span class="sh">'</span><span class="p">,</span>
+    <span class="n">metrics</span> <span class="o">=</span> <span class="p">[</span><span class="sh">'</span><span class="s">accuracy</span><span class="sh">'</span><span class="p">]</span>
+    <span class="p">)</span>
+</code></pre></div></div>
+
+<p>Before training the model, we also implement a change into the learning rate. The learning rate of the model describes how fast the model moves toward a minimim. As the loss function gets closer to its minimum, we want the learning rate to slow down in order to improve the convergence.</p>
+
+<p>We will keep a “large” initial learning rate to speed up the first iterations and the learning rate will be reduced during the training process.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># summary
+</span><span class="n">model_cnn</span><span class="p">.</span><span class="nf">summary</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Model: "sequential_2"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+conv2d (Conv2D)              (None, 28, 28, 32)        832       
+_________________________________________________________________
+max_pooling2d (MaxPooling2D) (None, 14, 14, 32)        0         
+_________________________________________________________________
+dropout_3 (Dropout)          (None, 14, 14, 32)        0         
+_________________________________________________________________
+conv2d_1 (Conv2D)            (None, 14, 14, 32)        25632     
+_________________________________________________________________
+max_pooling2d_1 (MaxPooling2 (None, 7, 7, 32)          0         
+_________________________________________________________________
+dropout_4 (Dropout)          (None, 7, 7, 32)          0         
+_________________________________________________________________
+flatten_2 (Flatten)          (None, 1568)              0         
+_________________________________________________________________
+dense_8 (Dense)              (None, 256)               401664    
+_________________________________________________________________
+dropout_5 (Dropout)          (None, 256)               0         
+_________________________________________________________________
+dense_9 (Dense)              (None, 10)                2570      
+=================================================================
+Total params: 430,698
+Trainable params: 430,698
+Non-trainable params: 0
+_________________________________________________________________
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Train the Model
+</span><span class="n">history_no_augm</span> <span class="o">=</span> <span class="n">model_cnn</span><span class="p">.</span><span class="nf">fit_generator</span><span class="p">(</span>
+    <span class="n">train_datagen</span><span class="p">.</span><span class="nf">flow</span><span class="p">(</span><span class="n">training_images</span><span class="p">,</span> <span class="n">training_labels</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">),</span>
+    <span class="n">steps_per_epoch</span><span class="o">=</span><span class="nf">len</span><span class="p">(</span><span class="n">training_images</span><span class="p">)</span> <span class="o">/</span> <span class="mi">32</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">validation_data</span><span class="o">=</span><span class="n">validation_datagen</span><span class="p">.</span><span class="nf">flow</span><span class="p">(</span><span class="n">testing_images</span><span class="p">,</span> <span class="n">testing_labels</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">),</span>
+    <span class="n">validation_steps</span><span class="o">=</span><span class="nf">len</span><span class="p">(</span><span class="n">testing_images</span><span class="p">)</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Epoch 1/30
+1875/1875 [==============================] - 88s 47ms/step - loss: 0.1924 - acc: 0.9391 - val_loss: 0.0425 - val_acc: 0.9855
+Epoch 2/30
+1875/1875 [==============================] - 76s 41ms/step - loss: 0.0738 - acc: 0.9778 - val_loss: 0.0296 - val_acc: 0.9904
+Epoch 3/30
+1875/1875 [==============================] - 70s 38ms/step - loss: 0.0575 - acc: 0.9827 - val_loss: 0.0249 - val_acc: 0.9905
+Epoch 4/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0503 - acc: 0.9846 - val_loss: 0.0234 - val_acc: 0.9921
+Epoch 5/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0440 - acc: 0.9864 - val_loss: 0.0225 - val_acc: 0.9920
+Epoch 6/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0397 - acc: 0.9877 - val_loss: 0.0208 - val_acc: 0.9927
+Epoch 7/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0361 - acc: 0.9892 - val_loss: 0.0194 - val_acc: 0.9932
+Epoch 8/30
+1875/1875 [==============================] - 70s 38ms/step - loss: 0.0325 - acc: 0.9898 - val_loss: 0.0221 - val_acc: 0.9919
+Epoch 9/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0317 - acc: 0.9899 - val_loss: 0.0215 - val_acc: 0.9926
+Epoch 10/30
+1875/1875 [==============================] - 73s 39ms/step - loss: 0.0296 - acc: 0.9904 - val_loss: 0.0184 - val_acc: 0.9939
+Epoch 11/30
+1875/1875 [==============================] - 73s 39ms/step - loss: 0.0281 - acc: 0.9917 - val_loss: 0.0181 - val_acc: 0.9944
+Epoch 12/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0281 - acc: 0.9914 - val_loss: 0.0216 - val_acc: 0.9930
+Epoch 13/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0280 - acc: 0.9916 - val_loss: 0.0196 - val_acc: 0.9936
+Epoch 14/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0240 - acc: 0.9923 - val_loss: 0.0201 - val_acc: 0.9937
+Epoch 15/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0234 - acc: 0.9928 - val_loss: 0.0188 - val_acc: 0.9942
+Epoch 16/30
+1875/1875 [==============================] - 69s 37ms/step - loss: 0.0250 - acc: 0.9927 - val_loss: 0.0175 - val_acc: 0.9943
+Epoch 17/30
+1875/1875 [==============================] - 69s 37ms/step - loss: 0.0222 - acc: 0.9928 - val_loss: 0.0168 - val_acc: 0.9946
+Epoch 18/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0227 - acc: 0.9930 - val_loss: 0.0212 - val_acc: 0.9937
+Epoch 19/30
+1875/1875 [==============================] - 69s 37ms/step - loss: 0.0222 - acc: 0.9934 - val_loss: 0.0209 - val_acc: 0.9935
+Epoch 20/30
+1875/1875 [==============================] - 69s 37ms/step - loss: 0.0245 - acc: 0.9927 - val_loss: 0.0183 - val_acc: 0.9949
+Epoch 21/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0225 - acc: 0.9934 - val_loss: 0.0201 - val_acc: 0.9946
+Epoch 22/30
+1875/1875 [==============================] - 69s 37ms/step - loss: 0.0227 - acc: 0.9933 - val_loss: 0.0187 - val_acc: 0.9943
+Epoch 23/30
+1875/1875 [==============================] - 70s 37ms/step - loss: 0.0198 - acc: 0.9940 - val_loss: 0.0189 - val_acc: 0.9948
+Epoch 24/30
+1875/1875 [==============================] - 71s 38ms/step - loss: 0.0212 - acc: 0.9937 - val_loss: 0.0214 - val_acc: 0.9946
+Epoch 25/30
+1875/1875 [==============================] - 70s 38ms/step - loss: 0.0224 - acc: 0.9929 - val_loss: 0.0196 - val_acc: 0.9951
+Epoch 26/30
+1875/1875 [==============================] - 69s 37ms/step - loss: 0.0214 - acc: 0.9936 - val_loss: 0.0199 - val_acc: 0.9947
+Epoch 27/30
+1875/1875 [==============================] - 69s 37ms/step - loss: 0.0195 - acc: 0.9941 - val_loss: 0.0211 - val_acc: 0.9945
+Epoch 28/30
+1875/1875 [==============================] - 79s 42ms/step - loss: 0.0206 - acc: 0.9939 - val_loss: 0.0189 - val_acc: 0.9948
+Epoch 29/30
+1875/1875 [==============================] - 79s 42ms/step - loss: 0.0207 - acc: 0.9941 - val_loss: 0.0193 - val_acc: 0.9952
+Epoch 30/30
+1875/1875 [==============================] - 83s 44ms/step - loss: 0.0205 - acc: 0.9939 - val_loss: 0.0188 - val_acc: 0.9950
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># evaluate performance
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Training = </span><span class="sh">"</span><span class="p">)</span>
+<span class="n">model_cnn</span><span class="p">.</span><span class="nf">evaluate</span><span class="p">(</span><span class="n">training_images</span><span class="o">/</span><span class="mf">255.0</span><span class="p">,</span> <span class="n">training_labels</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="s">Test = </span><span class="sh">"</span><span class="p">)</span>
+<span class="n">model_cnn</span><span class="p">.</span><span class="nf">evaluate</span><span class="p">(</span><span class="n">testing_images</span><span class="o">/</span><span class="mf">255.0</span><span class="p">,</span> <span class="n">testing_labels</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Training = 
+60000/60000 [==============================] - 13s 209us/sample - loss: 0.0024 - acc: 0.9994
+
+Test = 
+10000/10000 [==============================] - 2s 204us/sample - loss: 0.0188 - acc: 0.9950
+
+[0.018755361672989995, 0.995]
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Plot the loss and accuracy curves for training and validation 
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">history_no_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">loss</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Training loss</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">history_no_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_loss</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">validation loss</span><span class="sh">"</span><span class="p">,</span><span class="n">axes</span> <span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">legend</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="sh">'</span><span class="s">best</span><span class="sh">'</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">history_no_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">acc</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Training accuracy</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">history_no_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_acc</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Validation accuracy</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">legend</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="sh">'</span><span class="s">best</span><span class="sh">'</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_ylim</span><span class="p">(</span><span class="mf">0.8</span><span class="p">,</span><span class="mf">1.0</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_73_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Plot non-normalized confusion matrix
+</span><span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">model_cnn</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">testing_images</span><span class="o">/</span><span class="mf">255.0</span><span class="p">)</span>
+<span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">Y_test_pred</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">testing_labels</span><span class="p">,</span> <span class="n">Y_test_pred</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="nf">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">11</span><span class="p">)]),</span>
+                     <span class="n">title</span><span class="o">=</span><span class="sh">'</span><span class="s">Confusion matrix, without normalization</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_74_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_worst_predictions</span><span class="p">(</span><span class="n">model_cnn</span><span class="p">,</span><span class="n">testing_images</span><span class="o">/</span><span class="mf">255.0</span><span class="p">,</span><span class="n">testing_labels</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_75_0.png" />
+</figure>
+
+<p>From the above, we can see that our model approaches human-prediction baseline. Indeed, several of these digits cannot be properly identified by a human eye.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_convolutions_v2</span><span class="p">(</span><span class="n">model_cnn</span><span class="p">,</span><span class="n">testing_images</span><span class="o">/</span><span class="mf">1.0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_77_0.png" />
+</figure>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_77_1.png" />
+</figure>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_77_2.png" />
+</figure>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_77_3.png" />
+</figure>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_77_4.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df_results</span> <span class="o">=</span> <span class="n">df_results</span><span class="p">.</span><span class="nf">append</span><span class="p">({</span><span class="sh">'</span><span class="s">Model</span><span class="sh">'</span><span class="p">:</span><span class="sh">"</span><span class="s">CNN</span><span class="sh">"</span><span class="p">,</span>
+                                <span class="sh">'</span><span class="s">Training accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">history_no_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">acc</span><span class="sh">'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="sh">'</span><span class="s">Testing accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">history_no_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_acc</span><span class="sh">'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]},</span><span class="n">ignore_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_5"></a></p>
+<h2 id="5-convolutional-networks-cnn-with-data-augmentation">5. Convolutional Networks (CNN) with data augmentation</h2>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># load data
+</span><span class="n">mnist</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">datasets</span><span class="p">.</span><span class="n">mnist</span>
+<span class="p">(</span><span class="n">training_images</span><span class="p">,</span> <span class="n">training_labels</span><span class="p">),</span> <span class="p">(</span><span class="n">testing_images</span><span class="p">,</span> <span class="n">testing_labels</span><span class="p">)</span> <span class="o">=</span> <span class="n">mnist</span><span class="p">.</span><span class="nf">load_data</span><span class="p">()</span>
+
+<span class="n">training_images</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">expand_dims</span><span class="p">(</span><span class="n">training_images</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">testing_images</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">expand_dims</span><span class="p">(</span><span class="n">testing_images</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Import Image Generator
+</span><span class="kn">from</span> <span class="n">tensorflow.keras.preprocessing.image</span> <span class="kn">import</span> <span class="n">ImageDataGenerator</span>
+
+<span class="c1"># Create an ImageDataGenerator and do Image Augmentation
+</span><span class="n">train_datagen_augm</span> <span class="o">=</span> <span class="nc">ImageDataGenerator</span><span class="p">(</span>
+    <span class="n">rescale</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mf">255.0</span><span class="p">,</span>
+    <span class="n">zoom_range</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">rotation_range</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">width_shift_range</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">height_shift_range</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="p">)</span>
+
+<span class="n">train_datagen</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span><span class="n">training_images</span><span class="p">,</span> <span class="n">augment</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="n">validation_datagen</span> <span class="o">=</span> <span class="nc">ImageDataGenerator</span><span class="p">(</span>
+    <span class="n">rescale</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mf">255.0</span>
+    <span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># create CNN Conv2D_64 -&gt; MaxPooling_2 -&gt; Conv2D_64 -&gt; MaxPooling_2 -&gt; NN_128 -&gt; NN_10
+</span><span class="n">model_cnn_augm</span> <span class="o">=</span> <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">models</span><span class="p">.</span><span class="nc">Sequential</span><span class="p">([</span>
+    
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Conv2D</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">,</span> <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="sh">'</span><span class="s">same</span><span class="sh">'</span><span class="p">),</span>
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">MaxPooling2D</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dropout</span><span class="p">(</span><span class="mf">0.25</span><span class="p">),</span>
+    
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Conv2D</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span> <span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="sh">'</span><span class="s">same</span><span class="sh">'</span><span class="p">),</span>
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">MaxPooling2D</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dropout</span><span class="p">(</span><span class="mf">0.25</span><span class="p">),</span>
+    
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Flatten</span><span class="p">(),</span>
+    
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">relu</span><span class="sh">'</span><span class="p">),</span>
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dropout</span><span class="p">(</span><span class="mf">0.5</span><span class="p">),</span>
+    
+    <span class="n">tf</span><span class="p">.</span><span class="n">keras</span><span class="p">.</span><span class="n">layers</span><span class="p">.</span><span class="nc">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="n">activation</span><span class="o">=</span><span class="sh">'</span><span class="s">softmax</span><span class="sh">'</span><span class="p">)</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># compile model
+</span><span class="n">model_cnn_augm</span><span class="p">.</span><span class="nf">compile</span><span class="p">(</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="sh">'</span><span class="s">adam</span><span class="sh">'</span><span class="p">,</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="sh">'</span><span class="s">sparse_categorical_crossentropy</span><span class="sh">'</span><span class="p">,</span>
+    <span class="n">metrics</span> <span class="o">=</span> <span class="p">[</span><span class="sh">'</span><span class="s">accuracy</span><span class="sh">'</span><span class="p">]</span>
+    <span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">model_cnn_augm</span><span class="p">.</span><span class="nf">summary</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Model: "sequential_3"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+conv2d_2 (Conv2D)            (None, 28, 28, 32)        832       
+_________________________________________________________________
+max_pooling2d_2 (MaxPooling2 (None, 14, 14, 32)        0         
+_________________________________________________________________
+dropout_6 (Dropout)          (None, 14, 14, 32)        0         
+_________________________________________________________________
+conv2d_3 (Conv2D)            (None, 14, 14, 32)        25632     
+_________________________________________________________________
+max_pooling2d_3 (MaxPooling2 (None, 7, 7, 32)          0         
+_________________________________________________________________
+dropout_7 (Dropout)          (None, 7, 7, 32)          0         
+_________________________________________________________________
+flatten_3 (Flatten)          (None, 1568)              0         
+_________________________________________________________________
+dense_10 (Dense)             (None, 256)               401664    
+_________________________________________________________________
+dropout_8 (Dropout)          (None, 256)               0         
+_________________________________________________________________
+dense_11 (Dense)             (None, 10)                2570      
+=================================================================
+Total params: 430,698
+Trainable params: 430,698
+Non-trainable params: 0
+_________________________________________________________________
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Augmented training set
+</span><span class="n">training_set</span> <span class="o">=</span> <span class="n">train_datagen_augm</span><span class="p">.</span><span class="nf">flow</span><span class="p">(</span><span class="n">training_images</span><span class="p">,</span> <span class="n">training_labels</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+<span class="n">validation_set</span> <span class="o">=</span> <span class="n">validation_datagen</span><span class="p">.</span><span class="nf">flow</span><span class="p">(</span><span class="n">testing_images</span><span class="p">,</span> <span class="n">testing_labels</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Train the Model
+</span><span class="n">history_augm</span> <span class="o">=</span> <span class="n">model_cnn_augm</span><span class="p">.</span><span class="nf">fit_generator</span><span class="p">(</span>
+    <span class="n">training_set</span><span class="p">,</span>
+    <span class="n">steps_per_epoch</span><span class="o">=</span><span class="nf">len</span><span class="p">(</span><span class="n">training_images</span><span class="p">)</span> <span class="o">/</span> <span class="mi">32</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">validation_data</span><span class="o">=</span><span class="n">validation_set</span><span class="p">,</span>
+    <span class="n">validation_steps</span><span class="o">=</span><span class="nf">len</span><span class="p">(</span><span class="n">testing_images</span><span class="p">)</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Epoch 1/30
+1875/1875 [==============================] - 81s 43ms/step - loss: 0.3100 - acc: 0.9015 - val_loss: 0.0379 - val_acc: 0.9862
+Epoch 2/30
+1875/1875 [==============================] - 78s 41ms/step - loss: 0.1261 - acc: 0.9620 - val_loss: 0.0286 - val_acc: 0.9888
+Epoch 3/30
+1875/1875 [==============================] - 74s 40ms/step - loss: 0.1016 - acc: 0.9700 - val_loss: 0.0247 - val_acc: 0.9917
+Epoch 4/30
+1875/1875 [==============================] - 78s 41ms/step - loss: 0.0865 - acc: 0.9740 - val_loss: 0.0222 - val_acc: 0.9929
+Epoch 5/30
+1875/1875 [==============================] - 76s 41ms/step - loss: 0.0794 - acc: 0.9752 - val_loss: 0.0210 - val_acc: 0.9928
+Epoch 6/30
+1875/1875 [==============================] - 84s 45ms/step - loss: 0.0747 - acc: 0.9769 - val_loss: 0.0191 - val_acc: 0.9931
+Epoch 7/30
+1875/1875 [==============================] - 82s 44ms/step - loss: 0.0703 - acc: 0.9795 - val_loss: 0.0171 - val_acc: 0.9945
+Epoch 8/30
+1875/1875 [==============================] - 95s 51ms/step - loss: 0.0638 - acc: 0.9808 - val_loss: 0.0194 - val_acc: 0.9936
+Epoch 9/30
+1875/1875 [==============================] - 79s 42ms/step - loss: 0.0660 - acc: 0.9801 - val_loss: 0.0193 - val_acc: 0.9933
+Epoch 10/30
+1875/1875 [==============================] - 76s 41ms/step - loss: 0.0621 - acc: 0.9815 - val_loss: 0.0171 - val_acc: 0.9944
+Epoch 11/30
+1875/1875 [==============================] - 80s 43ms/step - loss: 0.0612 - acc: 0.9822 - val_loss: 0.0173 - val_acc: 0.9944
+Epoch 12/30
+1875/1875 [==============================] - 81s 43ms/step - loss: 0.0580 - acc: 0.9825 - val_loss: 0.0174 - val_acc: 0.9940
+Epoch 13/30
+1875/1875 [==============================] - 74s 39ms/step - loss: 0.0564 - acc: 0.9830 - val_loss: 0.0189 - val_acc: 0.9942
+Epoch 14/30
+1875/1875 [==============================] - 74s 40ms/step - loss: 0.0571 - acc: 0.9830 - val_loss: 0.0217 - val_acc: 0.9928
+Epoch 15/30
+1875/1875 [==============================] - 78s 42ms/step - loss: 0.0559 - acc: 0.9834 - val_loss: 0.0193 - val_acc: 0.9937
+Epoch 16/30
+1875/1875 [==============================] - 75s 40ms/step - loss: 0.0561 - acc: 0.9837 - val_loss: 0.0185 - val_acc: 0.9937
+Epoch 17/30
+1875/1875 [==============================] - 74s 39ms/step - loss: 0.0542 - acc: 0.9840 - val_loss: 0.0205 - val_acc: 0.9925
+Epoch 18/30
+1875/1875 [==============================] - 77s 41ms/step - loss: 0.0529 - acc: 0.9842 - val_loss: 0.0184 - val_acc: 0.9939
+Epoch 19/30
+1875/1875 [==============================] - 78s 42ms/step - loss: 0.0555 - acc: 0.9839 - val_loss: 0.0194 - val_acc: 0.9943
+Epoch 20/30
+1875/1875 [==============================] - 78s 42ms/step - loss: 0.0539 - acc: 0.9839 - val_loss: 0.0190 - val_acc: 0.9943
+Epoch 21/30
+1875/1875 [==============================] - 78s 42ms/step - loss: 0.0540 - acc: 0.9845 - val_loss: 0.0217 - val_acc: 0.9924
+Epoch 22/30
+1875/1875 [==============================] - 77s 41ms/step - loss: 0.0521 - acc: 0.9851 - val_loss: 0.0196 - val_acc: 0.9938
+Epoch 23/30
+1875/1875 [==============================] - 92s 49ms/step - loss: 0.0542 - acc: 0.9849 - val_loss: 0.0191 - val_acc: 0.9939
+Epoch 24/30
+1875/1875 [==============================] - 82s 44ms/step - loss: 0.0496 - acc: 0.9851 - val_loss: 0.0225 - val_acc: 0.9935
+Epoch 25/30
+1875/1875 [==============================] - 86s 46ms/step - loss: 0.0526 - acc: 0.9843 - val_loss: 0.0220 - val_acc: 0.9940
+Epoch 26/30
+1875/1875 [==============================] - 82s 44ms/step - loss: 0.0479 - acc: 0.9862 - val_loss: 0.0210 - val_acc: 0.9937
+Epoch 27/30
+1875/1875 [==============================] - 79s 42ms/step - loss: 0.0493 - acc: 0.9858 - val_loss: 0.0204 - val_acc: 0.9933
+Epoch 28/30
+1875/1875 [==============================] - 78s 42ms/step - loss: 0.0510 - acc: 0.9857 - val_loss: 0.0190 - val_acc: 0.9941
+Epoch 29/30
+1875/1875 [==============================] - 91s 49ms/step - loss: 0.0511 - acc: 0.9854 - val_loss: 0.0191 - val_acc: 0.9942
+Epoch 30/30
+1875/1875 [==============================] - 86s 46ms/step - loss: 0.0505 - acc: 0.9851 - val_loss: 0.0190 - val_acc: 0.9938
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># evaluate performance
+</span><span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Training = </span><span class="sh">"</span><span class="p">)</span>
+<span class="n">model_cnn_augm</span><span class="p">.</span><span class="nf">evaluate</span><span class="p">(</span><span class="n">training_images</span><span class="o">/</span><span class="mf">255.0</span><span class="p">,</span> <span class="n">training_labels</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="se">\n</span><span class="s">Test = </span><span class="sh">"</span><span class="p">)</span>
+<span class="n">model_cnn_augm</span><span class="p">.</span><span class="nf">evaluate</span><span class="p">(</span><span class="n">testing_images</span><span class="o">/</span><span class="mf">255.0</span><span class="p">,</span> <span class="n">testing_labels</span><span class="p">)</span>
+</code></pre></div></div>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Training = 
+60000/60000 [==============================] - 13s 212us/sample - loss: 0.0128 - acc: 0.9959
+
+Test = 
+10000/10000 [==============================] - 2s 199us/sample - loss: 0.0190 - acc: 0.9938
+
+[0.019008814232396254, 0.9938]
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Plot the loss and accuracy curves for training and validation 
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">history_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">loss</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Training loss</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">history_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_loss</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">validation loss</span><span class="sh">"</span><span class="p">,</span><span class="n">axes</span> <span class="o">=</span><span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">legend</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="sh">'</span><span class="s">best</span><span class="sh">'</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">history_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">acc</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">b</span><span class="sh">'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Training accuracy</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">plot</span><span class="p">(</span><span class="n">history_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_acc</span><span class="sh">'</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="sh">'</span><span class="s">r</span><span class="sh">'</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="sh">"</span><span class="s">Validation accuracy</span><span class="sh">"</span><span class="p">)</span>
+<span class="n">legend</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="sh">'</span><span class="s">best</span><span class="sh">'</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_ylim</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_88_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Plot non-normalized confusion matrix
+</span><span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">model_cnn_augm</span><span class="p">.</span><span class="nf">predict</span><span class="p">(</span><span class="n">testing_images</span><span class="o">/</span><span class="mf">255.0</span><span class="p">)</span>
+<span class="n">Y_test_pred</span> <span class="o">=</span> <span class="n">Y_test_pred</span><span class="p">.</span><span class="nf">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">testing_labels</span><span class="p">,</span> <span class="n">Y_test_pred</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="n">np</span><span class="p">.</span><span class="nf">array</span><span class="p">([</span><span class="nf">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">11</span><span class="p">)]),</span>
+                     <span class="n">title</span><span class="o">=</span><span class="sh">'</span><span class="s">Confusion matrix, without normalization</span><span class="sh">'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_89_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_worst_predictions</span><span class="p">(</span><span class="n">model_cnn_augm</span><span class="p">,</span><span class="n">testing_images</span><span class="o">/</span><span class="mf">255.0</span><span class="p">,</span><span class="n">testing_labels</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_90_0.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">TAD_tools</span><span class="p">.</span><span class="nf">plot_convolutions_v2</span><span class="p">(</span><span class="n">model_cnn_augm</span><span class="p">,</span><span class="n">testing_images</span><span class="o">/</span><span class="mf">1.0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_91_0.png" />
+</figure>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_91_1.png" />
+</figure>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_91_2.png" />
+</figure>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_91_3.png" />
+</figure>
+
+<figure>
+    <img src="https://tdody.github.io/assets/img/2019-08-24-MNIST/output_91_4.png" />
+</figure>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df_results</span> <span class="o">=</span> <span class="n">df_results</span><span class="p">.</span><span class="nf">append</span><span class="p">({</span><span class="sh">'</span><span class="s">Model</span><span class="sh">'</span><span class="p">:</span><span class="sh">"</span><span class="s">CNN Augmented</span><span class="sh">"</span><span class="p">,</span>
+                                <span class="sh">'</span><span class="s">Training accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">history_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">acc</span><span class="sh">'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                <span class="sh">'</span><span class="s">Testing accuracy</span><span class="sh">'</span><span class="p">:</span><span class="n">history_augm</span><span class="p">.</span><span class="n">history</span><span class="p">[</span><span class="sh">'</span><span class="s">val_acc</span><span class="sh">'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]},</span><span class="n">ignore_index</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<hr />
+<p><a id="Section_6"></a></p>
+<h2 id="6-conclusion-and-kaggle-submittal">6. Conclusion and Kaggle Submittal</h2>
+
+<p>As shown below, the best model correctly predicts the hand-written digits of the test set for 99.50% of the case (CCN no augmentation).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df_results</span>
+</code></pre></div></div>
+
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Model</th>
+      <th>Training accuracy</th>
+      <th>Testing accuracy</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Log Reg</td>
+      <td>0.911450</td>
+      <td>0.8987</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>Lasso</td>
+      <td>0.913900</td>
+      <td>0.9070</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>Ridge</td>
+      <td>0.920400</td>
+      <td>0.9152</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>DNN No dropout</td>
+      <td>0.997883</td>
+      <td>0.9786</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>DNN Dropout</td>
+      <td>0.990883</td>
+      <td>0.9829</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>CNN</td>
+      <td>0.993883</td>
+      <td>0.9950</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>CNN Augmented</td>
+      <td>0.985100</td>
+      <td>0.9938</td>
+    </tr>
+  </tbody>
+</table>
+</div>

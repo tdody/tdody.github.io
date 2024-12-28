@@ -1,0 +1,56 @@
+<footer id="attribution" style="float:right; color:#999; background:#fff;">
+Created by Thibault Dody, 05/03/2020.
+</footer>
+
+<h1 id="revenue-prediction">Revenue Prediction</h1>
+
+<h2 id="goal">Goal</h2>
+
+<p>The available dataset consists of a set of json files. Each json file contains the monthly transaction of our company.<br />
+The objective is to predict the total revenue generated during the 30 days following an input date.</p>
+
+<p>The focus on this project is to develop and efficient and useful workflow. The project stats with an <a href="https://github.com/tdody/RevenueModel/blob/master/notebooks/Part_1_EDA.ipynb">EDA</a>, different models are then <a href="https://github.com/tdody/RevenueModel/blob/master/notebooks/Part_2_Models.ipynb">tested</a>.</p>
+
+<p>My main objective through this project was to build and deploy a model and an associated API.<br />
+The python code is available in my <a href="https://github.com/tdody/RevenueModel">Github repository</a>.</p>
+
+<p>For the deployment of this model, I have chosen the following:</p>
+<ol>
+  <li>Build a flask app to create a web interface.</li>
+  <li>Build a Docker container for future use.</li>
+  <li>Deploy a live version using Heroku</li>
+</ol>
+
+<p><strong>A live version can be accessed <a href="https://revenue-ml.herokuapp.com/">here</a></strong></p>
+
+<p><strong>Note</strong>: The loading of the app can take a few seconds if Heroku needs to restart the build.</p>
+
+<h2 id="api">API</h2>
+
+<h3 id="prediction">Prediction</h3>
+
+<p>Two inputs are used for the prediction:</p>
+<ol>
+  <li>A country (if <code class="language-plaintext highlighter-rouge">all</code> is used then the predicted revenue encompasses all markets).</li>
+  <li>A date for which to compute our future revenue.</li>
+</ol>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/sh2bSUklFe4" frameborder="0"></iframe>
+
+<h3 id="training">Training</h3>
+
+<p>The API allows the user to re-train a model for a specific country. This useful feature can help keep the model up to date with new data.</p>
+<figure class="half">
+    <img src="https://tdody.github.io/assets/img/2020-05-03-Revenue/Train_training.png" />
+    <img src="https://tdody.github.io/assets/img/2020-05-03-Revenue/Train_trained.png" />
+    <figcaption>Training model API</figcaption>
+</figure>
+
+<h3 id="logs">Logs</h3>
+
+<p>In order to monitor our model performance and trainings, two logs are kept up-to-date every time our models are trained or used for prediction.</p>
+
+<figure>
+<img src="https://tdody.github.io/assets/img/2020-05-03-Revenue//Logs.png" />
+    <figcaption>Logs API</figcaption>
+</figure>
