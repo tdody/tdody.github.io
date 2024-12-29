@@ -1,11 +1,8 @@
 ---
-layout: post
+layout: page
 title:  "Skills"
 date:   2023-12-29
 excerpt: "My skills and competencies"
-project: false
-tag:
-- Skills
 comments: False
 ---
 
