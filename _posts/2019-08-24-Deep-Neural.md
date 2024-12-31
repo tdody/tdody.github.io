@@ -169,11 +169,11 @@ For the rest of this post, the tanh function is used. It performs relatively wel
 
 Finally, we define the **Cost Function** as the average of the **Loss Function** over the entire set of examples.  
   
-$$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)})$$
+$$ J = \frac{1}{m} \sum_{i=1}^m L(a^{(i)}, y^{(i)})$$
 
 The **Loss Function** for a single example is defined as:
   
-$$\mathcal{L}(a^{(i)}, y^{(i)})=- (y^{(i)}\log\left(a^{(i)}\right) - (1-y^{(i)})\log\left(1- a^{(i)}\right))$$
+$$L(a^{(i)}, y^{(i)})=- (y^{(i)}\log\left(a^{(i)}\right) - (1-y^{(i)})\log\left(1- a^{(i)}\right))$$
 
 ### 2.5. Optimization
 
@@ -185,9 +185,9 @@ Similarly to the simple neural network and the logistic regression, a gradient d
 Below are the formulas used to compute the gradients.
 
 $$dZ^{[l]} = dA^{[l]} * g'(Z^{[l]})$$
-$$ dW^{[l]} = \frac{\partial \mathcal{L} }{\partial W^{[l]}} = \frac{1}{m} dZ^{[l]} A^{[l-1] T}$$
-$$ db^{[l]} = \frac{\partial \mathcal{L} }{\partial b^{[l]}} = \frac{1}{m} \sum_{i = 1}^{m} dZ^{[l](i)}$$
-$$ dA^{[l-1]} = \frac{\partial \mathcal{L} }{\partial A^{[l-1]}} = W^{[l] T} dZ^{[l]}$$  
+$$ dW^{[l]} = \frac{\partial L }{\partial W^{[l]}} = \frac{1}{m} dZ^{[l]} A^{[l-1] T}$$
+$$ db^{[l]} = \frac{\partial L }{\partial b^{[l]}} = \frac{1}{m} \sum_{i = 1}^{m} dZ^{[l](i)}$$
+$$ dA^{[l-1]} = \frac{\partial L }{\partial A^{[l-1]}} = W^{[l] T} dZ^{[l]}$$  
 
 $$g(.)$$ is the activation function
 
@@ -1109,7 +1109,7 @@ $$g(x_{i}) = \frac{e^{x_{i}}}{\sum_{k=1}^{N} e^{x_{k}}}$$
 
 Finally, the **Loss Function** function needs to be revised:
   
-$$\mathcal{L}(a^{(i)}, y^{(i)})=-y^{(i)}\log\left(a^{(i)}\right)$$
+$$L(a^{(i)}, y^{(i)})=-y^{(i)}\log\left(a^{(i)}\right)$$
 
 Finally, the backward propagation needs to be adjusted as follows:
 $$dZ^{[l]} = \hat{Y} - Y $$
@@ -1851,9 +1851,9 @@ In order to reduce the over-fitting, there exists a set of techniques called reg
 **L1 and L2 regularizations**  
    The cost function is modified and a penalty term is added:  
 
-   $$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)}) + \frac{\lambda}{2*m}*\sum{}||w||^{2} \text{   for L2 Regularization}$$  
+   $$ J = \frac{1}{m} \sum_{i=1}^m L(a^{(i)}, y^{(i)}) + \frac{\lambda}{2*m}*\sum{}||w||^{2} \text{   for L2 Regularization}$$  
 
-   $$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)}) + \frac{\lambda}{m}*\sum{}|w| \text{   for L1 Regularization}$$   
+   $$ J = \frac{1}{m} \sum_{i=1}^m L(a^{(i)}, y^{(i)}) + \frac{\lambda}{m}*\sum{}|w| \text{   for L1 Regularization}$$   
      
    The idea behind this strategy is to ensure that the model is not governed by a small subsets of weights with high values. The parameter lambda is tunable.
   

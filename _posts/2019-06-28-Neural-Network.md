@@ -168,7 +168,7 @@ For the rest of this post, the tanh function is used. It performs relatively wel
 
 Finally, we define the **Cost Function** as the average of the **Loss Function** over the entire set of examples.  
   
-$$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)})$$
+$$ J = \frac{1}{m} \sum_{i=1}^m L(a^{(i)}, y^{(i)})$$
 
 ### 2.5. Optimization
 

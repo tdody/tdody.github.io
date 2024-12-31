@@ -104,7 +104,7 @@ $$y_{pred}=1\ if\ a\geq0.5\ else\ y_{pred}=0$$
   
 Finally, we need to define a performance metric in order to assess how well our model behaves. We call this metric the **Loss Function**. It represents how close are out predictions to the actual values. The loss function is defined as:
   
-$$\mathcal{L(x)}=-log(a)*y-log(1-a)*(1-y)$$
+$$L(x)=-log(a)*y-log(1-a)*(1-y)$$
 
 
 ```python
@@ -120,7 +120,7 @@ ax.plot(x,y_1,label="y=1")
 ax.plot(x,y_2,label="y=0")
 ax.set_xlabel('a')
 ax.set_ylabel('y')
-ax.set_title('Loss function: $\mathcal{L(x)}=-log(a)*y-log(1-a)*(1-y)$')
+ax.set_title('Loss function: $L(x)=-log(a)*y-log(1-a)*(1-y)$')
 ax.legend();
 ```
 
@@ -159,7 +159,7 @@ Whereas if $$y=0$$ and $$y_{prob}=0.05$$, then the loss is equal to:
 
 Finally, we define the **Cost Function** as the average of the **Loss Function** over the entire set of examples.  
   
-$$ J = \frac{1}{m} \sum_{i=1}^m \mathcal{L}(a^{(i)}, y^{(i)})$$
+$$ J = \frac{1}{m} \sum_{i=1}^m L(a^{(i)}, y^{(i)})$$
 
 The last step of this section consists of the optimization step. Now that the model and the performance metric have been defined, the weights of the model need to be optimized in order to best fit the data. This is where the **gradient descent** comes into play. The idea behind the optimization is to look at how the performance varies as a function of the weights. To do so, the partial derivatives (slops) of the **Cost Function** are computed.
 
