@@ -193,10 +193,10 @@ $$g(.)$$ is the activation function
 
 - Note that $$*$$ denotes element-wise multiplication.
 - The notation you will use is common in deep learning coding:
-    - dW1 = $$\frac{\partial \mathcal{J} }{ \partial W_1 }$$
-    - db1 = $$\frac{\partial \mathcal{J} }{ \partial b_1 }$$
-    - dW2 = $$\frac{\partial \mathcal{J} }{ \partial W_2 }$$
-    - db2 = $$\frac{\partial \mathcal{J} }{ \partial b_2 }$$
+    - dW1 = $$\frac{\partial J }{ \partial W_1 }$$
+    - db1 = $$\frac{\partial J }{ \partial b_1 }$$
+    - dW2 = $$\frac{\partial J }{ \partial W_2 }$$
+    - db2 = $$\frac{\partial J }{ \partial b_2 }$$
 
 ***
 <a id="Section_2"></a>
