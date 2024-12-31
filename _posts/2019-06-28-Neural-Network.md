@@ -109,15 +109,14 @@ The hidden layer is made of an ensemble of neurons each equipped with the follow
 
 As shown above, the input vector $$X=\{x_{1},x_{2}\}$$ passes through the first hidden layer. The output of the hidden layer are then used as an input for the output layer. Finally, the output of the last layer is used to make a prediction.  
 
-Let's take an example where the hidden layer is made of 3 hidden units. The equations of the model are:
+Let's take an example where the hidden layer is made of 2 hidden units. The equations of the model are:
   
-$$a_{1}^{[1]}=g(w_{1,1}^{[1]}*x_{1}+w_{1,2}^{[1]}*x_{2}+b_{1}^{[1]})$$
-
-$$a_{2}^{[1]}=g(w_{2,1}^{[1]}*x_{1}+w_{2,2}^{[1]}*x_{2}+b_{2}^{[1]})$$
+$$a_{1}^{[1]}=g(w_{1,1}^{[1]}*x_{1}+w_{1,2}^{[1]}*x_{2}+b_{1}^{[1]})$$<br>  
+$$a_{2}^{[1]}=g(w_{2,1}^{[1]}*x_{1}+w_{2,2}^{[1]}*x_{2}+b_{2}^{[1]})$$<br>  
 
 Then:
 
-$$y_{prob}=\sigma(w_{1}^{[2]}*a_{1}^{[1]}+w_{2}^{[2]}*a_{2}^{[1]}+b^{[2]})$$
+$$y_{prob}=\sigma(w_{1}^{[2]}*a_{1}^{[1]}+w_{2}^{[2]}*a_{2}^{[1]}+b^{[2]})$$<br>  
 
 ### 2.3. Activation Functions
   
@@ -179,18 +178,12 @@ Similarly to the logistic regression, a gradient descent is performed to optimiz
 
 Below are the formulas used to compute the gradients.
 
-$$\frac{\partial J }{ \partial z_{2}^{(i)} } = \frac{1}{m} (a^{[2](i)} - y^{(i)})$$
-
-$$\frac{\partial J }{ \partial W_2 } = \frac{\partial J }{ \partial z_{2}^{(i)} } a^{[1] (i) T} $$
-
-$$\frac{\partial J }{ \partial b_2 } = \sum_i{\frac{\partial J }{ \partial z_{2}^{(i)}}}$$
-
-$$\frac{\partial J }{ \partial z_{1}^{(i)} } =  W_2^T \frac{\partial J }{ \partial z_{2}^{(i)} } * ( 1 - a^{[1] (i) 2}) $$
-
-$$\frac{\partial J }{ \partial W_1 } = \frac{\partial J }{ \partial z_{1}^{(i)} }  X^T $$
-
-$$\frac{\partial J _i }{ \partial b_1 } = \sum_i{\frac{\partial J }{ \partial z_{1}^{(i)}}}$$
-
+$$\frac{\partial J }{ \partial z_{2}^{(i)} } = \frac{1}{m} (a^{[2](i)} - y^{(i)})$$<br>  
+$$\frac{\partial J }{ \partial W_2 } = \frac{\partial J }{ \partial z_{2}^{(i)} } a^{[1] (i) T} $$<br>  
+$$\frac{\partial J }{ \partial b_2 } = \sum_i{\frac{\partial J }{ \partial z_{2}^{(i)}}}$$<br>  
+$$\frac{\partial J }{ \partial z_{1}^{(i)} } =  W_2^T \frac{\partial J }{ \partial z_{2}^{(i)} } * ( 1 - a^{[1] (i) 2}) $$<br>  
+$$\frac{\partial J }{ \partial W_1 } = \frac{\partial J }{ \partial z_{1}^{(i)} }  X^T $$<br>  
+$$\frac{\partial J _i }{ \partial b_1 } = \sum_i{\frac{\partial J }{ \partial z_{1}^{(i)}}}$$<br>  
 
 - Note that $$*$$ denotes element-wise multiplication.
 - The notation you will use is common in deep learning coding:

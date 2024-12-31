@@ -110,14 +110,14 @@ Each hidden layer ($$l$$) is made of an ensemble of neurons each equipped with t
 
 As shown above, the input vector $$X=\{x_{1},x_{2}\}$$ passes through the first hidden layer. The output of the hidden layer are then used as an input for the output layer. Finally, the output of the last layer is used to make a prediction.  
 
-Let's take an example where the hidden layer is made of 3 hidden units. The equations of the model are:
+Let's take an example where the hidden layer is made of 2 hidden units. The equations of the model are:
   
-$$a_{1}^{[1]}=g(w_{1,1}^{[1]}*x_{1}+w_{1,2}^{[1]}*x_{2}+b_{1}^{[1]})$$
-$$a_{2}^{[1]}=g(w_{2,1}^{[1]}*x_{1}+w_{2,2}^{[1]}*x_{2}+b_{2}^{[1]})$$
+$$a_{1}^{[1]}=g(w_{1,1}^{[1]}*x_{1}+w_{1,2}^{[1]}*x_{2}+b_{1}^{[1]})$$<br>  
+$$a_{2}^{[1]}=g(w_{2,1}^{[1]}*x_{1}+w_{2,2}^{[1]}*x_{2}+b_{2}^{[1]})$$<br>  
 
 Then:
 
-$$y_{prob}=\sigma(w_{1}^{[2]}*a_{1}^{[1]}+w_{2}^{[2]}*a_{2}^{[1]}+b^{[2]})$$
+$$y_{prob}=\sigma(w_{1}^{[2]}*a_{1}^{[1]}+w_{2}^{[2]}*a_{2}^{[1]}+b^{[2]})$$<br>  
 
 ### 2.3. Activation Functions
   
@@ -184,10 +184,10 @@ Similarly to the simple neural network and the logistic regression, a gradient d
 
 Below are the formulas used to compute the gradients.
 
-$$dZ^{[l]} = dA^{[l]} * g'(Z^{[l]})$$
-$$ dW^{[l]} = \frac{\partial L }{\partial W^{[l]}} = \frac{1}{m} dZ^{[l]} A^{[l-1] T}$$
-$$ db^{[l]} = \frac{\partial L }{\partial b^{[l]}} = \frac{1}{m} \sum_{i = 1}^{m} dZ^{[l](i)}$$
-$$ dA^{[l-1]} = \frac{\partial L }{\partial A^{[l-1]}} = W^{[l] T} dZ^{[l]}$$  
+$$dZ^{[l]} = dA^{[l]} * g'(Z^{[l]})$$<br>
+$$ dW^{[l]} = \frac{\partial L }{\partial W^{[l]}} = \frac{1}{m} dZ^{[l]} A^{[l-1] T}$$<br>
+$$ db^{[l]} = \frac{\partial L }{\partial b^{[l]}} = \frac{1}{m} \sum_{i = 1}^{m} dZ^{[l](i)}$$<br>
+$$ dA^{[l-1]} = \frac{\partial L }{\partial A^{[l-1]}} = W^{[l] T} dZ^{[l]}$$  <br>
 
 $$g(.)$$ is the activation function
 
