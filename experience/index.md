@@ -63,7 +63,8 @@ Social Sentinel was acquired by Navigate360 in 2020. My work at Social Sentinel 
 
 *Jun 2013 – Oct 2020*  
 
-I co-founded the Data Automation and Machine Learning Team and led projects to improve engineering efficiency through automation and predictive modeling.  
+Most of my work at Jensen Hughes involved performing statistical risk analysis for nuclear power plants. Due to the technical nature of the work and the relative niche of the industry, we often had to develop our own tools and software.
+In addition, I co-founded the Data Automation and Machine Learning Team and led projects to improve engineering efficiency through automation and predictive modeling.  
 
 ### Key Projects  
 
