@@ -164,7 +164,7 @@ plt.show()
 
     
 <figure>
-    <a href="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_8_0.png"><img src="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_8_0.png"></a>
+    <a href="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_8_0.png"><img src="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_8_0.png"></a>
 </figure>
     
 
@@ -240,7 +240,7 @@ plt.axis("off")
 
     
 <figure>
-    <a href="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_13_1.png"><img src="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_13_1.png"></a>
+    <a href="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_13_1.png"><img src="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_13_1.png"></a>
 </figure>
     
 
@@ -277,7 +277,7 @@ plt.axis("off");
 
     
 <figure>
-    <a href="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_17_0.png"><img src="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_17_0.png"></a>
+    <a href="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_17_0.png"><img src="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_17_0.png"></a>
 </figure>
     
 
@@ -449,7 +449,7 @@ plt.title("One-hot encoding of the first 10 training tokens");
 
     
 <figure>
-    <a href="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_30_1.png"><img src="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_30_1.png"></a>
+    <a href="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_30_1.png"><img src="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_30_1.png"></a>
 </figure>
     
 
@@ -502,7 +502,7 @@ torchviz.make_dot(loss, params={"W":W, "logits":logits, "counts":counts, "probs"
 
     
 <figure>
-    <a href="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_34_0.svg"><img src="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_34_0.svg"></a>
+    <a href="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_34_0.svg"><img src="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_34_0.svg"></a>
 </figure>
     
 
@@ -656,7 +656,7 @@ ax.set_title("Negative log-likelihood loss over epochs");
 
     
 <figure>
-    <a href="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_39_0.png"><img src="https://tdody.github.io/assets/img/2024-01-05-bigram-and-nn/part_1_39_0.png"></a>
+    <a href="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_39_0.png"><img src="https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/part_1_39_0.png"></a>
 </figure>
     
 
