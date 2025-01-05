@@ -12,7 +12,7 @@ image: "https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/tile.p
 ---
 
 <footer id="attribution" style="float:right; color:#999; background:#fff;">
-Created by Thibault Dody, 06/24/2019.
+Created by Thibault Dody, 01/05/2025.
 </footer>
 
 # Road to Generative AI - Part 1: Bigram Models, Neural Networks
