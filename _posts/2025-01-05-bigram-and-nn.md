@@ -8,7 +8,7 @@ tag:
 - pytorch
 - python
 comments: false
-image: "https://tdody.github.io/assets/img/2019-06-24-Logistic-Regression/tile.png"
+image: "https://tdody.github.io/assets/img/2025-01-05-bigram-and-nn/title.png"
 ---
 
 <footer id="attribution" style="float:right; color:#999; background:#fff;">
