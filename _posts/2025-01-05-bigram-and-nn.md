@@ -74,7 +74,9 @@ print(characters[0:10])
 
 The simplest form of Generative AI is the bigram model. In this model, we calculate the probability of each character in the dataset based on the previous character. We then use these probabilities to generate new characters. Let's start by building a bigram model for our dataset.
 
-A language model leads the conditional probabilities $$P(c_i|c_{i-1})$$ where $c_i$ is the $i$-th character in the dataset. We can calculate these probabilities by counting the number of times each character appears after the previous character in the dataset. Then at prediction time, we can generate new characters by sampling from the conditional probabilities.
+A language model uses the conditional probabilities  
+$$P(c_i|c_{i-1})$$  
+where $c_i$ is the $i$-th character in the dataset. We can calculate these probabilities by counting the number of times each character appears after the previous character in the dataset. Then at prediction time, we can generate new characters by sampling from the conditional probabilities.
 
 For the name "adanel", the model needs to understand that the first "a" is the first character and that the "l" is the last character. To do so, we are going to add a start/end token `<.>` at the beginning of each name and at end of each name.
 
