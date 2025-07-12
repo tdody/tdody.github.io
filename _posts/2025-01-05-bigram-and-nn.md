@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Road to Generative AI - Part 1: Bigram Models, Neural Networks"
-date:   2023-01-05
+date:   2025-01-05
 excerpt: "A gentle introduction to bigram models and simple neural networks and their implementation in python using Pytorch."
 tag:
 - bigram
