@@ -706,7 +706,6 @@ for i in range(10):
 
     Here are a few generated names using the NN model:
     ckbordi
-    
     d
     on hsairerde
     tururil

@@ -2,20 +2,18 @@
 layout: post
 title:  "Road to Generative AI - Part 2: Text Generation with MLP"
 date:   2025-07-12
-excerpt: "In this post, we will explore text generation using Multi-Layer Perceptrons (MLPs) and their implementation in Python using PyTorch."
+excerpt: "In this post, we will explore text generation using Multi-Layer Perceptron (MLPs) and their implementation in Python using PyTorch."
 tag:
 - mlp
 - pytorch
 - python
 comments: false
-image: "https://tdody.github.io/assets/img/2025-07-12-Text-with_MLP/title.png"
+image: "https://tdody.github.io/assets/img/2025-07-12-Text-with-MLP/title.png"
 ---
 
 <footer id="attribution" style="float:right; color:#999; background:#fff;">
-Created by Thibault Dody, 01/05/2025.
+Created by Thibault Dody, 07/12/2025.
 </footer>
-
-# Road to Generative AI - Part 2: Multi-Layer Perceptron
 
 ## Introduction
 
@@ -45,11 +43,13 @@ print(f"The shortest character name has {min(min_length)} birds.")
 print(f"The longest character name has {max(max_length)} birds.")
 ```
 
-    First 10 birds in the dataset:
-    Abbott's babbler, Abbott's booby, Abbott's starling, Abbott's sunbird, Abd al-Kuri sparrow, Abdim's stork, Aberdare cisticola, Aberrant bush warbler, Abert's towhee, Abyssinian catbird
-    There are 10,976 birds in the dataset.
-    The shortest character name has 3 birds.
-    The longest character name has 35 birds.
+```output
+First 10 birds in the dataset:
+Abbott's babbler, Abbott's booby, Abbott's starling, Abbott's sunbird, Abd al-Kuri sparrow, Abdim's stork, Aberdare cisticola, Aberrant bush warbler, Abert's towhee, Abyssinian catbird
+There are 10,976 birds in the dataset.
+The shortest character name has 3 birds.
+The longest character name has 35 birds.
+```
 
 
 
@@ -85,17 +85,19 @@ for i in rdm_indexes:
     print(f"Original: {name} -> Cleaned: {cleaned_name}")
 ```
 
-    Cleaning process:
-    Original: Blue-collared parrot -> Cleaned: blue_collared_parrot
-    Original: Mindanao lorikeet -> Cleaned: mindanao_lorikeet
-    Original: Club-winged manakin -> Cleaned: club_winged_manakin
-    Original: Purple-bearded bee-eater -> Cleaned: purple_bearded_bee_eater
-    Original: Western banded snake eagle -> Cleaned: western_banded_snake_eagle
-    Original: Dusky-headed parakeet -> Cleaned: dusky_headed_parakeet
-    Original: White-throated swift -> Cleaned: white_throated_swift
-    Original: Sapphire flycatcher -> Cleaned: sapphire_flycatcher
-    Original: Rusty-backed spinetail -> Cleaned: rusty_backed_spinetail
-    Original: Dead Sea sparrow -> Cleaned: dead_sea_sparrow
+```output
+Cleaning process:
+Original: Blue-collared parrot -> Cleaned: blue_collared_parrot
+Original: Mindanao lorikeet -> Cleaned: mindanao_lorikeet
+Original: Club-winged manakin -> Cleaned: club_winged_manakin
+Original: Purple-bearded bee-eater -> Cleaned: purple_bearded_bee_eater
+Original: Western banded snake eagle -> Cleaned: western_banded_snake_eagle
+Original: Dusky-headed parakeet -> Cleaned: dusky_headed_parakeet
+Original: White-throated swift -> Cleaned: white_throated_swift
+Original: Sapphire flycatcher -> Cleaned: sapphire_flycatcher
+Original: Rusty-backed spinetail -> Cleaned: rusty_backed_spinetail
+Original: Dead Sea sparrow -> Cleaned: dead_sea_sparrow
+```
 
 
 
@@ -117,9 +119,11 @@ print(", ".join(sorted(unique_tokens)))
 print(f"Token mapping: {index_to_token}")
 ```
 
-    Number of unique tokens: 28
-    _, `, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
-    Token mapping: {1: 't', 2: 'u', 3: 'x', 4: 'a', 5: 'n', 6: '`', 7: 'z', 8: 'l', 9: 'c', 10: 'r', 11: 'd', 12: '_', 13: 'v', 14: 'k', 15: 's', 16: 'e', 17: 'q', 18: 'b', 19: 'h', 20: 'g', 21: 'y', 22: 'j', 23: 'f', 24: 'p', 25: 'm', 26: 'w', 27: 'o', 28: 'i', 0: '.'}
+```output
+Number of unique tokens: 28
+_, `, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
+Token mapping: {1: 't', 2: 'u', 3: 'x', 4: 'a', 5: 'n', 6: '`', 7: 'z', 8: 'l', 9: 'c', 10: 'r', 11: 'd', 12: '_', 13: 'v', 14: 'k', 15: 's', 16: 'e', 17: 'q', 18: 'b', 19: 'h', 20: 'g', 21: 'y', 22: 'j', 23: 'f', 24: 'p', 25: 'm', 26: 'w', 27: 'o', 28: 'i', 0: '.'}
+```
 
 
 ## Model Architecture
@@ -129,7 +133,7 @@ The main limitation of the bigram model is its scalability. As we increase the c
 The figure below shows the architecture of the MLP model. The model consists of an embedding layer $C$. The embeddings are fed into a hidden layer $H$ with a $tanh$ activation function. The output of the hidden layer is fed into the output layer $O$ with a softmax activation function. The output layer generates the probability distribution of the next character in the sequence.
 
 <figure>
-    <img src="./assets/MLP_architecture.png" width="500"/>
+    <img src="https://tdody.github.io/assets/img/2025-07-12-Text-with-MLP/MLP_architecture.png" width="500"/>
     <figcaption>Neural architecture</figcaption>
 </figure>
 
@@ -169,60 +173,61 @@ X = torch.tensor(X, dtype=torch.int64)
 Y = torch.tensor(Y, dtype=torch.int64)
 ```
 
-    abbott_s_babbler
-    ... -> a
-    ..a -> b
-    .ab -> b
-    abb -> o
-    bbo -> t
-    bot -> t
-    ott -> _
-    tt_ -> s
-    t_s -> _
-    _s_ -> b
-    s_b -> a
-    _ba -> b
-    bab -> b
-    abb -> l
-    bbl -> e
-    ble -> r
-    ler -> .
-    abbott_s_booby
-    ... -> a
-    ..a -> b
-    .ab -> b
-    abb -> o
-    bbo -> t
-    bot -> t
-    ott -> _
-    tt_ -> s
-    t_s -> _
-    _s_ -> b
-    s_b -> o
-    _bo -> o
-    boo -> b
-    oob -> y
-    oby -> .
-    abbott_s_starling
-    ... -> a
-    ..a -> b
-    .ab -> b
-    abb -> o
-    bbo -> t
-    bot -> t
-    ott -> _
-    tt_ -> s
-    t_s -> _
-    _s_ -> s
-    s_s -> t
-    _st -> a
-    sta -> r
-    tar -> l
-    arl -> i
-    rli -> n
-    lin -> g
-    ing -> .
-
+```output
+abbott_s_babbler
+... -> a
+..a -> b
+.ab -> b
+abb -> o
+bbo -> t
+bot -> t
+ott -> _
+tt_ -> s
+t_s -> _
+_s_ -> b
+s_b -> a
+_ba -> b
+bab -> b
+abb -> l
+bbl -> e
+ble -> r
+ler -> .
+abbott_s_booby
+... -> a
+..a -> b
+.ab -> b
+abb -> o
+bbo -> t
+bot -> t
+ott -> _
+tt_ -> s
+t_s -> _
+_s_ -> b
+s_b -> o
+_bo -> o
+boo -> b
+oob -> y
+oby -> .
+abbott_s_starling
+... -> a
+..a -> b
+.ab -> b
+abb -> o
+bbo -> t
+bot -> t
+ott -> _
+tt_ -> s
+t_s -> _
+_s_ -> s
+s_s -> t
+_st -> a
+sta -> r
+tar -> l
+arl -> i
+rli -> n
+lin -> g
+ing -> .
+```
 
 
 ```python
@@ -235,7 +240,8 @@ print("X:", X[0:10])
 print("Y:", Y[0:10])
 ```
 
-    Dataset information:
+```output
+Dataset information:
     X shape: torch.Size([215505, 3])
     Y shape: torch.Size([215505])
     
@@ -251,7 +257,7 @@ print("Y:", Y[0:10])
             [ 1, 12, 15],
             [12, 15, 12]])
     Y: tensor([ 4, 18, 18, 27,  1,  1, 12, 15, 12, 18])
-
+```
 
 Let's now focus on the embedding process. The embedding layer is a matrix that maps each token to a vector of fixed size. The size of the vector is called the embedding dimension. The embedding layer is initialized with random values and is trained during the training process. Below we create a random embedding matrix for our dataset.
 
@@ -276,20 +282,18 @@ one_hot_encoded = F.one_hot(torch.tensor(token_index), num_classes=n_token).floa
 one_hot_encoded @ C # (28, 1) @ (28, EMBEDDING_DIM) -> (1, EMBEDDING_DIM)
 ```
 
-
-
-
-    tensor([-1.0185, -1.2473])
-
-
-
+```output
+tensor([-1.0185, -1.2473])
+```
 
 ```python
 # alternatively, we can use Pytorch indexing to get the embedding for a specific token
 print("Shape of embeddings of X: ", C[X].shape) # (n_examples, context_size, embedding_dim)
 ```
 
-    Shape of embeddings of X:  torch.Size([215505, 3, 2])
+```output
+Shape of embeddings of X:  torch.Size([215505, 3, 2])
+```
 
 
 At this stage of the model, the embedding layer took care of transforming the input tokens into their vector representations. However, the context shape (`(n_examples, context_size, embedding_size)`) is not compatible with the input shape of the MLP model. To make it compatible, we need to flatten the context shape into a single vector for each example so the input shape becomes `(n_examples, context_size * embedding_size)`.
@@ -299,8 +303,9 @@ At this stage of the model, the embedding layer took care of transforming the in
 print("Shape of the flattened context:", C[X].view((-1, EMBEDDING_DIM * CONTEXT_SIZE)).shape) # flatten the context shape into a single vector for each example
 ```
 
-    Shape of the flattened context: torch.Size([215505, 6])
-
+```output
+Shape of the flattened context: torch.Size([215505, 6])
+```
 
 With the right input shape, we can now build the MLP model. The model consists of an embedding layer, a hidden layer with a $tanh$ activation function, and an output layer with a softmax activation function. The output layer generates the probability distribution of the next character in the sequence.
 
@@ -330,7 +335,9 @@ probs = F.softmax(y, dim=1) # shape (n_examples, n_token)
 print("Shape of the output probabilities:", probs.shape) # (n_examples, n_token)
 ```
 
-    Shape of the output probabilities: torch.Size([215505, 29])
+```output
+Shape of the output probabilities: torch.Size([215505, 29])
+```
 
 
 Now we can compute the loss function. The loss function measures how well the model predicts the next character in the sequence. We will use the cross-entropy loss function, which is commonly used for classification tasks. The cross-entropy loss function compares the predicted probability distribution with the true distribution and computes the loss.
@@ -342,8 +349,9 @@ loss = F.cross_entropy(y, Y) # compute the cross-entropy loss
 print("Loss:", loss.item())
 ```
 
-    Loss: 17.092239379882812
-
+```output
+Loss: 17.092239379882812
+```
 
 We can now clean things up a bit and set up the training loop. The training loop will iterate over the dataset, compute the loss, and update the model parameters using backpropagation. We will use the Adam optimizer to update the model parameters.
 
@@ -381,8 +389,9 @@ params = create_model(
 C, W1, b1, W2, b2 = params
 ```
 
-    The model has 3,687 parameters.
-
+```output
+The model has 3,687 parameters.
+```
 
 Because of the large size of our dataset, we will use mini-batch gradient descent to update the model parameters. This means that we will split the dataset into smaller batches and update the model parameters after each batch. This allows us to train the model faster and use less memory.
 
@@ -435,8 +444,9 @@ with torch.no_grad():
     print(f"Final loss: {loss.item()}")  # Print the final loss value
 ```
 
-    Final loss: 6.695342540740967
-
+```output
+Final loss: 6.695342540740967
+```
 
 
 ```python
@@ -470,9 +480,9 @@ params = create_model(
 C, W1, b1, W2, b2 = params
 ```
 
-    The model has 3,687 parameters.
-
-
+```output
+The model has 3,687 parameters.
+```
 
 ```python
 LEARNING_RATE = 0.1
@@ -515,10 +525,11 @@ train_model(params, learning_rate_decay=1, n_steps=20000)
 train_model(params, learning_rate_decay=0.1, n_steps=10000)
 ```
 
-    Final loss: 2.429
-    Final loss: 2.290
-    Final loss: 2.196
-
+```output
+Final loss: 2.429
+Final loss: 2.290
+Final loss: 2.196
+```
 
 At this stage, the training phase is only evaluated on the training data. However, to truly assess the model's performance, we should also evaluate it on a validation set. This will help us understand how well the model generalizes to unseen data and prevent overfitting. Let's now re-write sone of the data processing codes to allow for the training set to be broken down into a training, a development, and a test set. The training set will be used to train the model, the development set will be used to tune the hyperparameters, and the test set will be used to evaluate the model's performance.
 
@@ -576,10 +587,11 @@ print("Test set shape:", X_test.shape, Y_test.shape)
 
 ```
 
-    Training set shape: torch.Size([172513, 3]) torch.Size([172513])
-    Development set shape: torch.Size([21531, 3]) torch.Size([21531])
-    Test set shape: torch.Size([21461, 3]) torch.Size([21461])
-
+```output
+Training set shape: torch.Size([172513, 3]) torch.Size([172513])
+Development set shape: torch.Size([21531, 3]) torch.Size([21531])
+Test set shape: torch.Size([21461, 3]) torch.Size([21461])
+```
 
 
 ```python
@@ -593,9 +605,9 @@ params = create_model(
 C, W1, b1, W2, b2 = params
 ```
 
-    The model has 3,687 parameters.
-
-
+```output
+The model has 3,687 parameters.
+```
 
 ```python
 # train the model
@@ -604,10 +616,11 @@ train_model(params, learning_rate_decay=1, n_steps=20000)
 train_model(params, learning_rate_decay=0.1, n_steps=10000)
 ```
 
-    Final loss: 2.428
-    Final loss: 2.276
-    Final loss: 2.172
-
+```output
+Final loss: 2.428
+Final loss: 2.276
+Final loss: 2.172
+```
 
 
 ```python
@@ -619,8 +632,9 @@ with torch.no_grad():
     print(f"Final loss: {loss.item():,.3f}")  # Print the final loss value
 ```
 
-    Final loss: 2.173
-
+```output
+Final loss: 2.173
+```
 
 The train loss and dev loss are almost identical. This suggests that the model is generalizing well and not overfitting to the training data.
 When the training loss and the dev loss are close to each other, it indicates that the model is underfitting. This means that the model is not complex enough to capture the underlying patterns in the data. One solution to this problem is to increase the model's capacity by adding more layers or increasing the number of neurons in the hidden layer.
@@ -640,8 +654,9 @@ params = create_model(
 C, W1, b1, W2, b2 = params
 ```
 
-    The model has 18,087 parameters.
-
+```output
+The model has 18,087 parameters.
+```
 
 
 ```python
@@ -652,10 +667,11 @@ train_model(params, learning_rate_decay=0.5, n_steps=20000)
 train_model(params, learning_rate_decay=0.1, n_steps=10000)
 ```
 
-    Final loss: 1.751
-    Final loss: 1.551
-    Final loss: 1.424
-
+```output
+Final loss: 1.751
+Final loss: 1.551
+Final loss: 1.424
+```
 
 
 ```python
@@ -667,9 +683,9 @@ with torch.no_grad():
     print(f"Final loss: {loss.item():,.3f}")  # Print the final loss value
 ```
 
-    Final loss: 1.421
-
-
+```output
+Final loss: 1.421
+```
 
 ```python
 # visualize the embeddings
@@ -680,7 +696,6 @@ for i in range(C.shape[0]):
     plt.text(C[i, 0].item(), C[i, 1].item(), index_to_token[i], fontsize=8, alpha=0.7, ha='center', va='center', color='black')
 
 plt.grid('minor')
-
 ```
 
 
@@ -713,9 +728,9 @@ params = create_model(
 C, W1, b1, W2, b2 = params
 ```
 
-    The model has 30,319 parameters.
-
-
+```output
+The model has 30,319 parameters.
+```
 
 ```python
 # train the model
@@ -725,11 +740,11 @@ train_model(params, learning_rate_decay=0.5, n_steps=20000)
 train_model(params, learning_rate_decay=0.1, n_steps=20000)
 ```
 
-    Final loss: 1.576
-    Final loss: 1.337
-    Final loss: 1.241
-
-
+```output
+Final loss: 1.576
+Final loss: 1.337
+Final loss: 1.241
+```
 
 ```python
 # evaluate the final loss on the development set
@@ -740,8 +755,9 @@ with torch.no_grad():
     print(f"Final loss: {loss.item():,.3f}")  # Print the final loss value
 ```
 
-    Final loss: 1.230
-
+```output
+Final loss: 1.230
+```
 
 We can now sample new bird names from the model. The model will generate a sequence of characters based on the context and the learned patterns in the data. The generated sequence will be a valid bird name, as it will follow the same patterns as the training data.
 
@@ -771,17 +787,18 @@ for i in range(10):
     print(''.join(out))  # Print the generated bird name
 ```
 
-    white_earwater.
-    blackered_eaglaughing.
-    paler.
-    southat.
-    flamed_scopknia.
-    hoftta.
-    commonary.
-    long_thicker.
-    ochrike_vireo.
-    monduline_fantshrike.
-
+```output
+white_earwater.
+blackered_eaglaughing.
+paler.
+southat.
+flamed_scopknia.
+hoftta.
+commonary.
+long_thicker.
+ochrike_vireo.
+monduline_fantshrike.
+```
 
 ## References
 
