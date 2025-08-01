@@ -39,8 +39,8 @@ print(f"There are {len(birds):,d} birds in the dataset.")
 
 min_length = map(len, birds)
 max_length = map(len, birds)
-print(f"The shortest character name has {min(min_length)} birds.")
-print(f"The longest character name has {max(max_length)} birds.")
+print(f"The shortest character name has {min(min_length)} characters.")
+print(f"The longest character name has {max(max_length)} characters.")
 ```
 
 ```output
