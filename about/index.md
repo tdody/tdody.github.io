@@ -12,7 +12,7 @@ comments: false
             <p><img src="https://tdody.github.io/assets/img/Personal.png" style="float:left;width:200px;height:190px;padding-right:20px;">
 My name is <b>Thibault Dody</b>. I am a data scientist with a strong background in mathematics and engineering.<br><br>
 
-I am currently a Senior Data Scientist at <a href="https://faraday.ai/" target="_blank">Faraday</a>. I research, develop, and maintain machine learning models to help companies better understand their customers. I also work on developing new features and improving the performance of the existing models. In the recent years, my focus has been on propensity models, bias detection and mitigation, and recommender engines.<br><br>
+I am currently a Staff Data Scientist at <a href="https://faraday.ai/" target="_blank">Faraday</a>. I research, develop, and maintain machine learning models to help companies better understand their customers. I also work on developing new features and improving the performance of the existing models. In the recent years, my focus has been on propensity models, bias detection and mitigation, and recommender engines.<br><br>
 
 Previously, I worked on identifying signals of potential harm and threats found in billions of digital conversations each day. Prior to this, I focused on performing risk analysis for nuclear power plants. These assessments were related to external aggressions such as seismic, tornado missiles or floods.<br><br>
 

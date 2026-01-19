@@ -8,7 +8,7 @@ comments: False
 
 # Experience  
 
-## Faraday, Senior Data Scientist  
+## Faraday, Staff Data Scientist  
 
 *Nov 2021 – Present*  
 
